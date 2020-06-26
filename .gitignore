@@ -3,6 +3,6 @@
 .RData
 .Ruserdata
 *.xlsx
-*.pdf
+*.pdf 
 HMSC/
 *.xls
