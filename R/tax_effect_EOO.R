@@ -1,207 +1,240 @@
-##########################################################################
+##############################################################
 #### EFFECT OF TAXONOMIC CONFIDENCE OVER THE EOO ESTIMATE ####
-##########################################################################
-require(ConR)
-require(rgeos)
-source("suggestions_for_ConR.r")
+##############################################################
+rm(list=ls())
 
+#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
+library("ConR")
+require(rgeos)
+source("./R/suggestions_for_ConR.r")
+source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
+#source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
 
 ## Reading the Neotropics shapefile ##
-neotrop <- readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp_simplified.rds")
-neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
-
-#projecting and simplifying the neotropical contours
-neotrop.simp <- gSimplify(neotrop,tol=0.05)
-neotrop.simp <- gBuffer(neotrop.simp, byid=TRUE, width=0)
-neotrop.simp.proj <- spTransform(neotrop.simp, CRS("+init=epsg:5641"))  # define projection system of our data
+# neotrop.simp <- readRDS("data/Contour_Neotrop_simplified.rds")
 
 ## Reading herbarium data
-oc.data <- readRDS("threat_occ_data.rds")
+# oc.data <- readRDS("data/threat_occ_data.rds")
 
 #Putting data in the format demanded by the package
-MyData <- cbind.data.frame(ddlat = as.double(oc.data$latitude.work1),
-                           ddlon = as.double(oc.data$longitude.work1),
-                           tax = as.character(oc.data$species.correct2),
-                           higher.tax.rank = oc.data$family.correct1,
-                           tax.check2 = oc.data$tax.check2,
-                           stringsAsFactors = FALSE)
-rm(oc.data)
+# MyData <- cbind.data.frame(ddlat = as.double(oc.data$latitude.work1),
+#                            ddlon = as.double(oc.data$longitude.work1),
+#                            tax = as.character(oc.data$species.correct2),
+#                            tax.check2 = oc.data$tax.check2,
+#                            stringsAsFactors = FALSE)
+# rm(oc.data)
 
 #### CALCULATING EOO USING DIFFERENT CONFIDENCE LEVELS OF THE OCCURRENCES ####
-#teste <- MyData[grepl("Rutaceae",MyData$higher.tax.rank), c(1:3,5)] 
-t1 <- Sys.time()
-sens <- EOO.sensitivity (MyData[,c(1:3,5)], 
-                         levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
-                            occ.based = TRUE,
-                            exclude.area = TRUE,
-                            country_map = neotrop.simp,
-                            parallel = TRUE,
-                            NbeCores = 5,
-                            show_progress = TRUE,
-                            proj_user = 5641,
-                            value = "dist")
-t2 <- Sys.time()
-t2 - t1
-sapply(sens, head)
-resultado <- sens$EOO.change
+# teste <- MyData[grepl("Persea",MyData$tax), ] 
+# sens <- EOO.sensitivity (MyData, 
+#                          levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
+#                             occ.based = TRUE,
+#                             exclude.area = TRUE,
+#                             country_map = neotrop.simp,
+#                             method.range = "convex.hull",
+#                             parallel = TRUE,
+#                             NbeCores = 5,
+#                             show_progress = TRUE,
+#                             proj_user = 5641,
+#                             value = "dist")
+# sapply(sens, head)
+# oc.data <- readRDS("data/threat_occ_data.rds")
+# table(oc.data$species.correct2 == sens[[2]]$tax)
+# oc.data$dist.eoo <- sens[[2]]$prop.dist.eoo
+# saveRDS(oc.data,"data/threat_occ_data_new.rds")
+# saveRDS(sens$EOO.change,"data/eoo.change_preliminar.rds")
+# rm(oc.data, sens, MyData, neotrop.simp)
+
+## Reading previously saved files
+#resultado <- readRDS("data/eoo.change_preliminar.rds")
 
 #### CLASSYFYING SPECIES ACCORDING TO 3 CRITERIA ####
-tmp <- findInterval(resultado$Occs.level.5, c(15,30,75)) # number of occs indentied by family specialists
-tmp0 <- findInterval(resultado$Occs.level.4, c(15,30,75)) # number of occs indentied by any specialists
-tmp1 <- findInterval(resultado$Occs.level.5 / resultado$Occs.level.1, c(0.5,0.75,0.9)) # proportion of all occs indentied by faily specialists
-tmp2 <- as.double(as.character(cut(resultado$EOO.increase.4, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
-tmp3 <- as.double(as.character(cut(resultado$EOO.increase.2, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
-tmp4 <- as.double(as.character(cut(resultado$EOO.increase.1, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
-table(tmp, tmp1)
-table(tmp, tmp3)
 
-boxplot(jitter(tmp2) ~ tmp1, varwidth = TRUE, notch = TRUE, 
-        xlab = "Tax/all", ylab = "EOO change high to medium") # increase from high to medium in respect to the prop. of occs identfied by specialists
-boxplot(jitter(tmp3) ~ tmp1, varwidth = TRUE, notch = TRUE,
-        xlab = "Tax/all", ylab = "EOO change high to low") # increase from high to low in respect to the prop. of occs identfied by specialists
-boxplot(jitter(tmp4) ~ tmp1, varwidth = TRUE, notch = TRUE,
-        xlab = "Tax/all", ylab = "EOO change high to bad") # increase from high to bad in respect to the prop. of occs identfied by specialists
+### NEW CLASSIFICATION ###
+tmp <- findInterval(resultado$Occs.level.5, c(5,15,30,75)) # number of occs indentied by family specialists
+tmp0 <- findInterval(resultado$Occs.level.4, c(5,15,30,75)) # number of occs indentied by any specialists
+tmp1 <- findInterval(resultado$Occs.level.5 / resultado$Occs.level.1, c(0.25,0.5,0.75,0.9)) # proportion of all occs indentied by faily specialists
+tmp2 <- as.double(as.character(cut(resultado$EOO.increase.1, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
 
-#an inex of data quality
-index <- apply(cbind(tmp,tmp1,tmp4), 1, sum, na.rm = TRUE)
-index1 <- round(apply(cbind(tmp,tmp1,apply(cbind(tmp2,tmp3,tmp4),1,mean,na.rm=TRUE)), 1, sum, na.rm = TRUE),1)
-plot(jitter(index1) ~ index)
-table(index)
-
-## Which species we can include all TRUE_OTHER automatically:
-resultado$add.other <- FALSE
-resultado$add.other[!is.na(tmp2) & (tmp2 >= 2) ] <- TRUE
-resultado$add.other[!is.na(tmp2) & (tmp1 >= 2) ] <- TRUE
-resultado$add.other[is.na(tmp2)] <- TRUE
-tbc <- unique(MyData$tax[MyData$tax.check2 %in% "TRUE_TBC"])
-resultado$add.other[resultado$tax %in% tbc & (tmp3 >= 1) ] <- TRUE
-
-## Which species we can include all TRUE_TBC automatically:
-resultado$add.tbc <- FALSE
-resultado$add.tbc[resultado$tax %in% tbc & (tmp<3 | is.na(tmp3)) & (tmp1 >=1 | tmp3 >=1)] <- TRUE
+## an inex of data quality
+index <- apply(cbind(tmp,tmp1,tmp2), 1, sum, na.rm = TRUE)
+table(index, useNA = "always")
+resultado$index.conf <- index
 
 ## Assigning classes of taxonomic confidence
 resultado$tax.conf <- NA
-resultado$action <- NA
-#class 1: best taxonomy, many occurrences (> 75), little or no changes in EOO
-resultado$tax.conf[tmp == 3] <- "class1"
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 %in% 3 & (tmp1 %in% 3 | tmp2 %in% 3)] <- "class1.1" # TRUE + TRUE_OTHER >=75 + best tax or small EOO change
-resultado$action[resultado$tax.conf == "class1"] <- "nothing"
-#class 2: good taxonomy
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=3 | tmp4>=3)] <- "class2"   # good occs + best tax or small EOO change
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=2 & tmp4>=2)] <- "class2.1" # good occs + good tax + low EOO change
-#class 3
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=2 | tmp4>=2)] <- "class3"   # good occs + good tax or low EOO change
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=2 & tmp4>=2)] <- "class3.1" # low occs + good tax + low EOO change
-#class 4 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=2 | tmp4>=2)] <- "class4.1"   # low occs + good tax or low EOO change
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=1 & tmp4>=1)] <- "class4.2" # low occs + low tax + considerable EOO change 
-#class 5 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2] <- "class5" # all other good
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=3 | tmp4>=3)] <- "class5.1"   # bad occs + best tax or small EOO change 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=2 & tmp4>=2)] <- "class5.2" # bad occs + good tax + low EOO change 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=2 | tmp4>=2)] <- "class5.3"   # bad occs + good tax or small EOO change 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=1 & tmp4>=1)] <- "class5.4"  # bad occs + low tax + considerable EOO change 
-#class 6
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1] <- "class6"   # all other low occs 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=1 | tmp4>=1)] <- "class6.1"   # bad occs + low tax or considerable EOO change 
-#class 7
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp == 0 & resultado$true >5] <- "class7"   # bad occs + low tax or considerable EOO change 
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp == 0] <- "class7.1" # all other bad occs
+#class 1: best taxonomy (>90), many occurrences (> 75), little or no changes in EOO (do nothing)
+resultado$tax.conf[tmp == 4] <- "class1"
+#class 2: good taxonomy (75), good amount of occurrences (>30)
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 %in% 4 & tmp1>=3] <- "class2"
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 3 & tmp1>=3] <- "class2"
+#class 3: low taxonomy (>50), feasible amount of occurrences (>15)
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 >= 3 & tmp1>=2] <- "class3"
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & tmp1>=2] <- "class3"
+#class 4: low taxonomy (>50), bad amount of occurrences (<15)
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 >= 2 & tmp1>=1] <- "class4"
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & tmp1>=1] <- "class4"
+#class 5: wort taxonomy (<25)
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 >= 2 & tmp1 %in% 0] <- "class5"
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & tmp1 %in% 0] <- "class5"
+#class 6: very few (<5) or no occurrences validated by an specialist
+resultado$tax.conf[is.na(resultado$tax.conf) & is.na(tmp)] <- "class6"
+resultado$tax.conf[!is.na(tmp) & tmp %in% 0] <- "class6"
 
 ##Inspecting
 table(resultado$tax.conf, useNA = "always")
-table(gsub("\\.1|\\.2|\\.3|\\.4","",resultado$tax.conf), useNA = "always")
-boxplot(index1 ~ resultado$tax.conf, varwidth = TRUE)
+par(mfrow=c(2,2), mar=c(3,3,2,1))
+boxplot(index ~ resultado$tax.conf,
+        varwidth = TRUE, notch = TRUE, main = "index x classes")
+boxplot(resultado$Occs.level.5 / resultado$Occs.level.1 ~ resultado$tax.conf,
+        varwidth = TRUE, notch = TRUE, main = "prop. true x classes")
+boxplot(jitter(tmp0) ~ resultado$tax.conf,
+        varwidth = TRUE, notch = TRUE, main = "prop. true_other x classes")
+boxplot(log(resultado$EOO.increase.1+1) ~ resultado$tax.conf,
+        varwidth = TRUE, notch = TRUE, main = "EOO increase x classes")
 
-par(mfrow=c(2,2), mar=c(4,4,1,1))
-boxplot(index1 ~ gsub("\\.1|\\.2|\\.3|\\.4", "", resultado$tax.conf),
-        varwidth = TRUE, notch = TRUE)
-boxplot(resultado$Occs.level.5 / resultado$Occs.level.1 ~ gsub("\\.1|\\.2|\\.3|\\.4", "", resultado$tax.conf),
-  varwidth = TRUE, notch = TRUE)
-boxplot(jitter(tmp0) ~ gsub("\\.1|\\.2|\\.3|\\.4", "", resultado$tax.conf),
-          varwidth = TRUE, notch = TRUE)
-boxplot(log(resultado$EOO.increase.1+1) ~ gsub("\\.1|\\.2|\\.3|\\.4", "", resultado$tax.conf),
-        varwidth = TRUE, notch = TRUE)
+## Which species we can include all TRUE_TBC automatically:
+oc.data <- readRDS("data/threat_occ_data_new.rds")
+tbc <- unique(oc.data$species.correct2[oc.data$tax.check2 %in% "TRUE_TBC"])
+resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<4 & tmp0 >= 3] = "class2"
+resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<3 & tmp0 %in% 2] = "class3"
+resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<2 & tmp0 %in% 1] = "class4"
+saveRDS(resultado, "data/eoo.change_preliminar_new.rds")
 
-#class x: few occurrences, unknow taxonomy
-resultado$tax.conf[resultado$true < 3] <- "classX"
+#### PERFORMING THE FINAL CLASSIFICATIONS OF TAXONOMIC CONFIDENCE ####
+require(data.table)
+rm(list=ls()); gc()
 
+#Loading the data and the species classifications and merging
+oc.data <- data.table(readRDS("data/threat_occ_data_new.rds"))
+resultado <- data.table(readRDS("data/eoo.change_preliminar_new.rds"))
+oc.data <- merge(oc.data, resultado[,c("Species","tax.conf")], 
+                 by.x = "species.correct2", by.y = "Species", all.x = TRUE, sort = FALSE)
 
+#Creating the final column for the assessments by class of taxonomical confidence (see colorful table in the appendix)
+oc.data[, tax.check.final := tax.check2]
+oc.data[tax.check.final %in% "cannot_check", tax.check.final := "FALSE"]
 
+table(oc.data[,tax.check.final])
+oc.data[!tax.conf %in% "class1" & 
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC") & 
+          dist.eoo %in% 0, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[!tax.conf %in% "class1" & 
+          tax.conf %in% c("class3", "class4", "class5", "class6") & 
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
+          dist.eoo %in% 0, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[!tax.conf %in% "class1" & 
+          tax.conf %in% c("class4", "class5", "class6") & 
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
+          dist.eoo < 0.05, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[!tax.conf %in% "class1" & 
+          tax.conf %in% c("class5", "class6") & 
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
+          dist.eoo < 0.1, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[tax.conf %in% "class6" & 
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
+          dist.eoo < 0.25, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[tax.conf %in% "class6" & 
+          tax.check2 %in% c("TRUE_OTHER") & 
+          dist.eoo < 0.5, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
+oc.data[tax.conf %in% "class6" & 
+          tax.check2 %in% c("TRUE_OTHER") & 
+          is.na(dist.eoo), tax.check.final := "TRUE"]
+tmp <- table(oc.data[tax.conf %in% "class6" & tax.check.final %in% "TRUE", species.correct2])
+spp <- names(tmp[tmp<5])
+oc.data[tax.conf %in% "class6" & 
+          species.correct2 %in% spp &
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
+          dist.eoo < 1, tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
 
+tbc <- unique(oc.data$species.correct2[oc.data$tax.check2 %in% "TRUE_TBC"])
+tmp <- table(oc.data[species.correct2 %in% tbc & tax.check.final %in% "TRUE", species.correct2])
+spp <- names(tmp[tmp<30])
+oc.data[species.correct2 %in% spp &
+          tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC"), tax.check.final := "TRUE"]
+table(oc.data[,tax.check.final])
 
+## Final edits and saving the data with the new column of tax.check
+oc.data[tax.check.final %in% c("TRUE_OTHER","TRUE_TBC"), tax.check.final := "medium"]
+oc.data[tax.check.final %in% c("FALSE"), tax.check.final := "low"]
+oc.data[tax.check.final %in% c("TRUE"), tax.check.final := "high"]
+saveRDS(oc.data,"data/threat_occ_data_final.rds")
 
+### OLD CLASSIFICATION ###
+# tmp <- findInterval(resultado$Occs.level.5, c(15,30,75)) # number of occs indentied by family specialists
+# tmp0 <- findInterval(resultado$Occs.level.4, c(15,30,75)) # number of occs indentied by any specialists
+# tmp1 <- findInterval(resultado$Occs.level.5 / resultado$Occs.level.1, c(0.5,0.75,0.9)) # proportion of all occs indentied by faily specialists
+# tmp2 <- as.double(as.character(cut(resultado$EOO.increase.4, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
+# tmp3 <- as.double(as.character(cut(resultado$EOO.increase.2, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
+# tmp4 <- as.double(as.character(cut(resultado$EOO.increase.1, c(-Inf,0.05001, 0.09999, 0.29999, Inf), labels = c(3:0)))) # proportion of change in EOO due to the inclusion of non-taxonomic vetted specimens
+# table(tmp, tmp1)
+# table(tmp, tmp3)
+# 
+# boxplot(jitter(tmp2) ~ tmp1, varwidth = TRUE, notch = TRUE, 
+#         xlab = "Tax/all", ylab = "EOO change (other tax or better)") # increase from high to medium in respect to the prop. of occs identfied by specialists
+# boxplot(jitter(tmp3) ~ tmp1, varwidth = TRUE, notch = TRUE,
+#         xlab = "Tax/all", ylab = "EOO change(cannot check or better)") # increase from high to low in respect to the prop. of occs identfied by specialists
+# boxplot(jitter(tmp4) ~ tmp1, varwidth = TRUE, notch = TRUE,
+#         xlab = "Tax/all", ylab = "EOO change (all occs)") # increase from high to bad in respect to the prop. of occs identfied by specialists
+# 
+# 
+# ## an inex of data quality
+# index <- apply(cbind(tmp,tmp1,tmp4), 1, sum, na.rm = TRUE)
+# index1 <- round(apply(cbind(tmp,tmp1,apply(cbind(tmp2,tmp3,tmp4),1,mean,na.rm=TRUE)), 1, sum, na.rm = TRUE),1)
+# plot(jitter(index1) ~ index)
+# table(index)
+# 
+# ## Which species we can include all TRUE_OTHER automatically:
+# resultado$add.other <- FALSE
+# resultado$add.other[!is.na(tmp2) & (tmp2 >= 2) ] <- TRUE
+# resultado$add.other[!is.na(tmp2) & (tmp1 >= 2) ] <- TRUE
+# resultado$add.other[is.na(tmp2)] <- TRUE
+# oc.data <- readRDS("data/threat_occ_data.rds")
+# tbc <- unique(oc.data$species.correct2[oc.data$tax.check2 %in% "TRUE_TBC"])
+# resultado$add.other[resultado$tax %in% tbc & (tmp3 >= 1) ] <- TRUE
+# rm(oc.data)
+# 
+# ## Which species we can include all TRUE_TBC automatically:
+# resultado$add.tbc <- FALSE
+# resultado$add.tbc[resultado$tax %in% tbc & (tmp<3 | is.na(tmp3)) & (tmp1 >=1 | tmp3 >=1)] <- TRUE
+# 
+# ## Assigning classes of taxonomic confidence
+# resultado$tax.conf <- NA
+# resultado$action <- NA
+# #class 1: best taxonomy, many occurrences (> 75), little or no changes in EOO
+# resultado$tax.conf[tmp == 3] <- "class1"
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 %in% 3 & (tmp1 %in% 3 | tmp2 %in% 3)] <- "class1.1" # TRUE + TRUE_OTHER >=75 + best tax or small EOO change
+# resultado$action[resultado$tax.conf == "class1"] <- "nothing"
+# #class 2: good taxonomy
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=3 | tmp4>=3)] <- "class2"   # good occs + best tax or small EOO change
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=2 & tmp4>=2)] <- "class2.1" # good occs + good tax + low EOO change
+# #class 3
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2 & (tmp1>=2 | tmp4>=2)] <- "class3"   # good occs + good tax or low EOO change
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=2 & tmp4>=2)] <- "class3.1" # low occs + good tax + low EOO change
+# #class 4 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=2 | tmp4>=2)] <- "class4.1"   # low occs + good tax or low EOO change
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1 & (tmp1>=1 & tmp4>=1)] <- "class4.2" # low occs + low tax + considerable EOO change 
+# #class 5 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 2] <- "class5" # all other good
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=3 | tmp4>=3)] <- "class5.1"   # bad occs + best tax or small EOO change 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=2 & tmp4>=2)] <- "class5.2" # bad occs + good tax + low EOO change 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=2 | tmp4>=2)] <- "class5.3"   # bad occs + good tax or small EOO change 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=1 & tmp4>=1)] <- "class5.4"  # bad occs + low tax + considerable EOO change 
+# #class 6
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 1] <- "class6"   # all other low occs 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 0 & (tmp1>=1 | tmp4>=1)] <- "class6.1"   # bad occs + low tax or considerable EOO change 
+# #class 7
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp == 0 & resultado$true >5] <- "class7"   # bad occs + low tax or considerable EOO change 
+# resultado$tax.conf[is.na(resultado$tax.conf) & tmp == 0] <- "class7.1" # all other bad occs
+# #class 8: no occurrences validated by a family taxonomist
+# resultado$tax.conf[is.na(resultado$tax.conf) & is.na(tmp)] <- "class8"
 
-
-
-
-
-
-
-
-
-#### CALCULATING EOO USING DIFFERENT CONFIDENCE LEVELS ####
-resultado <- MyData[!duplicated(MyData$tax), c("higher.tax.rank", "tax")]
-resultado$non.dup.occurs <- unique.coords(MyData)$non.dup.occurs
-tmp <- as.data.frame.matrix(table(MyData$tax, MyData$tax.check2))
-tmp$false.true = apply(tmp[,c("FALSE","TRUE","TRUE_OTHER","TRUE_TBC")], 1, sum)
-tmp$true.true = apply(tmp[,c("TRUE","TRUE_OTHER")], 1, sum)
-tmp$true = tmp[,c("TRUE")]
-resultado <- cbind.data.frame(resultado, tmp[,6:8])
-
-## Convex Hull method
-EOO.best.tax <- EOO.computing(MyData[MyData$tax.check2 %in% "TRUE",], export_shp = FALSE,
-                              exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                              write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
-                              write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
-                              parallel = FALSE, NbeCores = 6) # run on parallel? How many cores?
-EOO.good.tax <- EOO.computing(MyData[MyData$tax.check2 %in% c("TRUE","TRUE_OTHER"),], export_shp = FALSE,
-                              exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                              write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
-                              write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
-                              parallel = FALSE, NbeCores = 6) # run on parallel? How many cores?
-EOO.low.tax <- EOO.computing(MyData[MyData$tax.check2 %in% c("FALSE","TRUE","TRUE_OTHER","TRUE_TBC"),], export_shp = FALSE,
-                             exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
-                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
-                             parallel = FALSE, NbeCores = 6) # run on parallel? How many cores?
-EOO.bad.tax <- EOO.computing(MyData, export_shp = FALSE,
-                             exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
-                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
-                             parallel = FALSE, NbeCores = 6) # run on parallel? How many cores?
-
-## Merging the results
-tmp = merge(resultado, EOO.bad.tax, by.x = "tax", by.y = "row.names", all.x = TRUE)
-tmp1 = merge(resultado, EOO.low.tax, by.x = "tax", by.y = "row.names", all.x = TRUE)
-tmp2 = merge(resultado, EOO.good.tax, by.x = "tax", by.y = "row.names", all.x = TRUE)
-tmp3 = merge(resultado, EOO.best.tax, by.x = "tax", by.y = "row.names", all.x = TRUE)
-resultado = cbind.data.frame(resultado, tmp$EOO, tmp1$EOO, tmp2$EOO, tmp3$EOO)
-names(resultado)[7:10] <- c("bad.tax", "low.tax", "good.tax","best.tax")
-
-## Calculating the proportional increases
-resultado$best.good <- resultado$best.low <- resultado$best.bad <-   NA
-#resultado$occ.best.good <- resultado$occ.best.low <-  resultado$occ.best.bad <- NA
-for (i in 1:dim(resultado)[1]) {
-  x <- as.numeric(resultado[i,7:10])
-  #x1 <- as.numeric(resultado[i,3:6])
-  if(is.na(x[4])) { 
-    resultado[i,11:13] <- c(NA, NA, NA) 
-  } else {
-    if(x[4] == 0) { 
-      resultado[i,11:13] <- c(NA, NA, NA)
-    } else {  
-      diffs <- 100*((x[1:3] - x[4])/x[4])
-      resultado[i,11:13] <- diffs
-      #diffs1 <- 100*((x1[1:3] - x1[4])/x1[4])
-      #resultado[i,14:16] <- diffs1
-    }
-  }
-}
-apply(resultado[,11:13], 2, summary)
-## EOO can decrease when adding more occurrences, when the new occurrences adjust the convex hull sides towards the center of the species distribution
-#apply(resultado[,14:16], 2, summary)
-## Differences in the number of occurrences can never be negative...
 
 

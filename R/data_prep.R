@@ -16,6 +16,17 @@ source("suggestions_for_ConR.r")
 # require(conR)
 # require(wdpar)
 
+########################################
+#### SIPLIFIED NEOTROPICAL COUNTOUR ####
+########################################
+neotrop <- readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp_simplified.rds")
+neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
+
+#projecting and simplifying the neotropical contours
+neotrop.simp <- gSimplify(neotrop,tol=0.05)
+neotrop.simp <- gBuffer(neotrop.simp, byid=TRUE, width=0)
+saveRDS(neotrop.simp, file = "data//Contour_Neotrop_simplified.rds")
+
 #####################################################################################################################################################################
 #####################################################################################################################################################################
 ########################

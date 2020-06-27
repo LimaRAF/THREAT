@@ -3,7 +3,6 @@
 ###################################################
 
 ### AFAZERES ###
-# PASSAR OS ESTUDOS DO CRITERIO B PARA C?
 # LER O GUI DO CNCFLORA PARA AS AVALIA??ES: QUAIS COORDENADAS USAR??
 
 # TESTAR ConR USANDO OCORRENCIAS EM UNIDADES DE CONSERVACAO
@@ -23,27 +22,19 @@ renato.gta = read.csv("renato_assignments_GTA.csv", as.is= TRUE)
 # require(readxl)
 # require(alphahull)
 # require(spatstat)
-require(conR)
-source("suggestions_for_ConR.r")
-
+#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
+library("ConR")
+require(rgeos)
+source("./R/suggestions_for_ConR.r")
 
 #### LOADING THE NEOTROPICS MAP ###
-neotrop = readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp_simplified.rds")
-neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
-
-## projecting and simplifying the neotropical contours
-neotrop.simp <- gSimplify(neotrop,tol=0.05)
-neotrop.simp <- gBuffer(neotrop.simp, byid=TRUE, width=0)
-sum(gIsValid(neotrop.simp, byid=TRUE)==FALSE)
-neotrop.simp.proj <- spTransform(neotrop.simp, CRS("+init=epsg:5641"))  # define projection system of our data
-
-
+neotrop.simp <- readRDS("data/Contour_Neotrop_simplified.rds")
 
 ##################################################
 #### CALCULATING THE METRICS FOR EACH SPECIES ####
 ##################################################
 ## Reading herbarium data
-oc.data <- readRDS("threat_occ_data.rds")
+oc.data <- readRDS("data/threat_occ_data_final.rds")
 
 #Putting data in the format demanded by the package
 MyData <- cbind.data.frame(ddlat = as.double(oc.data$latitude.work1),
