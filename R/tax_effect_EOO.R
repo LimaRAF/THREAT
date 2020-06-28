@@ -8,25 +8,39 @@ library("ConR")
 require(rgeos)
 source("./R/suggestions_for_ConR.r")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
-#source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
+source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
 
-## Reading the Neotropics shapefile ##
+# ## Reading the Neotropics shapefile ##
 # neotrop.simp <- readRDS("data/Contour_Neotrop_simplified.rds")
-
-## Reading herbarium data
+# 
+# ## Reading herbarium data
 # oc.data <- readRDS("data/threat_occ_data.rds")
-
-#Putting data in the format demanded by the package
-# MyData <- cbind.data.frame(ddlat = as.double(oc.data$latitude.work1),
-#                            ddlon = as.double(oc.data$longitude.work1),
-#                            tax = as.character(oc.data$species.correct2),
-#                            tax.check2 = oc.data$tax.check2,
+# ## Reading/editing inventory data
+# inv.data <- readRDS("data/threat_inventory_data.rds")
+# inv.data$year_data[is.na(inv.data$year_data)] <- 
+#   inv.data$year[is.na(inv.data$year_data)] 
+# inv.data$numTombo[is.na(inv.data$numTombo)] <- 
+#   paste0("ordem_",inv.data$ordem[is.na(inv.data$numTombo)])
+# inv.data$DetDate <- gsub("\\\n","",inv.data$DetDate)
+# 
+# #Putting data in the format demanded by the ConR package
+# MyData <- cbind.data.frame(ddlat = as.double(c(oc.data$latitude.work1, inv.data$lat1)),
+#                            ddlon = as.double(c(oc.data$longitude.work1, inv.data$long1)),
+#                            tax = as.character(c(oc.data$species.correct2, inv.data$species.correct2)),
+#                            higher.tax.rank = c(oc.data$family.correct1, inv.data$family),
+#                            coly = as.double(c(oc.data$ano, inv.data$year_data)),
+#                            vouchers = c(oc.data$dup.ID1, inv.data$numTombo),
+#                            detBy = c(oc.data$determinador.name, inv.data$DetBy),
+#                            dety = c(oc.data$ano.det, inv.data$DetDate),
+#                            tax.check2 = c(oc.data$tax.check2, inv.data$tax_check2),
+#                            UC = c(oc.data$UC, inv.data$UC),
+#                            source = c(rep("herbaria",dim(oc.data)[1]), rep("treeco",dim(inv.data)[1])),
 #                            stringsAsFactors = FALSE)
-# rm(oc.data)
-
-#### CALCULATING EOO USING DIFFERENT CONFIDENCE LEVELS OF THE OCCURRENCES ####
-# teste <- MyData[grepl("Persea",MyData$tax), ] 
-# sens <- EOO.sensitivity (MyData, 
+# rm(oc.data, inv.data)
+# 
+# #### CALCULATING EOO USING DIFFERENT CONFIDENCE LEVELS OF THE OCCURRENCES ####
+# #teste <- MyData[grepl("Persea",MyData$tax), ]
+# sens <- EOO.sensitivity (MyData[,c("ddlat", "ddlon", "tax", "tax.check2")],
 #                          levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
 #                             occ.based = TRUE,
 #                             exclude.area = TRUE,
@@ -38,19 +52,18 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitiv
 #                             proj_user = 5641,
 #                             value = "dist")
 # sapply(sens, head)
-# oc.data <- readRDS("data/threat_occ_data.rds")
-# table(oc.data$species.correct2 == sens[[2]]$tax)
-# oc.data$dist.eoo <- sens[[2]]$prop.dist.eoo
-# saveRDS(oc.data,"data/threat_occ_data_new.rds")
-# saveRDS(sens$EOO.change,"data/eoo.change_preliminar.rds")
-# rm(oc.data, sens, MyData, neotrop.simp)
+# table(MyData$tax == sens[[2]]$tax)
+# MyData$dist.eoo <- sens[[2]]$prop.dist.eoo
+# saveRDS(MyData, "data/threat_occ_data_new.rds")
+# saveRDS(sens$EOO.change, "data/eoo.change_preliminar.rds")
+# rm(sens, MyData, neotrop.simp)
 
 ## Reading previously saved files
-#resultado <- readRDS("data/eoo.change_preliminar.rds")
+resultado <- readRDS("data/eoo.change_preliminar.rds")
 
 #### CLASSYFYING SPECIES ACCORDING TO 3 CRITERIA ####
 
-### NEW CLASSIFICATION ###
+## NEW CLASSIFICATION ##
 tmp <- findInterval(resultado$Occs.level.5, c(5,15,30,75)) # number of occs indentied by family specialists
 tmp0 <- findInterval(resultado$Occs.level.4, c(5,15,30,75)) # number of occs indentied by any specialists
 tmp1 <- findInterval(resultado$Occs.level.5 / resultado$Occs.level.1, c(0.25,0.5,0.75,0.9)) # proportion of all occs indentied by faily specialists
@@ -66,7 +79,7 @@ resultado$tax.conf <- NA
 #class 1: best taxonomy (>90), many occurrences (> 75), little or no changes in EOO (do nothing)
 resultado$tax.conf[tmp == 4] <- "class1"
 #class 2: good taxonomy (75), good amount of occurrences (>30)
-resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 %in% 4 & tmp1>=3] <- "class2"
+resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 >= 4 & tmp1>=3] <- "class2"
 resultado$tax.conf[is.na(resultado$tax.conf) & tmp >= 3 & tmp1>=3] <- "class2"
 #class 3: low taxonomy (>50), feasible amount of occurrences (>15)
 resultado$tax.conf[is.na(resultado$tax.conf) & tmp0 >= 3 & tmp1>=2] <- "class3"
@@ -95,7 +108,7 @@ boxplot(log(resultado$EOO.increase.1+1) ~ resultado$tax.conf,
 
 ## Which species we can include all TRUE_TBC automatically:
 oc.data <- readRDS("data/threat_occ_data_new.rds")
-tbc <- unique(oc.data$species.correct2[oc.data$tax.check2 %in% "TRUE_TBC"])
+tbc <- unique(oc.data$tax[oc.data$tax.check2 %in% "TRUE_TBC"])
 resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<4 & tmp0 >= 3] = "class2"
 resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<3 & tmp0 %in% 2] = "class3"
 resultado$tax.conf[resultado$Species %in% tbc & !is.na(tmp) & tmp<2 & tmp0 %in% 1] = "class4"
@@ -109,7 +122,7 @@ rm(list=ls()); gc()
 oc.data <- data.table(readRDS("data/threat_occ_data_new.rds"))
 resultado <- data.table(readRDS("data/eoo.change_preliminar_new.rds"))
 oc.data <- merge(oc.data, resultado[,c("Species","tax.conf")], 
-                 by.x = "species.correct2", by.y = "Species", all.x = TRUE, sort = FALSE)
+                 by.x = "tax", by.y = "Species", all.x = TRUE, sort = FALSE)
 
 #Creating the final column for the assessments by class of taxonomical confidence (see colorful table in the appendix)
 oc.data[, tax.check.final := tax.check2]
@@ -146,18 +159,18 @@ table(oc.data[,tax.check.final])
 oc.data[tax.conf %in% "class6" & 
           tax.check2 %in% c("TRUE_OTHER") & 
           is.na(dist.eoo), tax.check.final := "TRUE"]
-tmp <- table(oc.data[tax.conf %in% "class6" & tax.check.final %in% "TRUE", species.correct2])
+tmp <- table(oc.data[tax.conf %in% "class6" & tax.check.final %in% "TRUE", tax])
 spp <- names(tmp[tmp<5])
 oc.data[tax.conf %in% "class6" & 
-          species.correct2 %in% spp &
+          tax %in% spp &
           tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC", "FALSE") & 
           dist.eoo < 1, tax.check.final := "TRUE"]
 table(oc.data[,tax.check.final])
 
-tbc <- unique(oc.data$species.correct2[oc.data$tax.check2 %in% "TRUE_TBC"])
-tmp <- table(oc.data[species.correct2 %in% tbc & tax.check.final %in% "TRUE", species.correct2])
+tbc <- unique(oc.data$tax[oc.data$tax.check2 %in% "TRUE_TBC"])
+tmp <- table(oc.data[tax %in% tbc & tax.check.final %in% "TRUE", tax])
 spp <- names(tmp[tmp<30])
-oc.data[species.correct2 %in% spp &
+oc.data[tax %in% spp &
           tax.check2 %in% c("TRUE_OTHER", "TRUE_TBC"), tax.check.final := "TRUE"]
 table(oc.data[,tax.check.final])
 

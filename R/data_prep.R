@@ -1,20 +1,13 @@
 #####################################################
 #### PREPARING DATA FROM THREAT IUCN ASSESSMENTS ####
 #####################################################
+#rm(list=ls())
 
 #### LOADING PACKAGES ###
 library(data.table)
 library(rgeos)
-source("suggestions_for_ConR.r")
-
-# library(rgdal)
-# library(redlistr)
-# require(maptools)
-# require(readxl)
-# require(alphahull)
-# require(spatstat)
-# require(conR)
-# require(wdpar)
+library(dplyr)
+source("R/suggestions_for_ConR.r")
 
 ########################################
 #### SIPLIFIED NEOTROPICAL COUNTOUR ####
@@ -26,6 +19,7 @@ neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
 neotrop.simp <- gSimplify(neotrop,tol=0.05)
 neotrop.simp <- gBuffer(neotrop.simp, byid=TRUE, width=0)
 saveRDS(neotrop.simp, file = "data//Contour_Neotrop_simplified.rds")
+
 
 #####################################################################################################################################################################
 #####################################################################################################################################################################
@@ -334,13 +328,6 @@ path = "C:/Users/renato/Documents/raflima/Pos Doc/Databases/TreeCo Database Mana
 source(paste(path,"references_data_prep.R",sep="/"))
 #source(paste(path,"abundances_data_prep.R",sep="/"))
 
-##Loading packages
-#require(rgdal)
-#require(raster)
-#require(dplyr)
-#require(stringr)
-#require(scales)
-
 ## EDITING TREECO SITE AND ABUNDANCE DATA ##
 #Loading the data
 surveys = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//References//references.csv",as.is=TRUE, encoding = "UTF-8")
@@ -435,7 +422,6 @@ surveys2 = sites3[!duplicated(sites3$ordem),]
 rm(sites,sites2)
 
 ##MERGING CWM WITH ENVIRONMENTAL INFO
-require(dplyr)
 ##Single site plots
 dados2 = merge(dados,surveys.final, by="ordem",all.x=TRUE)
 
@@ -514,6 +500,24 @@ trees.final$UC[trees.final$UC %in% c("", NA)] <- "unknown"
 trees.final$UC[trees.final$UC %in% c("Military","other_public_lands")] <- "US"
 trees.final$UC[trees.final$UC %in% c("private|UC Protecao Integral")] <- "unknown"
 
+## Removing occurrences closest to 1km from herbarium data
+source("R/dist.valid.points.R")
+oc.data <- readRDS("threat_occ_data.rds")
+oc.data <- data.frame(ddlat = as.double(oc.data$latitude.work1),
+                      ddlon = as.double(oc.data$longitude.work1),
+                      tax = oc.data$species.correct2,
+                      stringsAsFactors = FALSE)
+oc.data <- oc.data[!is.na(oc.data$ddlat),]
+oc.data <- oc.data[!is.na(oc.data$ddlon),]
+inv.data <- data.frame(ddlat = trees.final$lat1,
+                       ddlon = trees.final$long1,
+                       tax = trees.final$species.correct2,
+                       stringsAsFactors = FALSE)
+inv.data <- .dist.valid.points(inv.data, oc.data, NbeCores = 5)
+trees.final$dist.herb.km <- round(inv.data$distance/1000,2)
+trees.final <- trees.final[trees.final$dist.herb.km >= 2,]
+rm(oc.data, inv.data)
+
 ## Removing unnecessary columns
 cols = c("lat1","long1","species.correct2","family",
   "coletor","number","year_data","numTombo","DetBy","DetDate",
@@ -557,6 +561,10 @@ resultado$pop.size.2018 <- tmp1$pop.size.2018
 
 ## How many species in the checklist with pop.size estimates?
 100*table(!is.na(resultado$pop.size.2018))/dim(resultado)[1]
+
+## Pop size an number of occurrences are related?
+plot(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1))
+abline(lm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), lwd=2, col=2)
 
 ## Which specie swe have population sizes which are not in the checklist?
 miss.sp <- tmp$species.correct2[!tmp$species.correct2 %in% resultado$species.correct2]
