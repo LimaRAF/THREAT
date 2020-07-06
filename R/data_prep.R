@@ -9,16 +9,54 @@ library(rgeos)
 library(dplyr)
 source("R/suggestions_for_ConR.r")
 
-########################################
-#### SIPLIFIED NEOTROPICAL COUNTOUR ####
-########################################
-neotrop <- readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp_simplified.rds")
+#########################################
+#### SIMPLIFIED NEOTROPICAL COUNTOUR ####
+#########################################
+neotrop <- readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp.rds")
 neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
 
 #projecting and simplifying the neotropical contours
-neotrop.simp <- gSimplify(neotrop,tol=0.05)
+neotrop.simp <- gSimplify(neotrop, tol=0.0001, topologyPreserve = TRUE)
 neotrop.simp <- gBuffer(neotrop.simp, byid=TRUE, width=0)
-saveRDS(neotrop.simp, file = "data//Contour_Neotrop_simplified.rds")
+neotrop.simp1 <- gSimplify(neotrop, tol=0.001, topologyPreserve = TRUE)
+neotrop.simp1 <- gBuffer(neotrop.simp1, byid=TRUE, width=0)
+neotrop.simp2 <- gSimplify(neotrop, tol=0.005, topologyPreserve = TRUE)
+neotrop.simp2 <- gBuffer(neotrop.simp2, byid=TRUE, width=0)
+neotrop.simp3 <- gSimplify(neotrop, tol=0.01, topologyPreserve = TRUE)
+neotrop.simp3 <- gBuffer(neotrop.simp3, byid=TRUE, width=0)
+
+#how many polygons left?
+length(neotrop)
+length(neotrop.simp)
+length(neotrop.simp1)
+length(neotrop.simp2)
+length(neotrop.simp3)
+
+# any bad polygons remaining?
+sum(gIsValid(neotrop.simp, byid=TRUE)==FALSE) #no!
+sum(gIsValid(neotrop.simp1, byid=TRUE)==FALSE) #no!
+sum(gIsValid(neotrop.simp2, byid=TRUE)==FALSE) #no!
+sum(gIsValid(neotrop.simp3, byid=TRUE)==FALSE) #no!
+
+#removing very small polygons
+length(neotrop.simp2)
+area <- gArea(neotrop.simp2, byid=TRUE) 
+neotrop.simp4 <- neotrop.simp2[area > 0.004*0.004,] #removing polygons smaller than ~16 ha/0.16 km2
+length(neotrop.simp4)
+ 
+
+#Inspecting more closely...
+plot(neotrop.simp1, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=1)
+plot(neotrop.simp2, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=2)
+plot(neotrop.simp3, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=3)
+plot(neotrop.simp4, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=4)
+
+#Saving
+#saveRDS(neotrop.simp, file = "data//Contour_Neotrop_simplified_very_large.rds")
+saveRDS(neotrop.simp1, file = "data//Contour_Neotrop_simplified_tol_001.rds")
+saveRDS(neotrop.simp2, file = "data//Contour_Neotrop_simplified_tol_005.rds")
+saveRDS(neotrop.simp3, file = "data//Contour_Neotrop_simplified_tol_01.rds")
+saveRDS(neotrop.simp4, file = "data//Contour_Neotrop_simplified_tol_005_no_small.rds")
 
 
 #####################################################################################################################################################################
@@ -294,7 +332,7 @@ oc.data1 <- oc.data[,c("latitude.work1","longitude.work1","species.correct2","fa
          "coletor.name","coletor.number","ano","numTombo","dup.ID1",
          "typeStatus","determinador.name1","ano.det1","tax.check2",
          "geo.check1","origin.coord1","af.check2","UC"),]
-saveRDS(oc.data1, file = "threat_occ_data.rds", compress = "gzip")
+saveRDS(oc.data1, file = "data/threat_occ_data.rds", compress = "gzip")
 
 #### OBTAINING THE NAME AND NUMBER OF OCCURRENCES (TOTAL AND SPATIALLY-UNIQUE) PER SPECIES ####
 resultado <- oc.data[!duplicated(oc.data$species.correct2), c("family.correct1", "species.correct2")]
@@ -466,7 +504,7 @@ miss.spp = c("Agonandra brasiliensis","Aiouea bracteata","Aspidosperma brasilien
 trees.final <- trees.final[trees.final$species.correct2 %in% c(spp.af.true, miss.spp),]
 
 ## Removing records already in the herbarium data
-tombos <- readRDS("threat_occ_data.rds")
+tombos <- readRDS("data/threat_occ_data.rds")
 tombos <- tombos$dup.ID1
 tombos <- as.character(unlist(strsplit(tombos, "\\|")))
 trees.final <- trees.final[!trees.final$numTombo %in% tombos,]
@@ -502,7 +540,7 @@ trees.final$UC[trees.final$UC %in% c("private|UC Protecao Integral")] <- "unknow
 
 ## Removing occurrences closest to 1km from herbarium data
 source("R/dist.valid.points.R")
-oc.data <- readRDS("threat_occ_data.rds")
+oc.data <- readRDS("data/threat_occ_data.rds")
 oc.data <- data.frame(ddlat = as.double(oc.data$latitude.work1),
                       ddlon = as.double(oc.data$longitude.work1),
                       tax = oc.data$species.correct2,
@@ -527,7 +565,7 @@ cols = c("lat1","long1","species.correct2","family",
 trees.final = trees.final[,cols]
 
 ## Saving ##
-saveRDS(trees.final, file = "threat_inventory_data.rds", compress = "gzip")
+saveRDS(trees.final, file = "data/threat_inventory_data.rds", compress = "gzip")
 
 #### OBTAINING THE NUMBER OF OCCURRENCES PER SPECIES FROM TREECO ####
 tmp <- table(trees.final$species.correct2)
@@ -576,7 +614,7 @@ length(miss.sp) # 215 species; most are non-AF species
 # tmp3 <- merge(tmp2, spp, by.x = "original.search", by.y = "SpeciesKTSA")
 # write.csv(tmp3, "tmp.csv")
 
-saveRDS(resultado, "assess_iucn_spp.rds")
+saveRDS(resultado, "data/assess_iucn_spp.rds")
 #####################################################################################################################################################################
 #####################################################################################################################################################################
 ##############################
@@ -606,4 +644,4 @@ tmp <- tmp[,c("assessmentId","redlistCategory","redlistCriteria","yearPublished"
 #table(prev.assess$species.correct2 == tmp$species.correct2)
 prev.assess <- cbind.data.frame(prev.assess, tmp,
                                 stringsAsFactors = FALSE)
-saveRDS(prev.assess, "previous_assessments_spp.rds")
+saveRDS(prev.assess, "data/previous_assessments_spp.rds")

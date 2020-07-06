@@ -136,9 +136,9 @@ my.subpop.comp = function (XY, Resol_sub_pop = NULL) {
   }
   list_data <- split(XY, f = XY$tax)
   if(class(Resol_sub_pop) == "data.frame") {
-    OUTPUT <- lapply(list_data, function(x) .subpop.comp(x, Resol_sub_pop = unique(x$spp.radius)))
+    OUTPUT <- lapply(list_data, function(x) ConR:::.subpop.comp(x, Resol_sub_pop = unique(x$spp.radius)))
   } else {
-    OUTPUT <- lapply(list_data, function(x) .subpop.comp(x, Resol_sub_pop = Resol_sub_pop))
+    OUTPUT <- lapply(list_data, function(x) ConR:::.subpop.comp(x, Resol_sub_pop = Resol_sub_pop))
   }
   ### END OF PART INCLUDED/EDITED BY RENATO ###
   
@@ -148,16 +148,19 @@ my.subpop.comp = function (XY, Resol_sub_pop = NULL) {
 }
 
 # Renato's version trying to fix an error I was having (not sure why)
-my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.areas = NULL, 
-                              Cell_size_locations = 10, method_protected_area = "no_more_than_one", 
-                              ID_shape_PA = "WDPA_PID", Rel_cell_size = 0.05, parallel = FALSE, 
-                              NbeCores = 2)  {
+my.locations.comp <- function (XY, method = "fixed_grid", nbe_rep = 0, protec.areas = NULL, 
+                               Cell_size_locations = NULL, method_protected_area = "no_more_than_one", 
+                               ID_shape_PA = "WDPA_PID", Rel_cell_size = 0.05, parallel = FALSE, 
+                               NbeCores = 2, show_progress = TRUE) 
+{
   if (!any(class(XY) == "data.frame")) 
     XY <- as.data.frame(XY)
   if (any(XY[, 2] > 180) || any(XY[, 2] < -180) || any(XY[, 
                                                           1] < -180) || any(XY[, 1] > 180)) 
     stop("coordinates are outside of expected range")
-  projEAC <- crs("+proj=cea +lon_0=Central Meridian+lat_ts=Standard Parallel+x_0=False Easting+y_0=False Northing +ellps=WGS84")
+  if (method != "fixed_grid" & method != "sliding scale") 
+    stop("method should be fixed_grid sliding scale")
+  projEAC <- ConR:::.proj_crs()
   coordEAC <- data.frame(matrix(unlist(rgdal::project(as.matrix(XY[, 
                                                                    c(2, 1)]), proj = as.character(projEAC), inv = FALSE)), 
                                 ncol = 2), tax = XY[, 3])
@@ -171,14 +174,19 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
   }
   coordEAC$tax <- as.character(coordEAC$tax)
   list_data <- split(coordEAC, f = coordEAC$tax)
-  crs_proj <- crs("+proj=cea +lon_0=Central Meridian+lat_ts=Standard Parallel+x_0=False Easting+y_0=False Northing +ellps=WGS84")
+  crs_proj <- projEAC
+  
   if (is.null(protec.areas)) {
-    if (nrow(coordEAC) > 1) 
-      pairwise_dist <- dist(coordEAC[, 1:2], upper = F)
-    if (any(method == "fixed_grid")) 
+    # if (nrow(coordEAC) > 1) 
+    #   pairwise_dist <- stats::dist(coordEAC[, 1:2], upper = F)
+    if (any(method == "fixed_grid") & !is.null(Cell_size_locations)) { 
       Resolution <- Cell_size_locations
+    } else { 
+      Resolution <- 10
+    }  
     if (any(method == "sliding scale")) {
       if (nrow(coordEAC) > 1) {
+        pairwise_dist <- stats::dist(coordEAC[, 1:2], upper = F)
         Resolution <- max(pairwise_dist) * Rel_cell_size/1000
       }
       else {
@@ -186,38 +194,51 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
       }
     }
     if (parallel) {
-      registerDoParallel(NbeCores)
-      message("doParallel running with ", NbeCores, " cores")
+      cl <- snow::makeSOCKcluster(NbeCores)
+      doSNOW::registerDoSNOW(cl)
+      message("Parallel running with ", NbeCores, " cores")
       `%d%` <- foreach::`%dopar%`
     }
     else {
       `%d%` <- foreach::`%do%`
     }
     x <- NULL
-    output <- foreach(x = 1:length(list_data), .combine = "c") %d% 
-    {
-      res <- .cell.occupied(size = Resolution, crs_proj = crs_proj, 
-                            coord = list_data[[x]], nbe_rep = nbe_rep)
-      names(res) <- c("spatial", "nbe_occ")
-      res
+    if (show_progress) {
+      pb <- utils::txtProgressBar(min = 0, max = length(list_data), 
+                                  style = 3)
+      progress <- function(n) utils::setTxtProgressBar(pb, 
+                                                       n)
+      opts <- list(progress = progress)
     }
+    else {
+      opts <- NULL
+    }
+    output <- foreach::foreach(x = 1:length(list_data), .combine = "c", 
+                               .options.snow = opts) %d% {
+                                 if (!parallel & show_progress) 
+                                   utils::setTxtProgressBar(pb, x)
+                                 res <- .cell.occupied(size = Resolution, coord = list_data[[x]], 
+                                                       nbe_rep = nbe_rep)
+                                 names(res) <- c("spatial", "nbe_occ")
+                                 res
+                               }
+    if (parallel) 
+      snow::stopCluster(cl)
+    if (show_progress) 
+      close(pb)
     Locations <- unlist(output[names(output) == "nbe_occ"])
-    
-    #### PART EDITED BY RENATO  ####  
-    r2 <- unlist(output[names(output) == "spatial"]) #[[1]] # Giles, not sure why the indexation was here, but I was having an error while trying to assign species names to the spatail objects created
-    #### END OF THE PART EDITED BY RENATO  #### 
-    
-    names(Locations) <-  names(r2)<-  sub(pattern = " ", 
+    r2 <- unlist(output[names(output) == "spatial"])
+    names(Locations) <- names(r2) <- gsub(pattern = " ", 
                                           replacement = "_", names(list_data))
   }
+  
   if (!is.null(protec.areas)) {
     DATA_SF <- as.data.frame(XY[, 1:2])
     colnames(DATA_SF) <- c("ddlat", "ddlon")
-    coordinates(DATA_SF) <- ~ddlon + ddlat
-    crs(DATA_SF) <- crs(protec.areas)
-    Links_NatParks <- over(DATA_SF, protec.areas)
-    coordEAC_pa <- coordEAC[!is.na(Links_NatParks[, 1]), 
-                            ]
+    sp::coordinates(DATA_SF) <- ~ddlon + ddlat
+    raster::crs(DATA_SF) <- raster::crs(protec.areas)
+    Links_NatParks <- sp::over(DATA_SF, protec.areas)
+    coordEAC_pa <- coordEAC[!is.na(Links_NatParks[, 1]), ]
     coordEAC_pa <- cbind(coordEAC_pa, id_pa = Links_NatParks[which(!is.na(Links_NatParks[, 
                                                                                          1])), ID_shape_PA])
     LocNatParks <- vector(mode = "numeric", length = length(list_data))
@@ -235,13 +256,19 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
       else {
         coordEAC_pa$tax <- as.character(coordEAC_pa$tax)
         list_data_pa <- split(coordEAC_pa, f = coordEAC_pa$tax)
-        if (nrow(coordEAC_pa) > 1) 
-          pairwise_dist_pa <- dist(coordEAC_pa[, 1:2], 
-                                   upper = F)
-        if (any(method == "fixed_grid")) 
+        # if (nrow(coordEAC_pa) > 1) 
+        #   pairwise_dist_pa <- stats::dist(coordEAC_pa[, 
+        #                                               1:2], upper = F)
+        if (any(method == "fixed_grid") & !is.null(Cell_size_locations)) { 
           Resolution <- Cell_size_locations
+        } else { 
+          Resolution <- 10
+        } 
+        
         if (any(method == "sliding scale")) {
           if (nrow(coordEAC_pa) > 1) {
+            pairwise_dist_pa <- stats::dist(coordEAC_pa[, 
+                                                        1:2], upper = F)
             Resolution <- max(pairwise_dist_pa)/1000 * 
               Rel_cell_size
           }
@@ -250,8 +277,9 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
           }
         }
         if (parallel) {
-          registerDoParallel(NbeCores)
-          message("doParallel running with ", NbeCores, 
+          cl <- snow::makeSOCKcluster(NbeCores)
+          doSNOW::registerDoSNOW(cl)
+          message("Parallel running with ", NbeCores, 
                   " cores")
           `%d%` <- foreach::`%dopar%`
         }
@@ -259,15 +287,31 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
           `%d%` <- foreach::`%do%`
         }
         x <- NULL
-        output <- foreach(x = 1:length(list_data_pa), 
-                          .combine = "c") %d% {
-                            res <- .cell.occupied(size = Resolution, crs_proj = crs_proj, 
-                                                  coord = list_data_pa[[x]], nbe_rep = nbe_rep)
-                            names(res) <- c("spatial", "nbe_occ")
-                            res
-                          }
+        if (show_progress) {
+          pb <- utils::txtProgressBar(min = 0, max = length(list_data), 
+                                      style = 3)
+          progress <- function(n) utils::setTxtProgressBar(pb, 
+                                                           n)
+          opts <- list(progress = progress)
+        }
+        else {
+          opts <- NULL
+        }
+        output <- foreach::foreach(x = 1:length(list_data_pa), 
+                                   .combine = "c", .options.snow = opts) %d% {
+                                     if (!parallel & show_progress) 
+                                       utils::setTxtProgressBar(pb, x)
+                                     res <- ConR:::.cell.occupied(size = Resolution, coord = list_data_pa[[x]], 
+                                                           nbe_rep = nbe_rep)
+                                     names(res) <- c("spatial", "nbe_occ")
+                                     res
+                                   }
+        if (parallel) 
+          snow::stopCluster(cl)
+        if (show_progress) 
+          close(pb)
         loc_pa <- unlist(output[names(output) == "nbe_occ"])
-        r2_PA <- unlist(output[names(output) == "spatial"])[[1]]
+        r2_PA <- unlist(output[names(output) == "spatial"])
         names(loc_pa) <- names(r2_PA) <- gsub(pattern = " ", 
                                               replacement = "_", names(list_data_pa))
         LocNatParks[names(LocNatParks) %in% names(loc_pa)] <- loc_pa
@@ -276,47 +320,67 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
     else {
       r2_PA <- NA
     }
-    coordEAC_not_pa <- coordEAC[is.na(Links_NatParks[, 1]), 
-                                ]
+    
+    coordEAC_not_pa <- coordEAC[is.na(Links_NatParks[, 1]),]
     LocOutNatParks <- vector(mode = "numeric", length = length(list_data))
     names(LocOutNatParks) <- gsub(pattern = " ", replacement = "_", 
                                   names(list_data))
     if (nrow(coordEAC_not_pa) > 0) {
       coordEAC_not_pa$tax <- as.character(coordEAC_not_pa$tax)
       list_data_not_pa <- split(coordEAC_not_pa, f = coordEAC_not_pa$tax)
-      if (nrow(coordEAC_pa) > 1) 
-        pairwise_dist_not_pa <- dist(coordEAC_not_pa[, 
-                                                     1:2], upper = F)
-      if (any(method == "fixed_grid")) 
+      # if (nrow(coordEAC_pa) > 1) 
+      #   pairwise_dist_not_pa <- stats::dist(coordEAC_not_pa[, 
+      #                                                       1:2], upper = F)
+      if (any(method == "fixed_grid") & !is.null(Cell_size_locations)) { 
         Resolution <- Cell_size_locations
+      } else {
+        Resolution <- 10
+      }  
       if (any(method == "sliding scale")) {
         if (nrow(coordEAC_pa) > 1) {
-          Resolution <- max(pairwise_dist_not_pa) * 
-            Rel_cell_size
+          pairwise_dist_not_pa <- stats::dist(coordEAC_not_pa[, 
+                                                              1:2], upper = F)
+          Resolution <- max(pairwise_dist_not_pa) * Rel_cell_size
         }
         else {
           Resolution <- 10
         }
       }
       if (parallel) {
-        registerDoParallel(NbeCores)
-        message("doParallel running with ", NbeCores, 
-                " cores")
+        cl <- snow::makeSOCKcluster(NbeCores)
+        doSNOW::registerDoSNOW(cl)
+        message("Parallel running with ", NbeCores, " cores")
         `%d%` <- foreach::`%dopar%`
       }
       else {
         `%d%` <- foreach::`%do%`
       }
       x <- NULL
-      output <- foreach(x = 1:length(list_data_not_pa), 
-                        .combine = "c") %d% {
-                          res <- .cell.occupied(size = Resolution, crs_proj = crs_proj, 
-                                                coord = list_data_not_pa[[x]], nbe_rep = nbe_rep)
-                          names(res) <- c("spatial", "nbe_occ")
-                          res
-                        }
+      if (show_progress) {
+        pb <- utils::txtProgressBar(min = 0, max = length(list_data), 
+                                    style = 3)
+        progress <- function(n) utils::setTxtProgressBar(pb, 
+                                                         n)
+        opts <- list(progress = progress)
+      }
+      else {
+        opts <- NULL
+      }
+      output <- foreach::foreach(x = 1:length(list_data_not_pa), 
+                                 .combine = "c", .options.snow = opts) %d% {
+                                   if (!parallel & show_progress) 
+                                     utils::setTxtProgressBar(pb, x)
+                                   res <- ConR:::.cell.occupied(size = Resolution, coord = list_data_not_pa[[x]], 
+                                                         nbe_rep = nbe_rep)
+                                   names(res) <- c("spatial", "nbe_occ")
+                                   res
+                                 }
+      if (parallel) 
+        snow::stopCluster(cl)
+      if (show_progress & show_progress) 
+        close(pb)
       loc_not_pa <- unlist(output[names(output) == "nbe_occ"])
-      r2 <- unlist(output[names(output) == "spatial"])[[1]]
+      r2 <- unlist(output[names(output) == "spatial"])
       names(loc_not_pa) <- names(r2) <- gsub(pattern = " ", 
                                              replacement = "_", names(list_data_not_pa))
       LocOutNatParks[names(LocOutNatParks) %in% names(loc_not_pa)] <- loc_not_pa
@@ -334,6 +398,8 @@ my.locations.comp = function (XY, method = "fixed_grid", nbe_rep = 0, protec.are
 
 # Renato's version of .IUCN.comp to include pre-calculated inputs and with thresholds as arguments (Global Tree Assessments use slightly different threholds to define LC species)
 # NOT CHECKED FOR: !is.null(protec.areas)
+
+DATA <- critB_high
 criteria.B = function (DATA, poly_borders = NULL, 
                         #Cell_size_AOO = 2, Cell_size_locations = 10, Resol_sub_pop = 5, method_locations = c("fixed_grid"), Rel_cell_size = 0.05, 
                         protec.areas = NULL, 
@@ -369,102 +435,43 @@ criteria.B = function (DATA, poly_borders = NULL,
     Results = rbind.data.frame(DATA, tmp, make.row.names = TRUE, deparse.level = 2)
   }
   
-  # XY <- DATA[, c(2:1)]
-  # coordEAC <- as.data.frame(matrix(unlist(rgdal::project(as.matrix(XY),
-  #                                                        proj = as.character(projEAC), inv = FALSE)), ncol = 2))
-  # rownames(coordEAC) <- seq(1, nrow(coordEAC), 1)
-  # if (SubPop) {
-  #   subpop_stats <- subpop.comp(DATA, Resol_sub_pop = Resol_sub_pop)
-  #   SubPopPoly <- subpop_stats[[2]]
-  #   NbeSubPop <- subpop_stats[[1]]
-  # }
-  # locations_res <- locations.comp(XY = DATA, method = method_locations, 
-  #                                 protec.areas = protec.areas, Cell_size_locations = Cell_size_locations, 
-  #                                 ID_shape_PA = ID_shape_PA)
-  # if (is.null(protec.areas)) {
-  #   r2 <- locations_res[[1]]
-  #   Locations <- locations_res[[2]]
-  # }  else {
-  #   r2 <- locations_res[[1]]
-  #   r2_PA <- locations_res[[2]]
-  #   LocNatParks <- locations_res[[3]]
-  #   LocOutNatParks <- locations_res[[4]]
-  # }
-  # if (!is.null(protec.areas)) {
-  #   DATA_SF <- as.data.frame(unique(XY))
-  #   colnames(DATA_SF) <- c("ddlon", "ddlat")
-  #   coordinates(DATA_SF) <- ~ddlon + ddlat
-  #   crs(DATA_SF) <- crs(protec.areas)
-  #   Links_NatParks <- over(DATA_SF, protec.areas)
-  # }
-  # if (any(method_locations == "fixed_grid")) 
-  #   Resolution <- Cell_size_locations * 1000
-  # if (any(method_locations == "sliding scale")) {
-  #   pairwise_dist <- dist(coordEAC, upper = F)
-  #   if (nrow(coordEAC) > 1) {
-  #     Resolution <- max(pairwise_dist) * Rel_cell_size
-  #   } else {
-  #     Resolution <- 10000
-  #   }
-  # }
-  
-  if (any(Results["EOO",] < Results["AOO",])) 
-    Results["EOO",][Results["EOO",] < Results["AOO",]] <- Results["AOO",][Results["EOO",] < Results["AOO",]]
 
-  # if (nrow(unique(XY)) > 2) {
-  #   EOO_ <- EOO.computing(DATA[, 1:2], exclude.area = exclude.area, 
-  #                         country_map = poly_borders, Name_Sp = NamesSp, buff_width = buff_width, 
-  #                         export_shp = TRUE, alpha = alpha, buff.alpha = buff.alpha, 
-  #                         method.range = method.range, write_results = FALSE)
-  #   p1 <- EOO_[[2]]
-  #   EOO <- EOO_[[1]]
-  #   AOO <- .AOO.estimation(coordEAC, cell_size = Cell_size_AOO, 
-  #                          nbe_rep = nbe.rep.rast.AOO)
-  #   if (EOO < AOO) 
-  #     EOO <- AOO
-  #   Results["EOO", 1] <- as.numeric(EOO)
-  #   Results["AOO", 1] <- as.numeric(AOO)
-  #   if (SubPop) 
-  #     Results["Nbe_subPop", 1] <- NbeSubPop
-  #   Results["Nbe_unique_occ.", 1] <- nrow(unique(XY))
-  #   if (!is.null(protec.areas)) 
-  #     Results["Nbe_loc", 1] <- LocNatParks + LocOutNatParks
-  #   if (is.null(protec.areas)) 
-  #     Results["Nbe_loc", 1] <- Locations
-  #   if (!is.null(protec.areas)) {
-  #     Results["Nbe_loc_PA", 1] <- LocNatParks
-  #   }
-  #### CHECK HERE ####
-    if (!is.null(protec.areas)) 
-      Results["Ratio_occ_within_PA", 1] <- round(length(which(!is.na(Links_NatParks[, 1])))/nrow(Links_NatParks) * 100, 1)
-  #### END CHECK ####
-  
+  if (any(Results[,"EOO"] < Results[,"AOO"]) )
+    Results[,"EOO"][!is.na(Results[,"EOO"]) & Results[,"EOO"] < Results[,"AOO"]] <- 
+      Results[,"AOO"][!is.na(Results[,"EOO"]) & Results[,"EOO"] < Results[,"AOO"]]
+
+    if (!is.null(protec.areas)) {
+      Results$Ratio_occ_within_PA <- NA
+      Results[, "Ratio_occ_within_PA"] <- 
+        round((Results[,"Nbe_loc_PA"]/apply(Results[,c("Nbe_loc","Nbe_loc_PA")], 1, sum, na.rm=TRUE)) * 100, 1)
+    }  
+   
     Rank_EOO = rep(4, dim(DATA)[2])
-    Rank_EOO[Results["EOO",] < EOO.threshold[1]] <-3
-    Rank_EOO[Results["EOO",] < EOO.threshold[2]] <-2
-    Rank_EOO[Results["EOO",] < EOO.threshold[3]] <-1
+    Rank_EOO[Results[,"EOO"] < EOO.threshold[1]] <-3
+    Rank_EOO[Results[,"EOO"] < EOO.threshold[2]] <-2
+    Rank_EOO[Results[,"EOO"] < EOO.threshold[3]] <-1
 
     Rank_AOO = rep(4, dim(DATA)[2])
-    Rank_AOO[Results["AOO",] < AOO.threshold[1]] <-3
-    Rank_AOO[Results["AOO",] < AOO.threshold[2]] <-2
-    Rank_AOO[Results["AOO",] < AOO.threshold[3]] <-1
+    Rank_AOO[Results[,"AOO"] < AOO.threshold[1]] <-3
+    Rank_AOO[Results[,"AOO"] < AOO.threshold[2]] <-2
+    Rank_AOO[Results[,"AOO"] < AOO.threshold[3]] <-1
     
     Rank_Loc = rep(4, dim(DATA)[2])
-    Rank_Loc[Results["Nbe_loc",] < Loc.threshold[1]] <-3
-    Rank_Loc[Results["Nbe_loc",] < Loc.threshold[2]] <-2
-    Rank_Loc[Results["Nbe_loc",] < Loc.threshold[3]] <-1
+    Rank_Loc[apply(Results[,c("Nbe_loc","Nbe_loc_PA")], 1, sum, na.rm=TRUE) < Loc.threshold[1]] <-3
+    Rank_Loc[apply(Results[,c("Nbe_loc","Nbe_loc_PA")], 1, sum, na.rm=TRUE) < Loc.threshold[2]] <-2
+    Rank_Loc[apply(Results[,c("Nbe_loc","Nbe_loc_PA")], 1, sum, na.rm=TRUE) < Loc.threshold[3]] <-1
     
     Rank_B1a <- apply(rbind(Rank_EOO, Rank_Loc), 2, max, na.rm=TRUE)
     Rank_B2a <- apply(rbind(Rank_AOO, Rank_Loc), 2, max, na.rm=TRUE)
     Rank_CriteriaB <- apply(rbind(Rank_B1a, Rank_B2a), 2, min, na.rm=TRUE)
 
-    Nbe_Loc <- as.numeric(Results["Nbe_loc", ])
+    Nbe_Loc <- as.numeric(Results[,"Nbe_loc"])
     Cat = rep("LC or NT", dim(DATA)[2])
     Cat[Rank_CriteriaB == 1] <- "CR"
     Cat[Rank_CriteriaB == 2] <- "EN"
     Cat[Rank_CriteriaB == 3 & Nbe_Loc > 0 & Nbe_Loc < 11] <- "VU"
     
-    Cat_Code <- rep(NA, dim(DATA)[2])
+    Cat_Code <- rep(NA, dim(DATA)[1])
     if(any(Rank_B1a > Rank_B2a))    
       Cat_Code[Rank_B1a > Rank_B2a] <- paste(Cat[Rank_B1a > Rank_B2a], "B2a")
     if(any(Rank_B1a < Rank_B2a)) 
@@ -472,80 +479,49 @@ criteria.B = function (DATA, poly_borders = NULL,
     if (any(Rank_B1a == Rank_B2a)) 
       Cat_Code[Rank_B1a == Rank_B2a & Rank_B1a != 4] <- paste(Cat[Rank_B1a == Rank_B2a & Rank_B1a != 4], "B1a+B2a") 
 
-    if (!is.null(protec.areas)) {
-      if (any(as.numeric(Results["Ratio_occ_within_PA", ]) == 100)) {
-        Results["Category_CriteriaB", as.numeric(Results["Ratio_occ_within_PA", ]) == 100] <- "LC or NT"
-        Results["Category_code", as.numeric(Results["Ratio_occ_within_PA", ]) == 100] <- Cat_Code
-      } else {
-        Results["Category_CriteriaB", ] <- Cat
-        Results["Category_code", ] <- Cat_Code
-      }
-    } else {
-      Results["Category_CriteriaB", ] <- Cat
-      Results["Category_code", ] <- Cat_Code
-    }
-
-    if (any(Rank_B2a == 1)) 
-      Results["Category_AOO", Rank_B2a == 1] <- "CR"
-    if (any(Rank_B2a == 2)) 
-      Results["Category_AOO", Rank_B2a == 2] <- "EN"
-    if (any(Rank_B2a == 3)) 
-      Results["Category_AOO", Rank_B2a == 3] <- "VU"
-    if (any(Rank_B2a > 3)) 
-      Results["Category_AOO", Rank_B2a > 3] <- "LC or NT"
-    if (any(Rank_B1a == 1)) 
-      Results["Category_EOO", Rank_B1a == 1] <- "CR"
-    if (any(Rank_B1a == 2)) 
-      Results["Category_EOO", Rank_B1a == 2] <- "EN"
-    if (any(Rank_B1a == 3)) 
-      Results["Category_EOO", Rank_B1a == 3] <- "VU"
-    if (any(Rank_B1a > 3)) 
-      Results["Category_EOO", Rank_B1a > 3] <- "LC or NT"
-  # }
-  # else {
-  #   p1 <- NULL
-  #   if (nrow(coordEAC) == 2) {
-  #     pairwise_dist <- dist(coordEAC, upper = F)
-  #     if (pairwise_dist <= Resolution) {
-  #       AOO <- Cell_size_AOO * Cell_size_AOO
-  #     }
-  #     else {
-  #       AOO <- 2 * Cell_size_AOO * Cell_size_AOO
-  #     }
-  #   }
-  #   else {
-  #     AOO <- Cell_size_AOO * Cell_size_AOO
-  #   }
-  # Results["AOO", 1] <- AOO
-  # if (SubPop) 
-  #   Results["Nbe_subPop", 1] <- NbeSubPop
-  # Results["Nbe_unique_occ.", 1] <- nrow(unique(XY))
-    #### CHECK HERE ####
-    if (!is.null(protec.areas)) 
-      Results["Ratio_occ_within_PA", 1] <- round(length(which(!is.na(Links_NatParks[, 1])))/nrow(Links_NatParks) * 100, 2)
-    #### END CHECK ####
     
-  # if (is.null(protec.areas)) 
-  #   Results["Nbe_loc", 1] <- Locations
-  # if (!is.null(protec.areas)) 
-  #   Results["Nbe_loc", 1] <- LocNatParks + LocOutNatParks
-  # if (!is.null(protec.areas)) 
-  #   Results["Nbe_loc_PA", 1] <- LocNatParks
     if (!is.null(protec.areas)) {
-      if (any(as.numeric(Results["Ratio_occ_within_PA", ]) == 100)) {
-        Results["Category_CriteriaB", as.numeric(Results["Ratio_occ_within_PA", ]) == 100] <- "LC or NT"
+      if (any(as.numeric(Results[,"Ratio_occ_within_PA"]) == 100)) {
+        Cat[as.numeric(Results[, "Ratio_occ_within_PA"]) %in% 100] <- "LC or NT"
+        Cat_Code[as.numeric(Results[, "Ratio_occ_within_PA"]) %in% 100] <- NA
+      } 
+    }   
+    
+    Results$Category_EOO <- NA
+    Results$Category_AOO <- NA
+    
+    if (any(Rank_B2a == 1)) 
+      Results[Rank_B2a == 1, "Category_AOO"] <- "CR"
+    if (any(Rank_B2a == 2)) 
+      Results[Rank_B2a == 2, "Category_AOO"] <- "EN"
+    if (any(Rank_B2a == 3)) 
+      Results[Rank_B2a == 3, "Category_AOO"] <- "VU"
+    if (any(Rank_B2a > 3)) 
+      Results[Rank_B2a > 3, "Category_AOO"] <- "LC or NT"
+    if (any(Rank_B1a == 1)) 
+      Results[Rank_B1a == 1, "Category_EOO"] <- "CR"
+    if (any(Rank_B1a == 2)) 
+      Results[Rank_B1a == 2, "Category_EOO"] <- "EN"
+    if (any(Rank_B1a == 3)) 
+      Results[Rank_B1a == 3, "Category_EOO"] <- "VU"
+    if (any(Rank_B1a > 3)) 
+      Results[Rank_B1a > 3, "Category_EOO"] <- "LC or NT"
+
+    if (!is.null(protec.areas)) {
+      if (any(as.numeric(Results[,"Ratio_occ_within_PA"]) %in% 100)) {
+        Results[as.numeric(Results[,"Ratio_occ_within_PA"]) %in% 100, "Category_CriteriaB"] <- "LC or NT"
       } else {
-        if (any(as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3])) {
-          Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",
-                      ]) <= Loc.threshold[3]] <- Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
+        if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3])) {
+          Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",
+                      ]) <= Loc.threshold[3]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
         } else {
-          if (any(as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2])) {
-            Results["Category_AOO", as.numeric(Results["AOO", 1]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", 
-                      ]) <= Loc.threshold[2]] <- Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
+          if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2])) {
+            Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", 
+                      ]) <= Loc.threshold[2]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
           } else {
-            if (any(as.numeric(Results["AOO", ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
-              Results["Category_AOO", as.numeric(Results["AOO", 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", 
-                      ]) <= Loc.threshold[1]] <- Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
+            if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
+              Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", 
+                      ]) <= Loc.threshold[1]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
             } else {
               Results["Category_AOO", ] <- Results["Category_CriteriaB", ] <- "LC or NT"
             }
@@ -553,17 +529,17 @@ criteria.B = function (DATA, poly_borders = NULL,
         }
       }
     } else {
-      if (any(as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3])) {
-        Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
-        Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
+      if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3])) {
+        Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
+        Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
       } else {
-        if (any(as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2])) {
-          Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
-          Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
+        if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2])) {
+          Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
+          Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
         } else {
-          if (any(as.numeric(Results["AOO", ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
-            Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
-            Results["Category_CriteriaB", as.numeric(Results["AOO", ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
+          if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
+            Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
+            Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] &  as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
           } else {
             #Results["Category_AOO", ] <- "LC or NT"
             #Results["Category_CriteriaB", ] <- "LC or NT"
@@ -572,14 +548,14 @@ criteria.B = function (DATA, poly_borders = NULL,
       }
     }
     if (any(is.na(Results["Category_AOO", ]))) {
-      if (any(as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[3])) {
-        Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[3]] <- "CR"
+      if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[3])) {
+        Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[3]] <- "CR"
       } else {
-        if (any(as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2])) {
-          Results["Category_AOO", as.numeric(Results["AOO", ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2]] <- "EN"
+        if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2])) {
+          Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2]] <- "EN"
         } else {
-          if (any(as.numeric(Results["AOO", 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
-            Results["Category_AOO", as.numeric(Results["AOO", 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
+          if (any(as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
+            Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
           } else {
             #Results["Category_AOO", ] <- "LC or NT"
           }
@@ -683,7 +659,7 @@ criteria.B = function (DATA, poly_borders = NULL,
   #     plot(1:10, 1:10, type = "n", bty = "n", xaxt = "n", yaxt = "n")
   #     if (is.null(protec.areas)) {
   #       legend(1, 10, c(paste("EOO=", ifelse(!is.na(Results["EOO", 1]), round(as.numeric(Results["EOO", 1]), 1),
-  #                                             NA), "km2"), paste("AOO (grid res.", Cell_size_AOO, "km)=", format(Results["AOO", 1], scientific = 5), 
+  #                                             NA), "km2"), paste("AOO (grid res.", Cell_size_AOO, "km)=", format(Results[,"AOO" 1], scientific = 5), 
   #                                             "km2"), paste("Number of unique occurrences=", Results["Nbe_unique_occ.", 1]), paste("Number of sub-populations (radius", 
   #                                             Resol_sub_pop, "km)=", Results["Nbe_subPop", 1]), paste("Number of locations (grid res.:", 
   #                                             round(Resolution/1000, 1), " km)", "=", Results["Nbe_loc",1]), paste("IUCN category according to criterion B:", 
@@ -691,7 +667,7 @@ criteria.B = function (DATA, poly_borders = NULL,
   #     }
   #     if (!is.null(protec.areas)) {
   #       legend(1, 10, c(paste("EOO=", ifelse(!is.na(Results["EOO", 1]), round(as.numeric(Results["EOO", 1]), 1), 
-  #                                             NA), "km2"), paste("AOO (grid res.", Cell_size_AOO, "km)=", format(Results["AOO", 1], scientific = 5), 
+  #                                             NA), "km2"), paste("AOO (grid res.", Cell_size_AOO, "km)=", format(Results[,"AOO" 1], scientific = 5), 
   #                                             "km2"), paste("Number of unique occurrences=", Results["Nbe_unique_occ.", 1]), paste("Number of sub-populations (radius", 
   #                                             Resol_sub_pop, "km)=", Results["Nbe_subPop", 1]), paste("Number of locations (grid res.:", 
   #                                             round(Resolution/1000, 1), " km)", "=", Results["Nbe_loc",1]), paste("Number of occupied protected areas=", 
