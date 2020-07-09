@@ -23,9 +23,13 @@ renato.gta = read.csv("renato_assignments_GTA.csv", as.is= TRUE)
 # require(alphahull)
 # require(spatstat)
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
+
+devtools::install_github("gdauby/ConR@devel")
+
 library("ConR")
+
 require(rgeos)
-source("./R/suggestions_for_ConR.r")
+# source("./R/suggestions_for_ConR.r")
 
 #### LOADING THE NEOTROPICS MAP ###
 neotrop.simp <- readRDS("data/Contour_Neotrop_simplified.rds")
@@ -187,5 +191,62 @@ criteria.B(resultado.hull, poly_borders = NULL,
                        protec.areas = NULL, 
                        file_name = NULL, add.legend = FALSE, DrawMap = FALSE, map_pdf = FALSE, draw.poly.EOO = FALSE, 
                        EOO.threshold = c(20000, 5000, 100), AOO.threshold = c(2000, 500, 10), Loc.threshold = c(10, 5, 1))
+
+library(tidyverse)
+
+# all_source <- 
+#   list.files("D:/MonDossierR/ConR_orig/R/", full.names = T)
+# for (i in 1:length(all_source)) source(all_source[i])
+
+oc.data_tb <- 
+  oc.data %>% 
+  as_tibble() %>% 
+  dplyr::select(ddlat, ddlon, tax)
+
+## list of species with at least one georeferenced occurrence
+oc.data_tb %>% 
+  filter(!is.na(ddlat), !is.na(ddlon)) %>% 
+  distinct(tax)
+
+## list of species with no georeferenced occurrences
+oc.data_tb %>% 
+  filter(is.na(ddlat) | is.na(ddlon)) %>% 
+  distinct(tax)
+
+## no paralleling 2224.4 secondes
+
+system.time(results_cb <- 
+              criterion_B(x = oc.data_tb))
+
+
+## paralleling
+
+system.time(results_cb <- 
+              criterion_B(x = oc.data_tb, parallel = T))
+
+dim(results_cb)
+
+## number and proportion of species in each category
+results_cb %>% 
+  as_tibble() %>% 
+  group_by(category) %>% 
+  count() %>% 
+  mutate(prop = n/nrow(results_cb)*100)
+
+system.time(
+  results_cb <-
+    EOO.computing(
+      XY = oc.data_tb,
+      parallel = T,
+      exclude.area = F,
+      country_map = neotrop.simp
+    )
+)
+
+
+
+
+
+
 
 
