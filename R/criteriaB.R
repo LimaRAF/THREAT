@@ -9,7 +9,8 @@ rm(list=ls())
 
 #### LOADING PACKAGES ###
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
-require(ConR)
+devtools::install_github("gdauby/ConR@devel")
+library("ConR")
 require(data.table)
 source("./R/suggestions_for_ConR.r")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
@@ -328,5 +329,50 @@ saveRDS(critB_low, "data/criteriaB_low_confidence.rds")
 #                  showWarnings=TRUE, write_file_option="excel", 
 #                  parallel=TRUE, NbeCores=6)
 
+#### GILLES EXTRA CODES ####
 
+library(tidyverse)
+
+# all_source <- 
+#   list.files("D:/MonDossierR/ConR_orig/R/", full.names = T)
+# for (i in 1:length(all_source)) source(all_source[i])
+
+oc.data_tb <- 
+  oc.data %>% 
+  as_tibble() %>% 
+  dplyr::select(ddlat, ddlon, tax)
+
+## list of species with at least one georeferenced occurrence
+oc.data_tb %>% 
+  filter(!is.na(ddlat), !is.na(ddlon)) %>% 
+  distinct(tax)
+
+## list of species with no georeferenced occurrences
+oc.data_tb %>% 
+  filter(is.na(ddlat) | is.na(ddlon)) %>% 
+  distinct(tax)
+
+## no paralleling 2224.4 secondes
+system.time(results_cb <- 
+              criterion_B(x = oc.data_tb))
+## paralleling
+system.time(results_cb <- 
+              criterion_B(x = oc.data_tb, parallel = T))
+dim(results_cb)
+
+## number and proportion of species in each category
+results_cb %>% 
+  as_tibble() %>% 
+  group_by(category) %>% 
+  count() %>% 
+  mutate(prop = n/nrow(results_cb)*100)
+system.time(
+  results_cb <-
+    EOO.computing(
+      XY = oc.data_tb,
+      parallel = T,
+      exclude.area = F,
+      country_map = neotrop.simp
+    )
+)
 

@@ -584,7 +584,6 @@ rm(trees,trees1,trees.final)
 ##########################
 pop.sizes <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//pop.size.est_nmx50_mxd5_idp2.rds")
 pop.sizes.2018 <- pop.sizes$`2018`$mean 
-rm(pop.sizes)
 tmp <- apply(pop.sizes.2018, 2, sum)
 tmp <- data.frame(species.correct2 = gsub("_"," ",names(tmp)), 
                   pop.size.2018 = as.double(tmp), 
@@ -613,8 +612,79 @@ length(miss.sp) # 215 species; most are non-AF species
 # spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 # tmp3 <- merge(tmp2, spp, by.x = "original.search", by.y = "SpeciesKTSA")
 # write.csv(tmp3, "tmp.csv")
-
 saveRDS(resultado, "data/assess_iucn_spp.rds")
+
+
+### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ###
+mean.pop.sizes <- sapply(pop.sizes, function(x) apply(x$mean, 2, sum, na.rm = TRUE))
+low.pop.sizes <- sapply(pop.sizes, function(x) apply(x$low, 2, sum, na.rm = TRUE))
+high.pop.sizes <- sapply(pop.sizes, function(x) apply(x$high, 2, sum, na.rm = TRUE))
+table(rownames(mean.pop.sizes) == rownames(low.pop.sizes))
+table(rownames(mean.pop.sizes) == rownames(high.pop.sizes))
+
+## OBTAINING POPULATION SIZES FOR MISSING YEARS ##
+## Getting pop. sizes for all possible generation lengths (20, 30, 40, 50, 60, 70 years)
+gen.lengths <- c(25, 30, 35, 40, 45, 50, 55, 60, 65, 70)
+pos.gen.length <- sort(unique(gen.lengths * rep(c(1:3), each=length(gen.lengths))), decreasing = TRUE)
+miss.years <- 2018 - pos.gen.length
+miss.years1 <- miss.years[miss.years < 1992]
+miss.years2 <- miss.years[miss.years >= 1992]
+
+## Looping the pop. decline trends for each species and time interval
+res.mean <- res.low <- res.high <- vector("list", dim(mean.pop.sizes)[1])
+names(res.mean) <- names(res.low) <- names(res.high) <- rownames(mean.pop.sizes)
+
+for (i in 1:length(res.mean)) {
+ res1 <- pop.decline.fit(pop.size = mean.pop.sizes[i,],
+                        years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992),
+                        models = "all", project.years = miss.years1,
+                        plot.fit = FALSE)
+ res2 <- pop.decline.fit(pop.size = mean.pop.sizes[i,],
+                        years = c(1992,1995,2000,2005,2010,2015,2018),
+                        models = "all", project.years = miss.years2,
+                        #parsimony = TRUE,
+                        max.count = 20,
+                        plot.fit = FALSE)
+ res1$data$Modelo <- attributes(res1$best.model)$best.model.name
+ res2$data$Modelo <- head(attributes(res2$best.model)$best.model.name, 1)
+ dados <- rbind.data.frame(head(res1$data, -1), res2$data, stringsAsFactors = FALSE) 
+ dados$Predicted[dados$Year < 1850] <- 
+   dados$Predicted[dados$Year == 1850]
+ dados <- dados[,c("Year", "Observed", "Predicted", "Modelo")]
+ res.mean[[i]] <- dados
+}
+
+criterion_A(tmp, 
+                  years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992,1995,2000,2018),
+                  assess.year = 2018,
+                  generation.time = 70,
+                  subcriteria = c("A1", "A2"),
+                  models = "all", 
+                  project.years = NULL)
+
+i = 2
+
+
+
+#Saving
+saveRDS(mean.pop.sizes, "data/threat_mean_pop_sizes.rds")
+saveRDS(low.pop.sizes, "data/threat_low_pop_sizes.rds")
+saveRDS(high.pop.sizes, "data/threat_high_pop_sizes.rds")
+rm(pop.sizes)
+
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+##################################################
+#### GENERATION LENGHT AND MATURE INDIVIDUALS ####
+##################################################
+rm(list=ls())
+
+
+#### OBTAINING GOOD GUESSES OF GENERATION LENGTH BASED ON SPECIES ECOLOGICAL GROUPS AND MAXIMUM SIZE ####
+spp <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/DomainsKnownTreesNeotropics.csv", as.is = TRUE, na.string = c("", " ", NA))
+
+#### GETTING THE PROXIES OF GENERATION LENGTH FOR EACH SPECIES ####
+
 #####################################################################################################################################################################
 #####################################################################################################################################################################
 ##############################
