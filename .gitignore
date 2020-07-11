@@ -6,3 +6,10 @@
 *.pdf 
 HMSC/
 *.xls
+data/threat_occ_data.rds
+data/threat_occ_data_new.rds
+data/spp.convex.hull.polys_sf.rds
+data/StrictUCsNeotrop_simplified_proj.rds
+data/StrictUCsNeotrop_simplified.rds
+data/StrictUCsNeotrop_simplified_clipped.rds
+data/threat_inventory_data.rds
