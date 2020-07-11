@@ -11,6 +11,7 @@ rm(list=ls())
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
 devtools::install_github("gdauby/ConR@devel")
 library("ConR")
+
 require(data.table)
 source("./R/suggestions_for_ConR.r")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
