@@ -399,7 +399,7 @@ my.locations.comp <- function (XY, method = "fixed_grid", nbe_rep = 0, protec.ar
 # Renato's version of .IUCN.comp to include pre-calculated inputs and with thresholds as arguments (Global Tree Assessments use slightly different threholds to define LC species)
 # NOT CHECKED FOR: !is.null(protec.areas)
 
-DATA <- critB_high
+#DATA <- critB_high
 criteria.B = function (DATA, poly_borders = NULL, 
                         #Cell_size_AOO = 2, Cell_size_locations = 10, Resol_sub_pop = 5, method_locations = c("fixed_grid"), Rel_cell_size = 0.05, 
                         protec.areas = NULL, 
@@ -516,11 +516,11 @@ criteria.B = function (DATA, poly_borders = NULL,
                       ]) <= Loc.threshold[3]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[3] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[3]] <- "CR"
         } else {
           if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2])) {
-            Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", 
+            Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", 
                       ]) <= Loc.threshold[2]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[2]] <- "EN"
           } else {
             if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
-              Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", 
+              Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", 
                       ]) <= Loc.threshold[1]] <- Results["Category_CriteriaB", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
             } else {
               Results["Category_AOO", ] <- Results["Category_CriteriaB", ] <- "LC or NT"
@@ -554,8 +554,8 @@ criteria.B = function (DATA, poly_borders = NULL,
         if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2])) {
           Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[2] & as.numeric(Results["Nbe_loc",  ]) <= Loc.threshold[2]] <- "EN"
         } else {
-          if (any(as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
-            Results["Category_AOO", as.numeric(Results[,"AOO" 1]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
+          if (any(as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1])) {
+            Results["Category_AOO", as.numeric(Results[,"AOO" ]) < AOO.threshold[1] & as.numeric(Results["Nbe_loc", ]) <= Loc.threshold[1]] <- "VU"
           } else {
             #Results["Category_AOO", ] <- "LC or NT"
           }

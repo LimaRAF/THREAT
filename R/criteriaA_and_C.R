@@ -13,6 +13,11 @@ library("ConR")
 mean.pop.sizes <- readRDS("data/threat_mean_pop_sizes.rds")
 
 #Putting data in the ConR format
+sapply(1:length(res.high), function(x) {
+  
+  
+})
+
 PopData <- oc.data[, c("ddlat","ddlon",
                       "tax","higher.tax.rank",
                       "coly","vouchers",

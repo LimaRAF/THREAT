@@ -101,13 +101,42 @@ spp.af <- spp.af[!spp.af$TreeCo_status %in% c("remove","remove?","remove? Unreso
 spp.af.true <- spp.af[af.check2 %in% "TRUE", species.correct2]
 #Adding some missing names (don't know why they were excluded; probably due to missing valid determinations or coordinates)
 miss.spp = c("Agonandra brasiliensis","Aiouea bracteata","Aspidosperma brasiliense",
-             "Aspidosperma quirandy","Cochlospermum vitifolium","Ficus pakkensis","Handroanthus selachidentatus",
+             "Aspidosperma quirandy","Brasiliopuntia schulzii","Cochlospermum vitifolium","Derris leucanthus","Ficus pakkensis","Handroanthus selachidentatus",
              "Handroanthus spongiosus","Ilex cognata","Luetzelburgia purpurea","Mezilaurus synandra","Mimosa caesalpiniifolia",
-             "Ocotea grandifructa","Persea punctata","Piptadenia killipii","Piranhea securinega","Quillaja lancifolia",
-             "Tovomita longifolia","Trischidium decipiens")
+             "Ocotea grandifructa","Palicourea subcuspidata","Palicourea didymocarpos","Persea punctata","Piptadenia killipii","Piranhea securinega",
+             "Quillaja lancifolia","Quillaja lanceolata","Quillaja sellowiana",
+             "Tovomita longifolia","Trischidium decipiens","Zanthoxylum unifoliolatum")
 oc.data <- oc.data[species.correct2 %in% c(spp.af.true, miss.spp),] # occurrences inside the AF
-# oc.data[,uniqueN(species.correct2)] # 5183 species
+#oc.data[,uniqueN(species.correct2)] # 5183 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
+
+#### SOME LAST MINUTE, NEW SYNONYMS TO BE REPLACED ####
+oc.data[species.correct2 %in% "Brasiliopuntia schulzii", status := "ok"]
+oc.data[species.correct2 %in% "Brasiliopuntia schulzii", species.correct2 := "Brasiliopuntia brasiliensis"]
+oc.data[species.correct2 %in% "Derris leucanthus", status := "ok"]
+oc.data[species.correct2 %in% "Derris leucanthus", species.correct2 := "Muellera campestris"]
+spp2rep <- c("Palicourea subcuspidata","Palicourea didymocarpa","Palicourea didymocarpos")
+oc.data[species.correct2 %in% spp2rep, status := "ok"]
+oc.data[species.correct2 %in% spp2rep, species.correct2 := "Palicourea didymocarpa"]
+spp2rep <- c("Quillaja brasiliensis","Quillaja lancifolia","Quillaja lanceolata","Quillaja sellowiana")
+oc.data[species.correct2 %in% spp2rep, species.correct2 := "Quillaja lancifolia"]
+oc.data[loc.correct %like% "brazil" & species.correct2 %in% "Ixora grandifolia", species.correct2 := "Ixora muelleri"]
+oc.data[species.correct2 %in% "Misanteca duartei", species.correct2 := "Licaria guianensis"]
+oc.data[species.correct2 %like% "Zanthoxylum" & numTombo %in% c("jpb_54464","ase_6935","ase_29975","ase_30740","ase_35130"), species.correct2 := "Zanthoxylum unifoliolatum"]
+oc.data[species.correct2 %in% c("Calyptranthes grandifolia","Calyptranthes brasiliensis"), species.correct2 := "Calyptranthes brasiliensis"]
+oc.data[species.correct2 %in% c("Ossaea loligomorpha","Miconia loligomorpha"), species.correct2 := "Leandra loligomorpha"]
+oc.data[species.correct2 %in% c("Plinia brachybotrya","Plinia pseudodichasiantha"), species.correct2 := "Plinia pseudodichasiantha"]
+#oc.data[,uniqueN(species.correct2)] # 5178 species
+
+#### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF)
+rm.spp <- c("Annona calophylla","Bauhinia galpinii","Bunchosia glandulifera","Cereus repandus","Eugenia acapulcensis",      
+            "Garcinia longifolia","Grabowskia boerhaaviifolia","Humiriastrum cuspidatum","Ixora grandifolia","Maytenus macrocarpa","Miconia pausana",           
+            "Mimosa caesalpiniifolia","Mimosa rufescens","Myrceugenia obtusa","Myrsine ligustrina","Ocotea megaphylla", 
+            "Prunus oleifolia","Randia obovata","Rauvolfia tetraphylla","Schinus fasciculata","Senegalia fiebrigii",
+            "Sesbania macroptera","Sloanea multiflora","Solanum confusum","Solanum lanceifolium","Tarenaya spinosa",
+            "Vachellia macracantha","Zanthoxylum schreberi")
+oc.data <- oc.data[!species.correct2 %in% rm.spp,] # occurrences inside the AF
+#oc.data[,uniqueN(species.correct2)] # 5150 species
 
 #### REMOVING DUPLICATES ####
 gc()
@@ -124,8 +153,8 @@ oc.data[is.na(dup.ID1), dup.ID1 := numTombo, by = numTombo]
 oc.data <- unique(oc.data, by = "dup.ID1")
 #removing the extra column created for ranking
 #oc.data[,dup.ID1:=NULL] 
-toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 732,113 (23.64%) removed
-# oc.data[,uniqueN(species.correct2)] # 5183 species
+toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 730,297 (23.68%) removed
+# oc.data[,uniqueN(species.correct2)] # 5150 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING DATA NOT GEOGRAPHICALLY VALIDATED #### 
@@ -134,8 +163,8 @@ gc()
 toto2 = dim(oc.data)[1]
 oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" | 
                      (geo.check1 %like% "ok_state" & af.check2 == TRUE)]
-# oc.data[,uniqueN(species.correct2)] # 5165 species
-# table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
+#oc.data[,uniqueN(species.correct2)] # 5150 species
+#table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING MISSING COORDINATES ####
 ## Doing it after, only before distribution analyses 
@@ -148,9 +177,9 @@ oc.data$latitude.work1[oc.data$longitude.work1 %in% "no_coord" | oc.data$latitud
 # oc.data <- oc.data[!is.na(latitude.work1) | !is.na(longitude.work1),]
 # range(as.double(oc.data$latitude.work1), na.rm = TRUE)
 # range(as.double(oc.data$longitude.work1), na.rm = TRUE)
-toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 970,170 (41.01% of the non-duplicated) removed
-100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.32% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5183 species
+toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 961,869 (40.87% of the non-duplicated) removed
+100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.19% in respect to all records
+#oc.data[,uniqueN(species.correct2)] # 5150 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL DUPLICATES ####
@@ -162,9 +191,9 @@ oc.data[ , spat.dups := duplicated(coord.string, incomparables = "NA_NA"), by = 
 oc.data <- oc.data[spat.dups == FALSE,,]
 oc.data[,coord.string:=NULL] 
 oc.data[,spat.dups:=NULL] 
-toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 573,557 (24.25% of remaining records) removed
-100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.52% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5183 species
+toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 572,540 (24.33% of remaining records) removed
+100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.57% in respect to all records
+# oc.data[,uniqueN(species.correct2)] # 5150 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL OUTLIERS  ####
@@ -192,7 +221,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 gc()
 toto4 = dim(oc.data)[1]
 oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3117 true outliers
-# oc.data[,uniqueN(species.correct2)] # 5183 species
+# oc.data[,uniqueN(species.correct2)] # 5150 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 ## REMOVING PROBABLE OUTLIERS ##
@@ -202,9 +231,9 @@ tmp <- data.table(oc.data[species.correct2 %in% cult])
 #table(tmp$probable.out, useNA = "always")
 tmp1 <- data.table(tmp[probable.out %in% TRUE])
 oc.data <- oc.data[!numTombo %in% tmp1$numTombo]
-toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3117+41 (0.23% of remaining records) removed
+toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3170 (0.23% of remaining records) removed
 100*(toto4 - dim(oc.data)[1])/toto1 ## extra 0.1% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5183 species
+# oc.data[,uniqueN(species.correct2)] # 5150 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #3- remover non-core specimens for heavily cultivated native species (e.g. Araucaria angustifolia): rob.out.99 == FALSE
@@ -235,9 +264,9 @@ oc.data[country %in% yes.neotrop$code & is.na(neotrop.check), neotrop.check := T
 #Getting the number of non-neotropical occurrences per species
 extra.neotrop.spp = table(oc.data[neotrop.check == FALSE & af.check2 %in% c("cannot_check"), species.correct2])
 oc.data <- oc.data[neotrop.check == TRUE | is.na(neotrop.check) |(neotrop.check == FALSE & af.check2 %in% c("TRUE","FALSE"))]
-toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 489 (0.11% of remaining records) removed
+toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 485 (0.11% of remaining records) removed
 100*(toto5 - dim(oc.data)[1])/toto1 ## extra 0.02% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5183 species
+#oc.data[,uniqueN(species.correct2)] # 5150 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation #### Getting species information and generating the vectors for the groups of species
@@ -277,17 +306,16 @@ oc.data[determinador.name %in% taxonomists & tax.check2 %in% "FALSE", tax.check2
 
 #Validating all occurrences of TBC
 oc.data[species.correct1 %in% tbc & tax.check2 %in% c("FALSE","cannot_check"), tax.check2 := "TRUE_TBC",]
-#oc.data[,uniqueN(species.correct2)] # 5165 species
+#oc.data[,uniqueN(species.correct2)] # 5150 species
 #table(is.na(oc.data$latitude.work1))
 
 #some last minute validation to avoid the removal of species from the checklist
-oc.data[species.correct2 %in% "Agonandra brasiliensis" & determinador.name1 %like% c("Hiepko","Heipko","Marquete","Groppo"), tax.check2 := "TRUE"]
-oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("Baitello","Lorea"), tax.check2 := "TRUE"]
+oc.data[species.correct2 %in% "Agonandra brasiliensis" & determinador.name1 %like% c("Hiepko|Heipko|Marquete|Groppo"), tax.check2 := "TRUE"]
+oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("Baitello|Lorea"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Quillaja lancifolia" & determinador.name1 %in% c("Luebert, F."), tax.check2 := "TRUE" ]
-oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.", "Espirito Santo, F.S.", "Santo, F.E.","Silva-Castro","ilva, M.M."), tax.check2 := "TRUE" ]
+oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.|Espirito Santo, F.S.|Santo, F.E.|Silva-Castro|ilva, M.M."), tax.check2 := "TRUE" ]
 
 #### TRYING TO OBTAIN INFORMATION ON CONSERVATION UNITS FROM LOCALITY INFO ####
-#oc.data <- readRDS("threat_occ_data.rds")
 locals <- oc.data$locality
 #Editing the localities
 unwanted_array = list('Š'='S', 'š'='s', 'Ž'='Z', 'ž'='z', 'À'='A', 'Á'='A', 'Â'='A', 'Ã'='A', 'Ä'='A', 'Å'='A', 'Æ'='A', 'Ç'='C', 'È'='E', 'É'='E',
@@ -601,7 +629,7 @@ resultado$pop.size.2018 <- tmp1$pop.size.2018
 
 ## Pop size an number of occurrences are related?
 plot(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1))
-abline(lm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), lwd=2, col=2)
+abline(rlm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), lwd=2, col=3)
 
 ## Which specie swe have population sizes which are not in the checklist?
 miss.sp <- tmp$species.correct2[!tmp$species.correct2 %in% resultado$species.correct2]
@@ -612,78 +640,661 @@ length(miss.sp) # 215 species; most are non-AF species
 # spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 # tmp3 <- merge(tmp2, spp, by.x = "original.search", by.y = "SpeciesKTSA")
 # write.csv(tmp3, "tmp.csv")
+
+## Saving the data vailable per source of information
+taxon_id <- paste0("sp", 1:dim(resultado)[1])
+resultado <- cbind.data.frame(taxon_id, resultado, stringsAsFactors = FALSE)
 saveRDS(resultado, "data/assess_iucn_spp.rds")
 
 
-### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ###
+#### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ####
 mean.pop.sizes <- sapply(pop.sizes, function(x) apply(x$mean, 2, sum, na.rm = TRUE))
 low.pop.sizes <- sapply(pop.sizes, function(x) apply(x$low, 2, sum, na.rm = TRUE))
 high.pop.sizes <- sapply(pop.sizes, function(x) apply(x$high, 2, sum, na.rm = TRUE))
 table(rownames(mean.pop.sizes) == rownames(low.pop.sizes))
 table(rownames(mean.pop.sizes) == rownames(high.pop.sizes))
+rm(pop.sizes,pop.sizes.2018)
 
 ## OBTAINING POPULATION SIZES FOR MISSING YEARS ##
-## Getting pop. sizes for all possible generation lengths (20, 30, 40, 50, 60, 70 years)
-gen.lengths <- c(25, 30, 35, 40, 45, 50, 55, 60, 65, 70)
+## Getting pop. sizes for all possible generation lengths
+gen.lengths <- c(10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100)
 pos.gen.length <- sort(unique(gen.lengths * rep(c(1:3), each=length(gen.lengths))), decreasing = TRUE)
 miss.years <- 2018 - pos.gen.length
 miss.years1 <- miss.years[miss.years < 1992]
 miss.years2 <- miss.years[miss.years >= 1992]
 
 ## Looping the pop. decline trends for each species and time interval
-res.mean <- res.low <- res.high <- vector("list", dim(mean.pop.sizes)[1])
+require(snow)
+require(doSNOW)
+require(foreach)
+require(ConR)
+
+#defining the object for the loop
+pop_data <- high.pop.sizes
+
+#Setting the loop parameters
+cl <- snow::makeSOCKcluster(6)
+doSNOW::registerDoSNOW(cl)
+`%d%` <- foreach::`%dopar%`
+x <- NULL
+output <-
+  foreach::foreach(
+    x = 1:dim(pop_data)[1],
+    #.combine = 'c',
+    .options.snow = NULL
+  ) %d% {
+
+    res1 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
+                            years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992),
+                            #models = "all", 
+                            models = c("linear", "quadratic", "exponential", 
+                                       "logistic", "general_logistic"),
+                            project.years = miss.years1,
+                            plot.fit = FALSE)
+    res2 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
+                            years = c(1992,1995,2000,2005,2010,2015,2018),
+                            #models = "all", 
+                            models = c("linear", "quadratic", "exponential", 
+                                       "logistic", "general_logistic"),
+                            project.years = miss.years2,
+                            #parsimony = TRUE,
+                            max.count = 20,
+                            plot.fit = FALSE)
+    res1$data$Modelo <- attributes(res1$best.model)$best.model.name
+    res2$data$Modelo <- head(attributes(res2$best.model)$best.model.name, 1)
+    dados <- rbind.data.frame(head(res1$data, -1), res2$data, stringsAsFactors = FALSE) 
+    dados$Predicted[dados$Year < 1850] <- 
+      dados$Predicted[dados$Year == 1850]
+    dados <- dados[,c("Year", "Observed", "Predicted", "Modelo")]
+    dados
+  }
+snow::stopCluster(cl)
+
+#Saving the predcitions for each table (mean, low and high) 
+#res.mean <- output
+#res.low <- output
+res.high <- output
+
+#Setting species names
 names(res.mean) <- names(res.low) <- names(res.high) <- rownames(mean.pop.sizes)
 
-for (i in 1:length(res.mean)) {
- res1 <- pop.decline.fit(pop.size = mean.pop.sizes[i,],
-                        years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992),
-                        models = "all", project.years = miss.years1,
-                        plot.fit = FALSE)
- res2 <- pop.decline.fit(pop.size = mean.pop.sizes[i,],
-                        years = c(1992,1995,2000,2005,2010,2015,2018),
-                        models = "all", project.years = miss.years2,
-                        #parsimony = TRUE,
-                        max.count = 20,
-                        plot.fit = FALSE)
- res1$data$Modelo <- attributes(res1$best.model)$best.model.name
- res2$data$Modelo <- head(attributes(res2$best.model)$best.model.name, 1)
- dados <- rbind.data.frame(head(res1$data, -1), res2$data, stringsAsFactors = FALSE) 
- dados$Predicted[dados$Year < 1850] <- 
-   dados$Predicted[dados$Year == 1850]
- dados <- dados[,c("Year", "Observed", "Predicted", "Modelo")]
- res.mean[[i]] <- dados
-}
-
-criterion_A(tmp, 
-                  years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992,1995,2000,2018),
-                  assess.year = 2018,
-                  generation.time = 70,
-                  subcriteria = c("A1", "A2"),
-                  models = "all", 
-                  project.years = NULL)
-
-i = 2
-
-
-
-#Saving
+#Saving the estimated populations
 saveRDS(mean.pop.sizes, "data/threat_mean_pop_sizes.rds")
 saveRDS(low.pop.sizes, "data/threat_low_pop_sizes.rds")
 saveRDS(high.pop.sizes, "data/threat_high_pop_sizes.rds")
-rm(pop.sizes)
+
+#Saving the estimated and infered populations
+saveRDS(res.mean, "data/threat_mean_pop_sizes_infer.rds")
+saveRDS(res.low, "data/threat_low_pop_sizes_infer.rds")
+saveRDS(res.high, "data/threat_high_pop_sizes_infer.rds")
+
 
 #####################################################################################################################################################################
 #####################################################################################################################################################################
+#####################################################
+#### SPECIES TAXONOMY, SYNONYMS AND COMMON NAMES ####
+#####################################################
+require(taxize)
+require(flora)
+require(redlistr)
+
+## Red List IUCN key: 814b5b4ee7bc21205e9aec80f441b7e0ff8f957a326f2c76152ac9991b521e25
+
+## Seting the ncbi key
+#API-key: c9366b59140a833ccd26fe9ac4f92e48d208 
+options(ENTREZ_KEY = "c9366b59140a833ccd26fe9ac4f92e48d208")
+
+## Getting NCBI full taxonomy ##
+tax  <- readRDS("data/assess_iucn_spp.rds")[,1:3]
+
+#higher taxonomy
+fams <- sort(unique(tax$family.correct1))
+tmp  <- sapply(fams, taxize::classification, "ncbi")
+tmp1 <- lapply(tmp, function(x) x$name[x$rank %in% c("kingdom","phylum","class","order")]) 
+tmp1 <- do.call(rbind.data.frame, tmp1)
+tmp2 <- cbind.data.frame(tmp1, fams, stringsAsFactors = FALSE)
+names(tmp2) <- c("kingdom","phylum","classname","ordername","family")
+ncbi.taxonomy <- merge(tax, tmp2, by.x = "family.correct1", by.y = "family", all.x = TRUE, order = FALSE)
+ncbi.taxonomy$genus <- sapply(strsplit(ncbi.taxonomy$species.correct2, " "), function(x) x[1])
+ncbi.taxonomy <- ncbi.taxonomy[,c("kingdom","phylum","classname","ordername","family.correct1","genus","species.correct2")]
+ncbi.taxonomy$kingdom <- "Plantae" #IUCN standard notation
+ncbi.taxonomy$phylum <- "Tracheophyta" #IUCN standard notation
+ncbi.taxonomy <- ncbi.taxonomy[order(ncbi.taxonomy$species.correct2),]
+
+#lower taxonomy
+# gens <- sort(unique(ncbi.taxonomy$genus))
+# # res.gens <- vector("list", length(gens))
+# # for(i in 1:length(gens)){
+# #   cat(i,"\n")
+# #   res.gens[[i]] <- try(children(gens[i], db = "ncbi"), TRUE)
+# # }
+# tmp  <- lapply(gens, function(x) try(taxize::children(x, "ncbi"), TRUE))
+# tmp1 <- do.call(rbind.data.frame, tmp1)
+
+## Getting Tropicos full taxonomy ##
+#Tropicos API key: E8E538BC-0DAD-47EF-84CA-F6A663D9170A
+
+#higher taxonomy
+tmp  <- sapply(fams, taxize::classification, "tropicos", rows = 1)
+tmp1 <- lapply(tmp, function(x)
+    as.character(x$name[x$rank %in% c("class", "order")]))
+tmp1 <- do.call(rbind.data.frame, tmp1)
+tmp2 <- cbind.data.frame(tmp1, fams, stringsAsFactors = FALSE)
+names(tmp2) <- c("classname","ordername","family")
+tps.taxonomy <- merge(tax, tmp2, by.x = "family.correct1", by.y = "family", all.x = TRUE, order = FALSE)
+tps.taxonomy$genus <- sapply(strsplit(tps.taxonomy$species.correct2, " "), function(x) x[1])
+tps.taxonomy$kingdom <- "Plantae" #IUCN standard notation
+tps.taxonomy$phylum <- "Tracheophyta" #IUCN standard notation
+tps.taxonomy <- tps.taxonomy[,c("kingdom","phylum","classname","ordername","family.correct1","genus","species.correct2")]
+
+#lower taxonomy
+cl <- snow::makeSOCKcluster(6)
+doSNOW::registerDoSNOW(cl)
+`%d%` <- foreach::`%dopar%`
+x <- NULL
+output <- foreach::foreach(
+  x = 1:length(tps.taxonomy$species.correct2),
+  #.combine = 'c',
+  .options.snow = NULL
+) %d% {
+  try(taxize::get_tpsid_(tps.taxonomy$species.correct2[x]), TRUE)
+}
+snow::stopCluster(cl)
+output1 <- sapply(output, function(x) x[[1]])
+names(output1) <- sapply(output, function(x) names(x))
+output2 <- lapply(1:length(output1), function(x)
+  if (is.null(output1[[x]])) {
+    c(nameid= NA, scientificname = names(output1[x]), rankabbreviation = "sp.", 
+      nomenclaturestatusname = "Not found", author=NA, displayreference= NA, displaydate = NA,
+      search.string = names(output1[x]))
+  } else {
+    out <- output1[[x]][,c("nameid",
+              "scientificname",
+              "rankabbreviation",
+              "nomenclaturestatusname",
+              "author",
+              "displayreference",
+              "displaydate")]
+    if (dim(out)[1] > 1) {
+      out <- out[out$rankabbreviation %in% "sp.", ]
+      if (dim(out)[1] > 1 & any(out$scientificname %in% names(output1[x])))
+        out <- out[out$scientificname %in% names(output1[x]),]
+      if (dim(out)[1] > 1 & !all(out$nomenclaturestatusname %in% "Invalid"))
+        out <- out[!out$nomenclaturestatusname %in% "Invalid",]
+      if (dim(out)[1] > 1 & !all(out$nomenclaturestatusname %in% "Illegitimate"))
+        out <- out[!out$nomenclaturestatusname %in% "Illegitimate",]
+      if (dim(out)[1] > 1 & "Legitimate" %in% out$nomenclaturestatusname)
+        out <- out[out$nomenclaturestatusname %in% "Legitimate",]
+      if (dim(out)[1] > 1 & !all(out$displayreference %in% ""))
+        out <- out[!out$displayreference %in% "",]
+      if (dim(out)[1] > 1)
+        out <- out[which.min(out$displaydate),]
+    }
+    cbind.data.frame(out, search.string = names(output1[x]), 
+                     stringsAsFactors = FALSE)
+  }
+)
+output3 <- do.call(rbind.data.frame, output2)
+tps.taxonomy1 <- merge(tps.taxonomy, output3, by.x = "species.correct2", by.y = "search.string", all.x = TRUE, sort= FALSE)
+
+
+## Getting FB 2020 taxonomy
+toto <- flora::get.taxa(tax$species.correct2, replace.synonyms = FALSE, suggest.names = FALSE,
+         life.form = TRUE, habitat = TRUE, vegetation.type = TRUE,
+         vernacular = TRUE, states = TRUE, establishment = TRUE,
+         drop = c(""),
+         suggestion.distance = 0.9, parse = FALSE)
+table(toto$accepted.name)
+toto <- toto[c("family","genus","original.search","authorship","id","accepted.name","taxon.status","name.status","notes",
+               "threat.status","life.form","habitat","vegetation.type","vernacular.name","occurrence","establishment")]
+
+## Trying to get species ID from IUCN
+## Red List IUCN key: 814b5b4ee7bc21205e9aec80f441b7e0ff8f957a326f2c76152ac9991b521e25
+cl <- snow::makeSOCKcluster(6)
+doSNOW::registerDoSNOW(cl)
+`%d%` <- foreach::`%dopar%`
+x <- NULL
+iucn <- foreach::foreach(
+  x = 1:length(tps.taxonomy$species.correct2),
+  #.combine = 'c',
+  .options.snow = NULL
+) %d% {
+  try(taxize::get_iucn(tax$species.correct2[x], 
+                   key = "814b5b4ee7bc21205e9aec80f441b7e0ff8f957a326f2c76152ac9991b521e25"), TRUE)
+}
+snow::stopCluster(cl)
+
+iucn1 <- lapply(1:length(iucn), function(x)
+  if (is.null(iucn[[x]])) {
+    c(iucnid= NA, match = "error", name = tax$species.correct2[x], uri = NA)
+  } else {
+    atributos <- unlist(attributes(iucn[[x]]))
+    out <- c(iucnid= iucn[[x]][1], atributos[1:2]) 
+  }
+)
+iucn2 <- do.call(rbind.data.frame, iucn1)
+names(iucn2) <- c("Redlist_id","match","name")
+for(i in 1:3) iucn2[,i] <- as.character(iucn2[,i])
+toto1 <- merge(toto, iucn2[,!names(iucn2) %in% "match"], 
+                  by.x = "original.search", by.y = "name", all.x = TRUE, sort= FALSE)
+
+#### PUTTING ALL TAXONOMIC INFORMATION TOGETHER AND SAVING ####
+full.tax <- merge(toto1, tps.taxonomy1[,!names(tps.taxonomy1) %in% "genus"], 
+                            by.x = "original.search", by.y = "species.correct2", all.x = TRUE, sort= FALSE)
+full.tax$source <- "the Brazilian Flora 2020 (http://floradobrasil.jbrj.gov.br)"
+full.tax$source[is.na(full.tax$authorship)] <- "Tropicos (www.tropicos.org)" 
+full.tax$id[is.na(full.tax$authorship)] <- 
+  full.tax$nameid[is.na(full.tax$authorship)]
+full.tax$authorship[is.na(full.tax$authorship)] <- 
+  full.tax$author[is.na(full.tax$authorship)]
+full.tax[full.tax$original.search %in% "Ocotea koscinskii",c("family","genus","authorship")] <-
+  c("Lauraceae","Ocote","Baitello & Brotto")
+full.tax$source[is.na(full.tax$authorship)] <- "GBIF (www.gbif.org)" 
+
+#Final search using other databases (GBIF works better)
+splist <- full.tax$original.search[is.na(full.tax$authorship)]
+miss.tax <- get_gbifid_(splist)
+miss.tax1 <- lapply(1:length(miss.tax), function(x) {
+                  out <- miss.tax[[x]][,c("usagekey","kingdom","phylum","order","class","family","genus","canonicalname",
+                                          "rank","status","matchtype","synonym","scientificname")]
+                  if (dim(out)[1] > 1 & any(out$canonicalname %in% splist[x])) 
+                    out <- out[out$canonicalname %in% splist[x], ]
+                  if (dim(out)[1] > 1 & !all(out$status %in% "SYNONYM"))
+                    out <- out[out$status %in% "ACCEPTED",]
+                  out
+})
+miss.tax1 <- do.call(rbind.data.frame,miss.tax1)
+miss.tax1$authorship <- stringr::str_trim(sapply(strsplit(miss.tax1$scientificname," "), function(x) paste(tail(x,-2), collapse = " ")))
+cols <- c("family","genus","authorship","usagekey","status","synonym")
+full.tax[full.tax$original.search %in% splist, 
+         c("family","genus","authorship","id","taxon.status","notes")] <- miss.tax1[,cols]
+full.tax$family[is.na(full.tax$family)] <- 
+  full.tax$family.correct1[is.na(full.tax$family)]
+full.tax$genus[is.na(full.tax$genus)] <- 
+  sapply(strsplit(full.tax$original.search[is.na(full.tax$genus)], " "), function(x) x[1])
+
+## Filtering and creating the final columns
+full.tax1 <- full.tax[ ,c("kingdom","phylum","classname","ordername","family","genus","original.search","authorship","Redlist_id")]
+                         #,"accepted.name","taxon.status","name.status","notes","nomenclaturestatusname","displayreference","displaydate"
+                        #"life.form","habitat","vegetation.type","vernacular.name","occurrence"
+#Taxonomic Reference
+full.tax1$TaxonomicReference <-
+  paste0("More taxonomic information on this species can be found at: http://servicos.jbrj.gov.br/flora/search/",
+    gsub(" ", "_", full.tax$original.search),".")
+full.tax1$TaxonomicReference[full.tax$source %in% "Tropicos (www.tropicos.org)"] <-
+  paste0("More taxonomic information on this species can be found at: https://www.tropicos.org/name/", full.tax$id[full.tax$source %in% "Tropicos (www.tropicos.org)"],".")
+full.tax1$TaxonomicReference[full.tax$source %in% "GBIF (www.gbif.org)"] <-
+  paste0("More taxonomic information on this species can be found at: https://www.gbif.org/species/", full.tax$id[full.tax$source %in% "GBIF (www.gbif.org)"],".")
+ids <- !(is.na(full.tax$displayreference) | full.tax$displayreference %in% c(""," ")) & !(is.na(full.tax$displaydate) | full.tax$displaydate %in% c(""," ")) 
+full.tax1$TaxonomicReference[ids] <- 
+  paste0(full.tax1$TaxonomicReference[ids], paste0(" According to Tropicos (www.tropicos.org), this species was published in: ",
+                                                  paste0(full.tax$displayreference[ids]," (", full.tax$displaydate[ids], ").")))
+ids <- !(is.na(full.tax$displayreference) | full.tax$displayreference %in% c(""," ")) & (is.na(full.tax$displaydate) | full.tax$displaydate %in% c(""," "))
+full.tax1$TaxonomicReference[ids] <- 
+  paste0(full.tax1$TaxonomicReference[ids], paste0(" According to Tropicos (www.tropicos.org), this species was published in: ",
+                                                   full.tax$displayreference[ids]))
+
+#Taxonomic Notes
+full.tax1$TaxonomicNotes.value <- NA
+ids <- full.tax$taxon.status %in% c("accepted","ACCEPTED") & (grepl("correct", full.tax$name.status) | is.na(full.tax$name.status))
+full.tax1$TaxonomicNotes.value[ids] <- paste0("This taxon is accepted and is taken as being correct by ", full.tax$source[ids], ".")
+ids <- is.na(full.tax1$TaxonomicNotes.value) & !is.na(full.tax$name.status)
+full.tax1$TaxonomicNotes.value[ids] <- paste0("This taxon is taken as ",full.tax$name.status[ids], "by ", full.tax$source[ids], ".")
+ids <- is.na(full.tax1$TaxonomicNotes.value) & full.tax$nomenclaturestatusname %in% c("No opinion","Legitimate") & full.tax$source %in% "Tropicos (www.tropicos.org)"
+full.tax1$TaxonomicNotes.value[ids] <- "This taxon is accepted in Tropicos (www.tropicos.org)."
+ids <- is.na(full.tax1$TaxonomicNotes.value)
+full.tax1[ids,]
+#### CHECK HERE?: ADD CONFLICTS BETWEEN DATABASES (ReFlora vs. GBIF) ####
+#### CHECK HERE: OTHER ACCEPTED NAMES FROM REFLORA: e.g. Schinus terebinthifolius Raddi
+
+#### Three new combintions for Calyptranthes and Marlierea:
+#"Calyptranthes brasiliensis" -> ""
+#"Marlierea eugenioides" -> "Myrcia eugenioides Cambess."
+#"Marlierea laevigata" -> "Myrcia multipunctata Mazine"
+
+
+## Final edits and saving
+names(full.tax1)[names(full.tax1) %in% "original.search"] <- "species"
+names(full.tax1)[names(full.tax1) %in% "authorship"] <- "taxonomicAuthority"
+full.tax1 <- full.tax1[order(full.tax1$species),]
+table(full.tax1$species == ncbi.taxonomy$species.correct2)
+full.tax1$classname <- ncbi.taxonomy$classname
+
+#Solving encoding problems
+full.tax1$taxonomicAuthority <- gsub("Ã¼","ü",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã£","ã",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã©","é",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã¡","á",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã¨","è",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã³","ó",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã±","ñ",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã¶","ö",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã§","ç",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ãº","ú",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã¥","a",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã´","ô",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority <- gsub("Ã\u0081vila","Ávila",full.tax1$taxonomicAuthority)
+full.tax1$taxonomicAuthority[grepl("Ã",full.tax1$taxonomicAuthority)] <- 
+  gsub("A-","í",textclean::replace_non_ascii(full.tax1$taxonomicAuthority[grepl("Ã",full.tax1$taxonomicAuthority)]))
+
+##Saving
+taxon_id <- paste0("sp", 1:dim(full.tax1)[1])
+full.tax2 <- cbind.data.frame(taxon_id, full.tax1, stringsAsFactors = FALSE)
+write.csv(full.tax2, "data/threat_taxonomy.csv", row.names = FALSE, fileEncoding = "UTF-8")
+
+
+######################
+#### COMMON NAMES ####
+######################
+#Filtering and editing
+taxon_id <- paste0("sp", 1:dim(full.tax1)[1])
+common <- cbind.data.frame(taxon_id, full.tax[ ,c("original.search","vernacular.name")],
+                           stringsAsFactors = FALSE)
+table(common$taxon_id == full.tax2$taxon_id)
+names(common) <- c("taxon_id","validName","name0")
+common1 <- common[!is.na(common$name0),]
+
+#Solving encoding problems
+common1$name0 <- gsub("Ã¼", "ü", common1$name0)
+common1$name0 <- gsub("Ã£", "ã", common1$name0)
+common1$name0 <- gsub("Ã©", "é", common1$name0)
+common1$name0 <- gsub("Ã¡", "á", common1$name0)
+common1$name0 <- gsub("Ã¨", "è", common1$name0)
+common1$name0 <- gsub("Ã³", "ó", common1$name0)
+common1$name0 <- gsub("Ã±", "ñ", common1$name0)
+common1$name0 <- gsub("Ã¶", "ö", common1$name0)
+common1$name0 <- gsub("Ã§", "ç", common1$name0)
+common1$name0 <- gsub("Ãº", "ú", common1$name0)
+common1$name0 <- gsub("Ã¥", "a", common1$name0)
+common1$name0 <- gsub("Ã´", "ô", common1$name0)
+common1$name0 <- gsub("Ãª", "ê", common1$name0)
+common1$name0 <- gsub("Ãµ", "õ", common1$name0)
+common1$name0[grepl("Ã", common1$name0)] <- 
+  gsub("A-", "í", textclean::replace_non_ascii(common1$name0[grepl("Ã", common1$name0)]))
+
+#minor fixes
+common1$name0 <- gsub("pao \\/ pau \\/ pao", "pau", common1$name0)
+common1$name0 <- gsub("pao \\/ pau", "pau", common1$name0)
+common1$name0 <- gsub("cumixá/cumichá", "cumixá", common1$name0)
+common1$name0 <- gsub("Caixeta/Caixeto", "Caixeta", common1$name0)
+
+#Breaking the info
+tutu <- strsplit(common1$name0, "\\|")
+tutu <- lapply(tutu, stringr::str_trim)
+tutu <- lapply(tutu, function(x) t(sapply(strsplit(x, '\\/'), function(y) y[1:2])))
+names(tutu) <- common1$validName
+tutu1 <- do.call('rbind.data.frame', tutu)
+tutu1 <- cbind.data.frame(validName = sapply(strsplit(rownames(tutu1), "\\."), function(x) x[1]),
+                          language = as.character(tutu1[,2]),
+                          name = stringr::str_to_title(as.character(tutu1[,1])),
+                          stringsAsFactors = FALSE)
+tutu1$language <- stringr::str_replace_all(tutu1$language,
+                                           c("PORTUGUES" = "Portuguese","ESPANHOL" = "Spanish","INGLES" = "English", "KAXINAWA" = "South American Indian (Other)"))
+## Saving
+tutu2 <- merge(tutu1, common1[,1:2], by = "validName", all.x = TRUE)
+tutu2 <- tutu2[order(tutu2$validName),]
+tutu2 <- tutu2[,c("taxon_id","language","name")]
+write.csv(tutu2, "data/threat_commonnames.csv", row.names = FALSE, fileEncoding = "UTF-8")
+
+##################
+#### SYNONYMS ####
+##################
+flora.syn <- lapply(tax$species.correct2, flora::get.synonyms)
+flora.syn.authot <- lapply(1:length(flora.syn), function(x)
+  if (is.null(flora.syn[[x]])) {
+  } else {
+    validName <- tax$species.correct2[x]
+    out <- flora::get.taxa(flora.syn[[x]],replace.synonyms = FALSE, suggest.names = FALSE,
+                           life.form = FALSE, habitat = FALSE, vegetation.type = FALSE,
+                           vernacular = FALSE, states = FALSE, establishment = FALSE,
+                           drop = c(""))
+    name <- flora.syn[[x]]
+    speciesName <- flora.syn[[x]]
+    speciesAuthor <- out$authorship
+    cbind.data.frame(validName, name, speciesName, speciesAuthor, 
+                     stringsAsFactors = FALSE)
+  }
+)
+synonyms <- do.call(rbind.data.frame, flora.syn.authot)
+
+##Final Edits 
+#Solving encoding problems
+synonyms$speciesAuthor <- gsub("Ã¼","ü",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã£","ã",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã©","é",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã¡","á",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã¨","è",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã³","ó",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã±","ñ",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã¶","ö",synonyms$speciesAuthor)
+synonyms$speciesAuthor <- gsub("Ã§","ç",synonyms$speciesAuthor)
+
+#getting and removing infra-specific synonyms
+synonyms$infraType <- NA
+synonyms$infraType[grepl(" var\\. ",synonyms$speciesName)] <- "var."
+synonyms$speciesName <- gsub(" var\\. "," ",synonyms$speciesName)
+synonyms$infraType[grepl(" subsp\\. ",synonyms$speciesName)] <- "subsp."
+synonyms$speciesName <- gsub(" subsp\\. "," ",synonyms$speciesName)
+synonyms$infraType[grepl(" fo\\. ",synonyms$speciesName)] <- "fo."
+synonyms$speciesName <- gsub(" fo\\. "," ",synonyms$speciesName)
+
+#isolation the infra-specific author, name and cleaning speciesName
+synonyms$infrarankAuthor <- NA
+synonyms$infrarankAuthor[!is.na(synonyms$infraType)] <-
+  synonyms$speciesAuthor[!is.na(synonyms$infraType)]
+synonyms$speciesAuthor[!is.na(synonyms$infraType)] <- NA
+
+synonyms$infrarankName <- NA
+synonyms$infrarankName[!is.na(synonyms$infraType)] <-
+  sapply(strsplit(synonyms$speciesName[!is.na(synonyms$infraType)], " "), function(x) x[3])
+synonyms$speciesName <- 
+  stringr::str_trim(sapply(strsplit(synonyms$speciesName, " "), function(x) paste(x[1],x[2], sep=" ")))
+
+## Saving
+synonyms1 <- merge(synonyms, tax[,c("taxon_id","species.correct2")],
+                  by.x = "validName", by.y = "species.correct2", all.x = TRUE)
+synonyms1 <- synonyms1[order(synonyms1$validName),]
+synonyms1 <- synonyms1[,c("taxon_id","name","speciesName","infrarankName","infraType","speciesAuthor","infrarankAuthor")]
+write.csv(synonyms, "data/threat_synonyms.csv", row.names = FALSE, fileEncoding = "UTF-8")
+
+
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+##############################
+#### HABITATS AND ECOLOGY ####
+##############################
+rm(list = ls())
+
+## Getting Flora do BRasil information ##
+tax  <- readRDS("data/assess_iucn_spp.rds")[,1:3]
+toto <- flora::get.taxa(tax$species.correct2, replace.synonyms = FALSE, suggest.names = FALSE,
+                        life.form = TRUE, habitat = TRUE, vegetation.type = TRUE,
+                        vernacular = FALSE, states = FALSE, establishment = TRUE,
+                        drop = c(""),
+                        suggestion.distance = 0.9, parse = FALSE)
+hab <- cbind.data.frame(tax, 
+                         toto[,c("life.form","habitat","vegetation.type","establishment")],
+                         stringsAsFactors = FALSE)
+
+#### OBTAINING GOOD GUESSES OF GENERATION LENGTH BASED ON SPECIES ECOLOGICAL GROUPS AND MAXIMUM SIZE ####
+path = "C:/Users/renato/Documents/raflima/Pos Doc/Databases/TreeCo Database Management"
+source(paste(path,"trait_data_prep.R",sep="/"))
+
+## List of species
+res <- readRDS("data/assess_iucn_spp.rds")
+res$genus <- sapply(strsplit(res$species.correct2," "), function(x) x[1])
+res$taxon.rank <- "species"
+res <- res[,c("species.correct2","family.correct1","genus","species.correct2","taxon.rank")]
+names(res) <- c("Name_submitted","family","genus","species.correct","taxon.rank")
+res$ordem.spp = 1:dim(res)[1]
+
+## South American tree species list
+trees.sa = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv",as.is=TRUE,na.string=c(""," ",NA))
+## Reading trait data per taxonomic level ####
+trait.spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species traits//Atributos das espécies//traits.species.csv",as.is=T)
+trait.gen = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species traits//Atributos das espécies//traits.genus.csv",as.is=T)
+trait.fam = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species traits//Atributos das espécies//traits.family.csv",as.is=T)
+traits1 = trait_data_prep(res, trees.sa, trait.spp, trait.gen, trait.fam)$data_frame
+table(res$species.correct == traits1$Name_submitted)
+traits1$wsg_gcm3 <- as.double(traits1$wsg_gcm3)
+traits1$SeedMass_g <- as.double(traits1$SeedMass_g)
+
+
+## Getting the final table
+res1 <- res[,c("family", "species.correct")]
+names(res1) <- c("family.correct1", "species.correct2")
+aux <- merge(res[,c("family","species.correct")], trees.sa[,c(1:20,74:75,138:140,144:146,170:177)], 
+             by.x = "species.correct", by.y = "SpeciesKTSA", all.x = TRUE)
+aux <- aux[order(aux$species.correct),]
+
+# Establishment in respect to the AF
+res1$establishment <- traits1$establishment.AF
+res1$establishment[is.na(res1$establishment)] <- traits1$establishment.BR[is.na(res1$establishment)]
+#res1$establishment[is.na(res1$establishment)] <- "check"
+res1$establishment[res1$species.correct2 %in% c("Ormosia monosperma")] <- "native"
+res1$establishment[res1$species.correct2 %in% c("Bunchosia glandulifera","Bauhinia galpinii","Tarenaya spinosa")] <- "exotic"
+res1$establishment[(is.na(res1$establishment) | res1$establishment == "check") & res1$species.correct2 %in% c("Cereus repandus","Eugenia acapulcensis","Humiriastrum cuspidatum","Garcinia longifolia","Grabowskia boerhaaviifolia",
+                                                                                                              "Maytenus macrocarpa","Miconia pausana","Mimosa rufescens","Myrceugenia obtusa","Ocotea megaphylla","Rauvolfia tetraphylla",
+                                                                                                              "Sloanea multiflora","Solanum confusum","Solanum lanceifolium","Vachellia macracantha","Zanthoxylum schreberi")] <- "not in the AF"
+res1$establishment[res1$establishment %in% "native" & grepl("not in B",aux$establishment.BR) & !is.na(aux$Distribution.VCS)] <- "AF native but not in Brazil"
+
+## Flagging species according to their habit
+res1$habito <- traits1$habito
+res1$habito[res1$habito %in% c("1","1?")] = "tree"  
+res1$habito[res1$habito %in% c("0.5","0.5?")] = "shrub"  
+res1$habito[res1$habito %in% c("0")] = "not arborescent" 
+
+## Flagging species according to their growth form
+#1 Tree - size unknown Tree (any size); 2 Tree - large Large tree (>15 m); 3 Tree - small Small tree (1-15 m)
+#4 Shrub - size unknown; 5 Shrub (>1m); 6 Shrub - small (<1m)
+#16 Succulent - form unknown; 18 Succulent - shrub (generally <1 m); 19 Succulent - tree (generally >1 m); #20 Fern
+res1$life.form <- traits1$life.form
+res1$life.form[res1$life.form %in% "palm" & !is.na(aux$Growth.habits)] <- 
+  aux$Growth.habits[res1$life.form %in% "palm" & !is.na(aux$Growth.habits)]
+res1$life.form[res1$life.form %in% "succulent_tree" & !is.na(aux$Growth.habits) & grepl("Succulent", aux$Growth.habits)] <- 
+  aux$Growth.habits[res1$life.form %in% "succulent_tree" & !is.na(aux$Growth.habits) & grepl("Succulent", aux$Growth.habits)]
+res1$life.form[res1$life.form %in% "succulent_tree"] <- "Succulent tree"
+res1$life.form[res1$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & grepl("^Tree$", aux$Growth.habits)] <- "Woody tree (Tree)"
+res1$life.form[res1$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & grepl("^Shrub or treelet$", aux$Growth.habits)] <- "Woody tree (Shrub or treelet)"
+res1$life.form[res1$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & grepl("^Tree or shrub$", aux$Growth.habits)] <- "Woody tree (Tree or shrub)"
+res1$life.form[res1$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & grepl("^Hemiepiphytic", aux$Growth.habits)] <- "Woody tree (Hemiepiphytic)"
+res1$life.form[res1$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & grepl("^Lianescent", aux$Growth.habits)] <- "Woody tree (Lianescent)"
+res1$life.form[res1$life.form %in% "woody_vines_and_subshrubs"] <- "Woody tree (Lianescent)"
+res1$life.form[res1$life.form %in% "palm"] <- "Palm or palmoid"
+res1$life.form[res1$life.form %in% "palmoids"] <- "Palm or palmoid"
+res1$life.form[res1$life.form %in% "tree_fern"] <- "Tree fern"
+res1$life.form[res1$life.form %in% "woody_bamboo"] <- "Woody bamboo"
+res1$life.form[res1$life.form %in% "woody_tree" & res1$habito %in% "shrub"] <- "Woody tree (Shrub or treelet)"
+res1$life.form[res1$life.form %in% "woody_tree" & res1$habito %in% "tree"] <- "Woody tree (Tree)"
+res1$life.form[res1$life.form %in% "woody_tree"] <- "Woody tree"
+table(res1$life.form)
+
+## Flagging species according to their mean maximum size
+res1$MaxHeight <- traits1$MaxHeight_m
+res1$MaxHeight[is.na(res1$MaxHeight)] <- as.double(aux$Potential.height[is.na(res1$MaxHeight)])
+res1$MaxHeight[is.na(res1$MaxHeight) & !is.na(traits1$MaxDbh_cm)] <- as.double(aux$Potential.height[is.na(res1$MaxHeight)])
+table(is.na(res1$MaxHeight))
+res1[res1$habito %in% "shrub" & !is.na(res1$MaxHeight) & res1$MaxHeight >15,]
+res1[res1$habito %in% "tree" & !is.na(res1$MaxHeight) & res1$MaxHeight <5,]
+
+## Classifying species into the growth from classifications
+res1$GF <- findInterval(res1$MaxHeight, c(0,5,15))
+res1$GF[res1$GF %in% 1 & !is.na(aux$Potential.height) & aux$Potential.height >15] <- 2
+res1$GF[res1$GF %in% 2 & res1$life.form %in% "Woody tree (Shrub or treelet)" & !is.na(aux$Potential.height) & aux$Potential.height <5] <- 1
+res1$GF[res1$GF %in% 2 & res1$habito %in% "shrub"] <- 1
+res1$GF[res1$GF %in% 3 & res1$life.form %in% "Woody tree (Shrub or treelet)" & !is.na(aux$Potential.height) & aux$Potential.height <5] <- 1
+res1$GF[res1$GF %in% 3 & res1$habito %in% "shrub"] <- 2
+res1$GF[is.na(res1$GF) & res1$habito %in% "shrub" & res1$life.form  %in% "Woody tree (Shrub or treelet)"] <- 1
+res1$GF[is.na(res1$GF) & traits1$life.form.reflora %in% c("Shrub","Subshrub") & res1$life.form  %in% "Woody tree (Shrub or treelet)"] <- 1
+res1$GF[is.na(res1$GF) & traits1$life.form.reflora %in% c("Shrub|Tree") & res1$life.form  %in% "Woody tree (Tree or shrub)"] <- 2
+res1$GF <- stringr::str_replace_all(res1$GF, c("1" = "large_shrub", "2" = "small_tree", "3" = "large_tree"))
+res1$GF[is.na(res1$GF)] <- "tree_unknown"
+table(res1$GF, useNA = "always")
+traits1$life.form.reflora[is.na(res1$GF)]
+
+## Flagging species according to their ecological group
+res1$ecol.group <- traits1$ecological.group
+res1$ecol.group[res1$ecol.group %in% 1.5] <- 1
+res1$ecol.group[res1$ecol.group %in% 2.5] <- 3
+res1$ecol.group[res1$ecol.group %in% 3.5] <- 4
+res1$ecol.group[is.na(res1$ecol.group) & !res1$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae","Anacardiaceae","Sapindaceae","Lauraceae","Moraceae","Myrtaceae","Symplocaceae") & 
+                  !is.na(traits1$wsg_gcm3) & traits1$wsg_gcm3 < 0.4 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g < 0.1] <- 1
+res1$ecol.group[is.na(res1$ecol.group) & !res1$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                  !is.na(traits1$wsg_gcm3) & traits1$wsg_gcm3 < 0.55 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g < 0.25] <- 2
+res1$ecol.group[is.na(res1$ecol.group) & !res1$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                  !is.na(traits1$wsg_gcm3) & traits1$wsg_gcm3 > 0.85 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g > 1] <- 4
+res1$ecol.group[is.na(res1$ecol.group) & !res1$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                  !is.na(traits1$wsg_gcm3) & traits1$wsg_gcm3 > 0.7 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g > 0.75] <- 3
+res1$ecol.group <- stringr::str_replace_all(res1$ecol.group, c("1" = "pioneer", "2" = "early_secondary", "3" = "late_secondary", "4" = "climax"))
+res1$ecol.group[is.na(res1$ecol.group)] <- "unknown"
+table(res1$ecol.group, useNA = "always")
+
+
 ##################################################
 #### GENERATION LENGHT AND MATURE INDIVIDUALS ####
 ##################################################
-rm(list=ls())
+
+#### SETTING THE PROXIES OF GENERATION LENGTH FOR EACH SPECIES ####
+
+## Defining the generation lengths per combination of GF and ecol.group
+g1 <- sort(paste(c(1,3,2,4), sort(unique(res1$GF)),sep="."))
+g2 <- sort(paste(c(4,2,3,1,5), sort(unique(res1$ecol.group)),sep = "."))
+combo <- expand.grid(EG = g2, GF = g1)
+
+#Generation lengths
+combo$GL <- c(10, 20, 25, 35, 25, # for shrubs
+              20, 40, 50, 65, 45, # for small trees
+              30, 50, 65, 80, 60, # for large trees
+              25, 45, 50, 60, 50) # for trees unknown
+#Diameter at maturity 
+combo$DBH <- c(5, 5, 5, 5, 5, # for shrubs
+               7.5, 10, 15, 20, 15, # for small trees
+               10, 20, 30, 40, 25, # for large trees
+               7.5, 15, 20, 30, 15) # for trees unknown
+#Proportion of mature individuals in the population (from code '')
 
 
-#### OBTAINING GOOD GUESSES OF GENERATION LENGTH BASED ON SPECIES ECOLOGICAL GROUPS AND MAXIMUM SIZE ####
-spp <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/DomainsKnownTreesNeotropics.csv", as.is = TRUE, na.string = c("", " ", NA))
+combo[,1] <- gsub('[0-9:]\\.',"", combo[,1])
+combo[,2] <- gsub('[0-9:]\\.',"", combo[,2])
 
-#### GETTING THE PROXIES OF GENERATION LENGTH FOR EACH SPECIES ####
+
+
+#### PUTTING ALL FIELDS IN THE IUCN SIS FORMAT ####
+
+
+#HabitatDocumentation.narrative:	Habitat Information.
+#GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup:	(Coding Option, e.g. 3.4)
+#GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName:	(e.g. Habitat description, e.g. Shrubland ->Shrubland - Temperate)
+#GeneralHabitats.GeneralHabitatsSubfield.suitability:	Suitability - defaults to suitable if not provided
+#GenerationLength.range
+#GenerationLength.justification
+#FemaleMaturitySize.size:	Size at Maturity (in cms): Female
+#MaleMaturitySize.size:	Size at Maturity (in cms): Male
+#MaxSize.size	Maximum Size (in cms)
+#System.value:	System (can have more than one value, separated by pipes ("|"))
+#PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsLookup: i.e. the Code for the Plants e.g. for Tree - Large , its TL.
+#PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName:	Provide the description here if you have it e.g. Tree - Large
+
+
+
+
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+##################################################
+#### RANGE DESCRIPTION AND COUNTRY OCCURRENCE ####
+##################################################
+
+
+
+
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+#########################################################
+#### USE AND TREAD, THREATS AND CONSERVATION ACTIONS ####
+#########################################################
+
+
+
 
 #####################################################################################################################################################################
 #####################################################################################################################################################################
@@ -693,7 +1304,7 @@ spp <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF
 rm(list=ls())
 
 ## Getting the list of species in the Atlantic Forest
-prev.assess <- readRDS("assess_iucn_spp.rds")
+prev.assess <- readRDS("data/assess_iucn_spp.rds")
 prev.assess <- prev.assess[,1:2]
 
 ## Getting the IUCN assessments for Brazil (CNCFlora) - National level
