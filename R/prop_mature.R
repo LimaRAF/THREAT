@@ -65,7 +65,7 @@ rawdata <- rawdata[!duplicated(rawdata$ordem),]
 
 #Getting the number of individuals per species per dbh interval
 length(unique(rawdata$SiteCode)) # how many surveys?
-sum(result1$N) # how many tree measurements?
+dim(rawdata)[1] # how many tree measurements?
 
 result <- aggregate(rawdata$ordem, list(rawdata$Latin), length)
 names(result) <- c("species.correct", "N")

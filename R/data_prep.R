@@ -1280,10 +1280,14 @@ combo$p.est <- c(1, 1, 1, 1, 1, # for shrubs
                  0.7213, 0.5998, 0.4927, 0.2868, 0.5122, # for small trees
                  0.5842, 0.4498, 0.3047, 0.2533, 0.3342, # for large trees
                  0.6371, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
+combo$p.ci <- c("0.99-1.1", "0.975-1.075", "0.95-1.05", "0.90-1.025", "0.95-1.05", # for shrubs
+                 "0.5838-0.8587", "0.5212-0.6783", "0.4304-0.555", "0.1829-0.3906", "0.4737-0.5507", # for small trees
+                 "0.5141-0.6544", "0.417-0.4825", "0.2756-0.3338", "0.1827-0.3238", "0.3161-0.3524", # for large trees
+                 "0.6206-0.6536", "0.4352-0.4707", "0.3306-0.3646", "0.2624-0.2949", "0.4352-0.4707") # for trees unknown
 #Merging the info
 combo$str.match <- paste(combo$EG, combo$GF, sep = "_") 
 hab$str.match <- paste(hab$ecol.group, hab$GF, sep = "_")
-hab1 <- dplyr::left_join(hab, combo[,c("str.match","GL","DBH","p.est")], by= "str.match") 
+hab1 <- dplyr::left_join(hab, combo[,c("str.match","GL","DBH","p.est","p.ci")], by= "str.match") 
 
 #Adding Proportion of mature individuals in the population (from code '')
 p.est <- read.csv("data/prop_mature.csv", as.is = TRUE)
@@ -1327,20 +1331,29 @@ hab1$vt <- gsub("Campo de Várzea", "4.6", hab1$vt)
 hab1$vt <- gsub("Palmeiral", "2.1", hab1$vt)
 hab1$vt <- gsub("Vegetação Aquática", "4.6", hab1$vt)
 hab1$vt <- sapply(strsplit(hab1$vt,"\\|"), 
-                  function(x) paste(sort(unique(x), na.last = T), collapse = "|", sep=""))
+                  function(x) paste(sort(as.double(unique(x)), na.last = T), collapse = "|", sep=""))
 hab1$vt[hab1$vt %in% "NA"] <- "1.6"
 names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup"
   
 #GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName:	(e.g. Habitat description, e.g. Shrubland ->Shrubland - Temperate)
-hab1$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName <- NA
+hab1$vt <- hab1$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup
+hab1$vt <- gsub("^1.5$", "Subtropical/Tropical Dry Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1.6$", "Subtropical/Tropical Moist Lowland Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1.7$", "Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1.8$", "Subtropical/Tropical Swamp Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^2.1$", "Dry Savanna", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^3.5$", "Subtropical/Tropical Dry Shrubland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^4.6$", "Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^4.7$", "Subtropical/Tropical High Altitude Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^6$", "Inland Rocky Areas", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^14.5$", "Urban Areas", hab1$vt, perl = TRUE)
+names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName"
+
 
 #GeneralHabitats.GeneralHabitatsSubfield.suitability:	Suitability - defaults to suitable if not provided
 
 #GenerationLength.range
 names(hab1)[grepl("^GL", names(hab1))] <- "GenerationLength.range"
-
-#GenerationLength.justification
-hab1$GenerationLength.justification <- NA 
 
 #FemaleMaturitySize.size:	Size at Maturity (in cms): Female
 #MaleMaturitySize.size:	Size at Maturity (in cms): Male
@@ -1380,6 +1393,14 @@ hab1$pgf1 <- gsub("^20$", "Fern", hab1$pgf1)
 names(hab1)[grepl("^pgf$", names(hab1))] <- "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsLookup"
 names(hab1)[grepl("^pgf1$", names(hab1))] <- "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName"
 
+#GenerationLength.justification
+standard.texts <- data.frame(GL1 = "Field measurements of generation length are largely missing for Neotropical trees. Therefore, an approach based on tree functional types was used to set proxies of species generation lengths based on their growth form and ecological group. Values of the proxies ranged from 10 (for pioneer shrubs) to 80 years (large, climax trees), which are reasonable for tropical trees obtained using IUCN approximative method number 3 (IUCN 2019, p.29). This species was classified as ",
+                             GL2 = "More details on this approximate method to define species generation lengths can be found in Lima et al. (XXXX).",
+                             stringsAsFactors = FALSE)
+hab1$GenerationLength.justification <- paste0("standard_text_GL1", hab1$PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName,
+                                                 ", regarding its growth form (maximum height of ", hab1$MaxSize.size/100," m), and as ",
+                                                 hab1$ecol.group,", regarding its ecological group. standard_text_GL2")
+
 ##Organizing and saving
 hab2 <- hab1[order(hab1$species.correct),]
 cols <- c("taxon_id","Name_submitted",
@@ -1394,18 +1415,12 @@ cols <- c("taxon_id","Name_submitted",
           "MaxSize.size",
           "System.value",
           "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsLookup",
-          "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName"
+          "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName",
+          "p.est","p.ci"
 )
 hab2 <- hab2[, cols]
+write.csv(standard.texts, "data/threat_standard_texts.csv", row.names = FALSE, fileEncoding = "UTF-8")
 write.csv(hab2, "data/threat_habitats.csv", row.names = FALSE, fileEncoding = "UTF-8")
-
-
-
-
-
-
-
-
 
 #####################################################################################################################################################################
 #####################################################################################################################################################################
