@@ -910,8 +910,6 @@
 "Athenaea sellowiana","Aureliana sellowiana","Aureliana sellowiana","(Sendtn.) Barboza & Stehmann",NA,NA,NA
 "Athenaea tomentosa","Aureliana tomentosa","Aureliana tomentosa","Sendtn.",NA,NA,NA
 "Athenaea velutina","Aureliana velutina","Aureliana velutina","Sendtn.",NA,NA,NA
-"Athroostachys capitata","Merostachys capitata","Merostachys capitata","Hook.",NA,NA,NA
-"Athroostachys capitata","Merostachys capitata var. angustifolia","Merostachys capitata",NA,"var.","Döll","angustifolia"
 "Attalea apoda","Attalea camposportoana","Attalea camposportoana","Burret",NA,NA,NA
 "Attalea burretiana","Attalea salvadorensis","Attalea salvadorensis","Glassman",NA,NA,NA
 "Attalea burretiana","Attalea concentrista","Attalea concentrista","Bondar",NA,NA,NA
@@ -930,10 +928,6 @@
 "Attalea phalerata","Scheelea corumbaensis","Scheelea corumbaensis","(Barb.Rodr.) Barb.Rodr.",NA,NA,NA
 "Attalea phalerata","Scheelea martiana","Scheelea martiana","Burret",NA,NA,NA
 "Attalea phalerata","Scheelea microspadix","Scheelea microspadix","Burret",NA,NA,NA
-"Aulonemia radiata","Aulonemia fimbriatifolia","Aulonemia fimbriatifolia","L.G.Clark",NA,NA,NA
-"Aulonemia radiata","Aulonemia glaziovii","Aulonemia glaziovii","(Hack.) McClure",NA,NA,NA
-"Aulonemia radiata","Aulonemia ramosissima","Aulonemia ramosissima","(Hack.) McClure",NA,NA,NA
-"Aulonemia setosa","Eremocaulon setosum","Eremocaulon setosum","Londoño & L.G.Clark",NA,NA,NA
 "Aureliana wettsteiniana","Bassovia wettsteiniana","Bassovia wettsteiniana","Witasek",NA,NA,NA
 "Austroeupatorium inulaefolium","Austroeupatorium inulifolium","Austroeupatorium inulifolium","(Kunth) R.M.King & H.Rob.",NA,NA,NA
 "Austroeupatorium inulaefolium","Austroeupatorium inuliifolium","Austroeupatorium inuliifolium","(Kunth) R.M.King & H.Rob.",NA,NA,NA
@@ -2259,9 +2253,6 @@
 "Chrysophyllum viride","Chloroluma viridis","Chloroluma viridis","(Mart. & Eichler ex Miq.) Aubrév.",NA,NA,NA
 "Chrysophyllum viride","Chrysophyllum perfidum","Chrysophyllum perfidum","Allemão",NA,NA,NA
 "Chrysophyllum viride","Fibrocentrum glaziovianum","Fibrocentrum glaziovianum","Pierre ex Glaz.",NA,NA,NA
-"Chusquea acuminata","Chusquea tenuis","Chusquea tenuis","Glaz. ex E.G.Camus",NA,NA,NA
-"Chusquea juergensii","Chusquea swallenii","Chusquea swallenii","McClure & L.B. Sm.",NA,NA,NA
-"Chusquea kleinii","Chusquea capituliflora var. pubescens","Chusquea capituliflora",NA,"var.","McClure & L.B.Sm.","pubescens"
 "Cinnamodendron axillare","Canella axillaris","Canella axillaris","Nees et Mart.",NA,NA,NA
 "Cinnamodendron dinisii","Capsicodendron dinisii","Capsicodendron dinisii","(Schwacke) Occhioni",NA,NA,NA
 "Cinnamodendron dinisii","Capsicodendron pimenteira","Capsicodendron pimenteira","Hoehne",NA,NA,NA
@@ -3341,8 +3332,6 @@
 "Eremanthus polycephalus","Vanillosmopsis saligna","Vanillosmopsis saligna","(DC.) Sch. Bip.",NA,NA,NA
 "Eremanthus polycephalus","Albertinia polycephala","Albertinia polycephala","DC.",NA,NA,NA
 "Eremanthus polycephalus","Albertinia saligna","Albertinia saligna","Mart. ex DC.",NA,NA,NA
-"Eremocaulon asymmetricum","Criciuma asymmetrica","Criciuma asymmetrica","Soderstr. & Londoño",NA,NA,NA
-"Eremocaulon capitatum","Guadua capitata","Guadua capitata","(Trin.) Munro",NA,NA,NA
 "Eriotheca globosa","Bombax globosum","Bombax globosum","Aubl.",NA,NA,NA
 "Eriotheca globosa","Caryocar punctatum","Caryocar punctatum","Miq. ex Wittm.",NA,NA,NA
 "Eriotheca gracilipes","Bombax gracilipes","Bombax gracilipes","K.Schum.",NA,NA,NA
@@ -4184,9 +4173,6 @@
 "Graffenrieda intermedia","Graffenrieda stenopetala","Graffenrieda stenopetala","Ule",NA,NA,NA
 "Griselinia ruscifolia","Decostea ruscifolia","Decostea ruscifolia","Clos",NA,NA,NA
 "Griselinia ruscifolia","Griselinia ruscifolia var. itatiaiae","Griselinia ruscifolia",NA,"var.","(Wawra) Taub.","itatiaiae"
-"Guadua paniculata","Chusquea spinosa","Chusquea spinosa","E.Fourn.",NA,NA,NA
-"Guadua tagoara","Bambusa tagoara","Bambusa tagoara","Nees",NA,NA,NA
-"Guadua trinii","Bambusa trinii","Bambusa trinii","Nees",NA,NA,NA
 "Guapira areolata","Guapira paraguayensis","Guapira paraguayensis","(Heimerl) Lundell",NA,NA,NA
 "Guapira areolata","Pisonia areolata","Pisonia areolata","Heimerl",NA,NA,NA
 "Guapira areolata","Pisonia cacerensis","Pisonia cacerensis","Hoehne",NA,NA,NA
@@ -5659,7 +5645,6 @@
 "Meriania paniculata","Meriania sanchezii","Meriania sanchezii","R.Goldenb.",NA,NA,NA
 "Meriania robusta","Meriania pergamentacea","Meriania pergamentacea","Cogn.",NA,NA,NA
 "Merianthera sipolisii","Meriania sipolisii","Meriania sipolisii","Glaz. & Cogn.",NA,NA,NA
-"Merostachys multiramea","Merostachys anomala","Merostachys anomala","Dutra",NA,NA,NA
 "Metrodorea mollis","Metrodorea mollis var. glabrata","Metrodorea mollis",NA,"var.","Taub.","glabrata"
 "Metrodorea nigra","Metrodorea atropurpurea","Metrodorea atropurpurea","Fisch. ex Lem.",NA,NA,NA
 "Metrodorea nigra","Metrodorea brevifolia","Metrodorea brevifolia","(Engl.) Engl.",NA,NA,NA
@@ -9026,7 +9011,6 @@
 "Remijia ferruginea","Cinchona vellozii","Cinchona vellozii","A.St.-Hil.",NA,NA,NA
 "Retiniphyllum laxiflorum","Patima laxiflora","Patima laxiflora","Benth.",NA,NA,NA
 "Rhamnidium elaeocarpum","Rhamnidium cognatum","Rhamnidium cognatum","Reissek",NA,NA,NA
-"Rhipidocladum racemiflorum","Merostachys racemiflora","Merostachys racemiflora","(Steud.) E. Fourn.",NA,NA,NA
 "Rhizophora harrisonii","Rhizophora brevistyla","Rhizophora brevistyla","Salvoza",NA,NA,NA
 "Rhizophora mangle","Rhizophora americana","Rhizophora americana","Nutt.",NA,NA,NA
 "Rhizophora mangle","Rhizophora mangle var. samoensis","Rhizophora mangle",NA,"var.","Hochr.","samoensis"

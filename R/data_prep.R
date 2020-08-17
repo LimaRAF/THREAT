@@ -1,17 +1,19 @@
 #####################################################
+#####################################################
 #### PREPARING DATA FROM THREAT IUCN ASSESSMENTS ####
+#####################################################
 #####################################################
 #rm(list=ls())
 
-#### LOADING PACKAGES ###
+#### LOADING PACKAGES ####
 library(data.table)
 library(rgeos)
 library(dplyr)
 source("R/suggestions_for_ConR.r")
 
-#########################################
+########################################H
 #### SIMPLIFIED NEOTROPICAL COUNTOUR ####
-#########################################
+########################################H
 neotrop <- readRDS("E:/ownCloud/W_GIS/Am_Lat_ADM_GADM_v3.6/gadm36_Neotrop_0_sp.rds")
 neotrop <- gBuffer(neotrop, byid=TRUE, width=0)
 
@@ -59,11 +61,11 @@ saveRDS(neotrop.simp3, file = "data//Contour_Neotrop_simplified_tol_01.rds")
 saveRDS(neotrop.simp4, file = "data//Contour_Neotrop_simplified_tol_005_no_small.rds")
 
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-########################
-#### OCCURRENCE DATA ###
-########################
+#####################################################################################################################################################################h
+#####################################################################################################################################################################h
+##################################H
+#### HERBARIUM OCCURRENCE DATA ####
+##################################H
 
 #### LOADING OCCURRENCE DATA ###
 ## Loading the paths to occurrence data 
@@ -83,11 +85,11 @@ oc.data = rbindlist(lista) #merging the unicate and duplicated tables
 rm(lista, tmp, paths, i)
 gc()
 
-#################################
-#### MANAGING OCCURRENCE DATA ###
-#################################
+#################################H
+#### MANAGING OCCURRENCE DATA ####
+#################################H
 
-#### REMOVING SPECIES NOT IN THE ATLANTIC FOREST CHECKLIST ####
+#### REMOVING SPECIES NOT IN THE ATLANTIC FOREST CHECKLIST ###
 ## Creating a vector with the names of specimens determined at species and infra-specific levels
 oc.data[,species.correct2 := sapply(strsplit(species.correct1," "), function(x) paste(x[1], x[2],sep=" ")),]
 setkeyv(oc.data, "species.correct2") ## setting 'species.correct2' as key to the data.table (makes computations faster)
@@ -110,7 +112,7 @@ oc.data <- oc.data[species.correct2 %in% c(spp.af.true, miss.spp),] # occurrence
 #oc.data[,uniqueN(species.correct2)] # 5183 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### SOME LAST MINUTE, NEW SYNONYMS TO BE REPLACED ####
+#### SOME LAST MINUTE, NEW SYNONYMS TO BE REPLACED ###
 oc.data[species.correct2 %in% "Brasiliopuntia schulzii", status := "ok"]
 oc.data[species.correct2 %in% "Brasiliopuntia schulzii", species.correct2 := "Brasiliopuntia brasiliensis"]
 oc.data[species.correct2 %in% "Derris leucanthus", status := "ok"]
@@ -128,7 +130,7 @@ oc.data[species.correct2 %in% c("Ossaea loligomorpha","Miconia loligomorpha"), s
 oc.data[species.correct2 %in% c("Plinia brachybotrya","Plinia pseudodichasiantha"), species.correct2 := "Plinia pseudodichasiantha"]
 #oc.data[,uniqueN(species.correct2)] # 5178 species
 
-#### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF)
+#### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF) ###
 rm.spp <- c("Annona calophylla","Bauhinia galpinii","Bunchosia glandulifera","Cereus repandus","Eugenia acapulcensis",      
             "Garcinia longifolia","Grabowskia boerhaaviifolia","Humiriastrum cuspidatum","Ixora grandifolia","Maytenus macrocarpa","Miconia pausana",           
             "Mimosa caesalpiniifolia","Mimosa rufescens","Myrceugenia obtusa","Myrsine ligustrina","Ocotea megaphylla", 
@@ -139,9 +141,9 @@ oc.data <- oc.data[!species.correct2 %in% rm.spp,] # occurrences inside the AF
 
 ### Removing all woody bamboos - No abudance data ###
 oc.data <- oc.data[!family.correct1 %in% "Poaceae",]
-#oc.data[,uniqueN(species.correct2)] # 5150 species
+#oc.data[,uniqueN(species.correct2)] # 5101 species
 
-#### REMOVING DUPLICATES ####
+#### REMOVING DUPLICATES ###
 gc()
 toto1 <- dim(oc.data)[1]
 ## Ordering the dataset to more-easily remove duplicates
@@ -157,19 +159,19 @@ oc.data <- unique(oc.data, by = "dup.ID1")
 #removing the extra column created for ranking
 #oc.data[,dup.ID1:=NULL] 
 toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 730,297 (23.68%) removed
-# oc.data[,uniqueN(species.correct2)] # 5150 species
+# oc.data[,uniqueN(species.correct2)] # 5101 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### REMOVING DATA NOT GEOGRAPHICALLY VALIDATED #### 
+#### REMOVING DATA NOT GEOGRAPHICALLY VALIDATED ###
 ## But keeping records for species without coordinates but know to be in the Atlantic Forest
 gc()
 toto2 = dim(oc.data)[1]
 oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" | 
                      (geo.check1 %like% "ok_state" & af.check2 == TRUE)]
-#oc.data[,uniqueN(species.correct2)] # 5150 species
+#oc.data[,uniqueN(species.correct2)] # 5101 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### REMOVING MISSING COORDINATES ####
+#### REMOVING MISSING COORDINATES ###
 ## Doing it after, only before distribution analyses 
 oc.data$longitude.work1[is.na(oc.data$longitude.work1)] <-
         oc.data$longitude.work[is.na(oc.data$longitude.work1)]
@@ -182,10 +184,10 @@ oc.data$latitude.work1[oc.data$longitude.work1 %in% "no_coord" | oc.data$latitud
 # range(as.double(oc.data$longitude.work1), na.rm = TRUE)
 toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 961,869 (40.87% of the non-duplicated) removed
 100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.19% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5150 species
+#oc.data[,uniqueN(species.correct2)] # 5101 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### REMOVING SPATIAL DUPLICATES ####
+#### REMOVING SPATIAL DUPLICATES ###
 gc()
 toto3 = dim(oc.data)[1]
 setkeyv(oc.data, "species.correct2") ## setting 'species.correct2' as key to the data.table (makes computations faster)
@@ -196,10 +198,10 @@ oc.data[,coord.string:=NULL]
 oc.data[,spat.dups:=NULL] 
 toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 572,540 (24.33% of remaining records) removed
 100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.57% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5150 species
+# oc.data[,uniqueN(species.correct2)] # 5101 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### REMOVING SPATIAL OUTLIERS  ####
+#### REMOVING SPATIAL OUTLIERS  ###
 ## GETTING SPECIES INFORMATION: TBC, geographical range and cultivation #### Getting species information and generating the vectors for the groups of species
 spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 tmp = unique(oc.data[,species.correct2,])
@@ -224,7 +226,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 gc()
 toto4 = dim(oc.data)[1]
 oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3117 true outliers
-# oc.data[,uniqueN(species.correct2)] # 5150 species
+# oc.data[,uniqueN(species.correct2)] # 5101 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 ## REMOVING PROBABLE OUTLIERS ##
@@ -236,14 +238,14 @@ tmp1 <- data.table(tmp[probable.out %in% TRUE])
 oc.data <- oc.data[!numTombo %in% tmp1$numTombo]
 toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3170 (0.23% of remaining records) removed
 100*(toto4 - dim(oc.data)[1])/toto1 ## extra 0.1% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5150 species
+# oc.data[,uniqueN(species.correct2)] # 5101 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #3- remover non-core specimens for heavily cultivated native species (e.g. Araucaria angustifolia): rob.out.99 == FALSE
 ## REMOVE OCCURRENCES OUTSIDE THE NEOTROPICS, EXCEPT FOR PANTROPICAL SPECIES?
 ## REMOVE OCCURRENCE DATA FROM WELL-KNOW BOTANICAL GARDENS GROWING SOUTH AMERICA SPECIES?
 
-#### REMOVING NON-NEOTROPICAL OCCURRENCES ####
+#### REMOVING NON-NEOTROPICAL OCCURRENCES ###
 gc()
 toto5 = dim(oc.data)[1]
 # Finding possible unassigned non-neotropical occurrences
@@ -269,10 +271,11 @@ extra.neotrop.spp = table(oc.data[neotrop.check == FALSE & af.check2 %in% c("can
 oc.data <- oc.data[neotrop.check == TRUE | is.na(neotrop.check) |(neotrop.check == FALSE & af.check2 %in% c("TRUE","FALSE"))]
 toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 485 (0.11% of remaining records) removed
 100*(toto5 - dim(oc.data)[1])/toto1 ## extra 0.02% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5150 species
+#oc.data[,uniqueN(species.correct2)] # 5101 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-#### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation #### Getting species information and generating the vectors for the groups of species
+#### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation ### 
+# Getting species information and generating the vectors for the groups of species
 spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 spp = spp[spp$SpeciesKTSA %in% oc.data$species.correct2,]
 # uso = read_excel("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.xlsx", na= c(""," ",NA))
@@ -289,7 +292,7 @@ spp$nomes[is.na(spp$nomes)] = spp$NewTaxon.TPL[is.na(spp$nomes)]
 tbc = spp$nomes[spp$TBC %in% "TBC"]
 # cult= uso$Name_submitted[uso$group_renato == "cultivated"]
 
-#### SEPARATING DATA IDENTIFIED AND NOT IDENTIFIED BY TAXONOMISTS #### 
+#### SEPARATING DATA IDENTIFIED AND NOT IDENTIFIED BY TAXONOMISTS ###
 ## FLAGGING:
 #valid/TRUE: type specimen, identification validated by the family specialist, or collector is the specialist of the same family 
 #probably_valid/TRUE_...: identifications made by plant taxonomists or TBC (taxa with low taxonomic complexity)
@@ -309,7 +312,7 @@ oc.data[determinador.name %in% taxonomists & tax.check2 %in% "FALSE", tax.check2
 
 #Validating all occurrences of TBC
 oc.data[species.correct1 %in% tbc & tax.check2 %in% c("FALSE","cannot_check"), tax.check2 := "TRUE_TBC",]
-#oc.data[,uniqueN(species.correct2)] # 5150 species
+#oc.data[,uniqueN(species.correct2)] # 5101 species
 #table(is.na(oc.data$latitude.work1))
 
 #some last minute validation to avoid the removal of species from the checklist
@@ -318,7 +321,7 @@ oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("
 oc.data[species.correct2 %in% "Quillaja lancifolia" & determinador.name1 %in% c("Luebert, F."), tax.check2 := "TRUE" ]
 oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.|Espirito Santo, F.S.|Santo, F.E.|Silva-Castro|ilva, M.M."), tax.check2 := "TRUE" ]
 
-#### TRYING TO OBTAIN INFORMATION ON CONSERVATION UNITS FROM LOCALITY INFO ####
+#### TRYING TO OBTAIN INFORMATION ON CONSERVATION UNITS FROM LOCALITY INFO ###
 locals <- oc.data$locality
 #Editing the localities
 unwanted_array = list('Š'='S', 'š'='s', 'Ž'='Z', 'ž'='z', 'À'='A', 'Á'='A', 'Â'='A', 'Ã'='A', 'Ä'='A', 'Å'='A', 'Æ'='A', 'Ç'='C', 'È'='E', 'É'='E',
@@ -356,7 +359,7 @@ oc.data$locality1 <- locals
 ucs <- read.csv("UCs.csv", as.is = TRUE)
 oc.data <- dplyr::left_join(oc.data, ucs, by= "locality1")
 
-#### SAVING THE ESSENTIAL DATA FOR THE ASSESSMENTS ####
+#### SAVING THE ESSENTIAL DATA FOR THE ASSESSMENTS ###
 
 ## Filtering only the necessary columns
 oc.data1 <- oc.data[,c("latitude.work1","longitude.work1","species.correct2","family.correct1",
@@ -365,7 +368,7 @@ oc.data1 <- oc.data[,c("latitude.work1","longitude.work1","species.correct2","fa
          "geo.check1","origin.coord1","af.check2","UC"),]
 saveRDS(oc.data1, file = "data/threat_occ_data.rds", compress = "gzip")
 
-#### OBTAINING THE NAME AND NUMBER OF OCCURRENCES (TOTAL AND SPATIALLY-UNIQUE) PER SPECIES ####
+#### OBTAINING THE NAME AND NUMBER OF OCCURRENCES (TOTAL AND SPATIALLY-UNIQUE) PER SPECIES ###
 resultado <- oc.data[!duplicated(oc.data$species.correct2), c("family.correct1", "species.correct2")]
 #table(resultado$species.correct2 == names(table(oc.data$species.correct2)))
 resultado$total.occs <- as.double(table(oc.data$species.correct2))
@@ -383,13 +386,12 @@ tmp <- unique.coords(MyData)
 #table(resultado$species.correct2 == tmp$tax)
 resultado$non.dup.occs <- tmp$non.dup.occurs
 resultado$total.occs <- as.double(apply(resultado[,c("total.occs","non.neotrop.occs")], 1, sum, na.rm = TRUE))
-rm(oc.data,oc.data1,MyData)
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-########################
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+#######################H
 #### INVENTORY DATA ####
-########################
+#######################H
 rm(list=ls()[-which(ls() == "resultado")])
 
 ##Loading functions
@@ -608,11 +610,13 @@ tmp1 <- tmp1[order(tmp1$species.correct2),]
 resultado$treeco.occs <- tmp1$treeco.occs
 rm(trees,trees1,trees.final)
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-##########################
+
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+#########################H
 #### POPULATION SIZES ####
-##########################
+#########################H
+
 pop.sizes <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//pop.size.est_nmx50_mxd5_idp2.rds")
 pop.sizes.2018 <- pop.sizes$`2018`$mean 
 tmp <- apply(pop.sizes.2018, 2, sum)
@@ -632,7 +636,7 @@ resultado$pop.size.2018 <- tmp1$pop.size.2018
 
 ## Pop size an number of occurrences are related?
 plot(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1))
-abline(rlm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), lwd=2, col=3)
+abline(MASS::rlm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), lwd=2, col=3)
 
 ## Which specie swe have population sizes which are not in the checklist?
 miss.sp <- tmp$species.correct2[!tmp$species.correct2 %in% resultado$species.correct2]
@@ -650,7 +654,7 @@ resultado <- cbind.data.frame(taxon_id, resultado, stringsAsFactors = FALSE)
 saveRDS(resultado, "data/assess_iucn_spp.rds")
 
 
-#### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ####
+#### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ###
 mean.pop.sizes <- sapply(pop.sizes, function(x) apply(x$mean, 2, sum, na.rm = TRUE))
 low.pop.sizes <- sapply(pop.sizes, function(x) apply(x$low, 2, sum, na.rm = TRUE))
 high.pop.sizes <- sapply(pop.sizes, function(x) apply(x$high, 2, sum, na.rm = TRUE))
@@ -672,71 +676,102 @@ require(doSNOW)
 require(foreach)
 require(ConR)
 
-#defining the object for the loop
-pop_data <- high.pop.sizes
-
-#Setting the loop parameters
-cl <- snow::makeSOCKcluster(6)
-doSNOW::registerDoSNOW(cl)
-`%d%` <- foreach::`%dopar%`
-x <- NULL
-output <-
-  foreach::foreach(
-    x = 1:dim(pop_data)[1],
-    #.combine = 'c',
-    .options.snow = NULL
-  ) %d% {
-
-    res1 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
-                            years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992),
-                            #models = "all", 
-                            models = c("linear", "quadratic", "exponential", 
-                                       "logistic", "general_logistic"),
-                            project.years = miss.years1,
-                            plot.fit = FALSE)
-    res2 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
-                            years = c(1992,1995,2000,2005,2010,2015,2018),
-                            #models = "all", 
-                            models = c("linear", "quadratic", "exponential", 
-                                       "logistic", "general_logistic"),
-                            project.years = miss.years2,
-                            #parsimony = TRUE,
-                            max.count = 20,
-                            plot.fit = FALSE)
-    res1$data$Modelo <- attributes(res1$best.model)$best.model.name
-    res2$data$Modelo <- head(attributes(res2$best.model)$best.model.name, 1)
-    dados <- rbind.data.frame(head(res1$data, -1), res2$data, stringsAsFactors = FALSE) 
-    dados$Predicted[dados$Year < 1850] <- 
-      dados$Predicted[dados$Year == 1850]
-    dados <- dados[,c("Year", "Observed", "Predicted", "Modelo")]
-    dados
-  }
-snow::stopCluster(cl)
-
-#Saving the predcitions for each table (mean, low and high) 
-#res.mean <- output
-#res.low <- output
-res.high <- output
-
+dados <- list(mean.pop.sizes, low.pop.sizes, high.pop.sizes)
+results <- vector("list", length(dados))
+for(i in 1:length(dados)) {
+  #defining the object for the loop
+  pop_data <- dados[[i]]
+  
+  #Setting the loop parameters
+  cl <- snow::makeSOCKcluster(6)
+  doSNOW::registerDoSNOW(cl)
+  `%d%` <- foreach::`%dopar%`
+  x <- NULL
+  output <-
+    foreach::foreach(
+      x = 1:dim(pop_data)[1],
+      #.combine = 'c',
+      .options.snow = NULL
+    ) %d% {
+  
+      res1 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
+                              years = c(1850,1940,1945,1950,1955,1960,1965,1970,1975,1980,1985,1992),
+                              #models = "all", 
+                              models = c("linear", "quadratic", "exponential", 
+                                         "logistic", "general_logistic"),
+                              project.years = miss.years1,
+                              plot.fit = FALSE)
+      res2 <- ConR:::pop.decline.fit(pop.size = pop_data[x,],
+                              years = c(1992,1995,2000,2005,2010,2015,2018),
+                              #models = "all", 
+                              models = c("linear", "quadratic", "exponential", 
+                                         "logistic", "general_logistic"),
+                              project.years = miss.years2,
+                              #parsimony = TRUE,
+                              max.count = 20,
+                              plot.fit = FALSE)
+      res1$data$Modelo <- attributes(res1$best.model)$best.model.name
+      res2$data$Modelo <- head(attributes(res2$best.model)$best.model.name, 1)
+      dados <- rbind.data.frame(head(res1$data, -1), res2$data, stringsAsFactors = FALSE) 
+      #dados$Predicted[dados$Year < 1850] <- 
+        #dados$Predicted[dados$Year == 1850]
+      dados <- dados[,c("Year", "Observed", "Predicted", "Modelo")]
+      dados
+    }
+  snow::stopCluster(cl)
+  
+  #Saving the predictions for each table (mean, low and high) 
+  results[[i]] <- output 
+}
+  
 #Setting species names
-names(res.mean) <- names(res.low) <- names(res.high) <- rownames(mean.pop.sizes)
+rownames(mean.pop.sizes) <- gsub("_"," ", rownames(mean.pop.sizes))
+rownames(mean.pop.sizes) <- gsub("\\.","-", rownames(mean.pop.sizes))
+for(i in 1:length(results)) names(results[[i]]) <- rownames(mean.pop.sizes)
 
-#Saving the estimated populations
+## Putting data in the ConR format
+years <- results[[1]][[1]]$Year
+ncols <- length(years)
+spp <- names(results[[1]])
+nrows <- length(spp)
+mean.pop.conR <- low.pop.conR <- high.pop.conR <- matrix(NA, ncol = ncols, nrow = nrows,
+                                                            dimnames = list(spp, years))
+for(x in 1:length(results[[1]])) {
+  mean.pop.conR[x,] <- results[[1]][[x]]$Predicted
+  low.pop.conR[x,] <- results[[2]][[x]]$Predicted
+  high.pop.conR[x,] <- results[[3]][[x]]$Predicted
+}
+
+#Converting into data.frames
+mean.pop.conR <- cbind.data.frame(species = rownames(mean.pop.conR), mean.pop.conR, 
+                                   row.names = NULL, stringsAsFactors = FALSE)
+low.pop.conR <- cbind.data.frame(species = rownames(low.pop.conR), low.pop.conR, 
+                                  row.names = NULL, stringsAsFactors = FALSE)
+high.pop.conR <- cbind.data.frame(species = rownames(high.pop.conR), high.pop.conR, 
+                                   row.names = NULL, stringsAsFactors = FALSE)
+
+#### SAVING ###
+#Saving the estimated populations (ONLY "OBSERVED" POP SIZES)
 saveRDS(mean.pop.sizes, "data/threat_mean_pop_sizes.rds")
 saveRDS(low.pop.sizes, "data/threat_low_pop_sizes.rds")
 saveRDS(high.pop.sizes, "data/threat_high_pop_sizes.rds")
 
-#Saving the estimated and infered populations
-saveRDS(res.mean, "data/threat_mean_pop_sizes_infer.rds")
-saveRDS(res.low, "data/threat_low_pop_sizes_infer.rds")
-saveRDS(res.high, "data/threat_high_pop_sizes_infer.rds")
+#Saving the estimated and infered populations (BOTH "OBSERVED" AND ESTIMATED/INTERPOLATED POP SIZES)
+saveRDS(results[[1]], "data/threat_mean_pop_sizes_infer.rds")
+saveRDS(results[[2]], "data/threat_low_pop_sizes_infer.rds")
+saveRDS(results[[3]], "data/threat_high_pop_sizes_infer.rds")
 
+#Saving the estimated and infered populations in the ConR format
+saveRDS(mean.pop.conR, "data/threat_mean_pop_sizes_for_ConR.rds")
+saveRDS(low.pop.conR, "data/threat_low_pop_sizes_for_ConR.rds")
+saveRDS(high.pop.conR, "data/threat_high_pop_sizes_for_ConR.rds")
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
 #####################################################
 #### SPECIES TAXONOMY, SYNONYMS AND COMMON NAMES ####
 #####################################################
+rm(list=ls())
 require(taxize)
 require(flora)
 require(redlistr)
@@ -776,6 +811,7 @@ ncbi.taxonomy <- ncbi.taxonomy[order(ncbi.taxonomy$species.correct2),]
 
 ## Getting Tropicos full taxonomy ##
 #Tropicos API key: E8E538BC-0DAD-47EF-84CA-F6A663D9170A
+options(ENTREZ_KEY = "E8E538BC-0DAD-47EF-84CA-F6A663D9170A")
 
 #higher taxonomy
 tmp  <- sapply(fams, taxize::classification, "tropicos", rows = 1)
@@ -800,7 +836,9 @@ output <- foreach::foreach(
   #.combine = 'c',
   .options.snow = NULL
 ) %d% {
-  try(taxize::get_tpsid_(tps.taxonomy$species.correct2[x]), TRUE)
+  try(taxize::get_tpsid_(tps.taxonomy$species.correct2[x],
+                         key = "E8E538BC-0DAD-47EF-84CA-F6A663D9170A"),
+      TRUE)
 }
 snow::stopCluster(cl)
 output1 <- sapply(output, function(x) x[[1]])
@@ -986,9 +1024,10 @@ full.tax2 <- cbind.data.frame(taxon_id, full.tax1, stringsAsFactors = FALSE)
 write.csv(full.tax2, "data/threat_taxonomy.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
 
-######################
+#####################H
 #### COMMON NAMES ####
-######################
+#####################H
+
 #Filtering and editing
 taxon_id <- paste0("sp", 1:dim(full.tax1)[1])
 common <- cbind.data.frame(taxon_id, full.tax[ ,c("original.search","vernacular.name")],
@@ -1039,9 +1078,10 @@ tutu2 <- tutu2[order(tutu2$validName),]
 tutu2 <- tutu2[,c("taxon_id","language","name")]
 write.csv(tutu2, "data/threat_commonnames.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
-##################
+#################H
 #### SYNONYMS ####
-##################
+#################H
+
 flora.syn <- lapply(tax$species.correct2, flora::get.synonyms)
 flora.syn.authot <- lapply(1:length(flora.syn), function(x)
   if (is.null(flora.syn[[x]])) {
@@ -1101,8 +1141,8 @@ synonyms1 <- synonyms1[,c("taxon_id","name","speciesName","infrarankName","infra
 write.csv(synonyms, "data/threat_synonyms.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
 ##############################
 #### HABITATS AND ECOLOGY ####
 ##############################
@@ -1252,6 +1292,10 @@ hab$ecol.group <- stringr::str_replace_all(hab$ecol.group, c("1" = "pioneer", "2
 hab$ecol.group[is.na(hab$ecol.group)] <- "unknown"
 table(hab$ecol.group)
 
+## Including other traits that may be important
+table(hab$Name_submitted == traits1$Name_submitted)
+hab$SeedMass_g <- traits1$SeedMass_g
+hab$dispersal.syndrome <- traits1$dispersal.syndrome
 
 ##################################################
 #### GENERATION LENGHT AND MATURE INDIVIDUALS ####
@@ -1294,9 +1338,9 @@ p.est <- read.csv("data/prop_mature.csv", as.is = TRUE)
 hab1 <- dplyr::left_join(hab1, p.est[,c("species.correct","N","dbh.crit","p")], by= "species.correct") 
 
 
-###################################################
+##################################################H
 #### PUTTING ALL FIELDS IN THE IUCN SIS FORMAT ####
-###################################################
+##################################################H
 
 #HabitatDocumentation.narrative: Habitat Information.
 hab1$HabitatDocumentation.narrative <- NA
@@ -1401,6 +1445,14 @@ hab1$GenerationLength.justification <- paste0("standard_text_GL1", hab1$PlantGro
                                                  ", regarding its growth form (maximum height of ", hab1$MaxSize.size/100," m), and as ",
                                                  hab1$ecol.group,", regarding its ecological group. standard_text_GL2")
 
+## Any missing info?
+#Any missing GL?
+hab1$GenerationLength.range[is.na(hab1$GenerationLength.range)] <- 50
+#Any missing p?
+hab1$p.ci[is.na(hab1$p.est)] <- "0.44-0.45"
+hab1$p.est[is.na(hab1$p.est)] <- 0.45
+
+
 ##Organizing and saving
 hab2 <- hab1[order(hab1$species.correct),]
 cols <- c("taxon_id","Name_submitted",
@@ -1416,40 +1468,29 @@ cols <- c("taxon_id","Name_submitted",
           "System.value",
           "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsLookup",
           "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName",
-          "p.est","p.ci"
+          "p.est","p.ci",
+          #some extra info tha my be useful for species descriptions
+          "habito","life.form","DBH","wsg","ecol.group","dispersal.syndrome","SeedMass_g"
 )
 hab2 <- hab2[, cols]
 write.csv(standard.texts, "data/threat_standard_texts.csv", row.names = FALSE, fileEncoding = "UTF-8")
 write.csv(hab2, "data/threat_habitats.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-##################################################
-#### RANGE DESCRIPTION AND COUNTRY OCCURRENCE ####
-##################################################
 
-
-
-
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-#########################################################
-#### USE AND TREAD, THREATS AND CONSERVATION ACTIONS ####
-#########################################################
-
-
-
-
-#####################################################################################################################################################################
-#####################################################################################################################################################################
-##############################
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+#############################H
 #### PREVIOUS ASSESSMENTS ####
-##############################
+#############################H
 rm(list=ls())
+
+
+## Red List IUCN key: 814b5b4ee7bc21205e9aec80f441b7e0ff8f957a326f2c76152ac9991b521e25
+??rredlist
 
 ## Getting the list of species in the Atlantic Forest
 prev.assess <- readRDS("data/assess_iucn_spp.rds")
-prev.assess <- prev.assess[,1:2]
+prev.assess <- prev.assess[,1:3]
 
 ## Getting the IUCN assessments for Brazil (CNCFlora) - National level
 tmp = flora::get.taxa(prev.assess$species.correct2, replace.synonyms = FALSE, life.form = TRUE)
@@ -1463,10 +1504,29 @@ prev.assess$status.reflora <- tmp1$threat.status
 iucn <- read.csv("IUCN_2020_assessments.csv", as.is = TRUE, na.strin = c(NA,""," "))
 iucn$species.correct2 <- sapply(strsplit(iucn$scientificName," "), function(x) paste(x[1], x[2],sep=" "))
 tmp <- merge(prev.assess, iucn,  by= "species.correct2", all.x = TRUE)
-tmp <- tmp[,c("assessmentId","redlistCategory","redlistCriteria","yearPublished","assessmentDate","criteriaVersion",
+tmp <- tmp[,c("taxon_id","species.correct2","assessmentId","internalTaxonId","redlistCategory","redlistCriteria","yearPublished","assessmentDate","criteriaVersion",
           "language","rationale","habitat","threats","population","populationTrend","range","useTrade","systems","conservationActions",
           "realm","yearLastSeen","possiblyExtinct","possiblyExtinctInTheWild","scopes")]
-#table(prev.assess$species.correct2 == tmp$species.correct2)
+table(prev.assess$species.correct2 == tmp$species.correct2)
 prev.assess <- cbind.data.frame(prev.assess, tmp,
                                 stringsAsFactors = FALSE)
 saveRDS(prev.assess, "data/previous_assessments_spp.rds")
+
+
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+##################################################
+#### RANGE DESCRIPTION AND COUNTRY OCCURRENCE ####
+##################################################
+
+?red::countries
+
+
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+########################################################H
+#### USE AND TREAD, THREATS AND CONSERVATION ACTIONS ####
+########################################################H
+
+##See TreeCo use database
+
