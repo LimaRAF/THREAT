@@ -1515,6 +1515,70 @@ saveRDS(prev.assess, "data/previous_assessments_spp.rds")
 
 #####################################################################################################################################################################H
 #####################################################################################################################################################################H
+###################################################################
+#### SPECIES ENDEMISM LEVELS IN RESPECT TO THE ATLANTIC FOREST ####
+###################################################################
+
+#Species endemism levels
+end <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixF_endemism_levels.csv", as.is=TRUE)
+end$endemic <- NA
+end$endemic[end$endemism.level..validated.taxonomy.only. >= 85 & end$endemism.level..validated.and.probably.validated.taxonomy. >= 85 & 
+              !end$endemism.accepted.by.the.BF.2020 %in% "Not in the AF"] <- "endemic"
+end$endemic[is.na(end$endemic) & end$endemism.level..validated.taxonomy.only. >= 50 & end$endemism.level..validated.and.probably.validated.taxonomy. >= 50 &
+              end$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "endemic"
+end$endemic[end$endemism.level..validated.taxonomy.only. < 15 & end$endemism.level..validated.and.probably.validated.taxonomy. < 15 &
+              !end$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "occasional"
+end$endemic[is.na(end$endemic) & end$endemism.level..validated.taxonomy.only. >= 50 & 
+              end$endemism.level..validated.and.probably.validated.taxonomy. >= 50] <- "widespread_common"
+end$endemic[is.na(end$endemic) & end$endemism.level..validated.taxonomy.only. >= 15 & 
+              end$endemism.level..validated.and.probably.validated.taxonomy. >= 15] <- "widespread_sparse"
+end$endemic[is.na(end$endemic) & 
+              end$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_common"
+end$endemic[is.na(end$endemic) & 
+              !end$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_sparse"
+table(end$endemic, useNA = "always")
+#Probable occurrences
+end.prob <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
+#end.prob$species  <- sapply(end.prob$scientific.name, flora::remove.authors)
+end.prob$species  <- sapply(end.prob$scientific.name, function(x) paste(strsplit(x, " ")[[1]][1:2], collapse = " "))
+end.prob <- end.prob[end.prob$status %in% "no records found but cited in BF.2020",]
+tmp <- flora::get.taxa(end.prob$species)
+tmp1 <- flora::get_domains(tmp)
+tmp2 <- flora::get_endemism(tmp)
+end.prob$domain <- tmp1$domain 
+end.prob$end.br <- tmp2$endemism 
+end.prob$endemic <- NA
+end.prob$endemic[end.prob$domain %in% "Mata Atlântica" & 
+                   end.prob$end.br %in%  "é endêmica do Brasil"] <- "endemic"
+end.prob$endemic[is.na(end.prob$endemic) & grepl("Mata Atlântica", end.prob$domain)
+                 ] <- "not_endemic"
+end.prob$endemic[is.na(end.prob$endemic) & !grepl("Mata Atlântica", end.prob$domain) 
+                   ] <- "not in the AF"
+table(end.prob$endemic, useNA = "always")
+
+#Merging the two data.frames
+end1 <- end[,c("family","species",
+            "endemism.level..validated.and.probably.validated.taxonomy.",
+            "endemism.level..validated.taxonomy.only.",
+            "endemic")]
+names(end1)[3:4] <- c("endemism.level.1","endemism.level.2") 
+
+end.prob$endemism.level.1 <- NA
+end.prob$endemism.level.2 <- NA
+end.prob1 <- end.prob[,c("family","species",
+                    "endemism.level.1",
+                    "endemism.level.2",
+                    "endemic")]
+end.final <- rbind.data.frame(end1, end.prob1,
+                              stringsAsFactors = FALSE)
+end.final <- end.final[order(end.final$species),]
+
+## Saving
+saveRDS(end.final, "data/threat_endeism_levels.rds")
+
+
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
 ##################################################
 #### RANGE DESCRIPTION AND COUNTRY OCCURRENCE ####
 ##################################################

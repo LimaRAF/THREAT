@@ -160,10 +160,17 @@ legend("bottomright", c("Group-specific", "Fixed"),
        bty = "n", lwd=2)
 dev.off()
 
-#### COMPARING MAT. POP SIZE AND SPECIES DISTRIBUTION ####
+
+#########################################################################################################################################################H
+#########################################################################################################################################################H
+#### COMPARING POP SIZE AND SPECIES DISTRIBUTION ####
+#####################################################
+
 df1$mature.pop.size <- df1$pop.size * df1$p
+#Species information
 df1 <- merge(df1, PopData[,c("species","life.form","dispersal.syndrome","SeedMass_g","habito")],
              by = "species", all.x = TRUE, sort= FALSE)
+#Taxonomic information
 taxonomy <- read.csv("data/threat_taxonomy.csv", as.is = TRUE)
 df1 <- merge(df1, taxonomy[,c("species","classname","ordername")],
              by = "species", all.x = TRUE, sort= FALSE)
@@ -172,26 +179,27 @@ df1$taxonomy[df1$taxonomy %in% "Magnoliopsida"] <-
   df1$ordername[df1$taxonomy %in% "Magnoliopsida"]
 df1$taxonomy[grepl("palm",df1$life.form)] <- "Palms"
 df1$taxonomy[grepl("ucculent",df1$life.form)] <- "Cactus"
+#Species endemism
+end <- readRDS("data/threat_endeism_levels.rds")
+end$endemic[end$endemic %in% "not in the AF"] <- "occasional"
+end$endemic[end$endemic %in% "not_endemic"] <- "widespread_sparse"
+df1 <- merge(df1, end[,c("species","endemism.level.1","endemism.level.2","endemic")],
+             by = "species", all.x = TRUE, sort= FALSE)
 
-##Exploring patterns
+## Exploring patterns
 par(mfrow = c(2,2))
 par(mar=c(4,4,0.75,0.5), mgp=c(2.5,0.25,0),tcl=-0.2,las=1)
-plot(log(mature.pop.size) ~ log(treeco.occs), data = df1) # as expected, since one was generated from the other
+plot(log(mature.pop.size) ~ log(treeco.occs), data = df1, col = (df1$endemic %in% "endemic")+1) # as expected, since one was generated from the other
 abline(lm(log(mature.pop.size) ~ log(treeco.occs), data = df1), lwd=2,col=2)
-plot(log(mature.pop.size) ~ log(non.dup.occs), data = df1)
+plot(log(mature.pop.size) ~ log(non.dup.occs), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1), lwd=2,col=2)
-plot(log(mature.pop.size) ~ log(EOO.level.1), data = df1)
+plot(log(mature.pop.size) ~ log(EOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(EOO.level.1), data = df1), lwd=2,col=2)
-plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1)
+plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1), lwd=2,col=2)
 
-par(mfrow=c(1,1))
-plot(log(treeco.occs) ~ log(AOO.level.1), data = df1) # as expected, since one was generated from the other
-abline(lm(log(treeco.occs) ~ log(AOO.level.1), data = df1), lwd=2,col=2) # as expected, since one was generated from the other
-
-# number of occurences, non-duplicated occurrences, n.localities, EOO or AOO? AOO!
-pairs(log(mature.pop.size) ~ log(non.dup.occs) + 
-        log(EOO.level.1) + log(AOO.level.1) + log(Loc.level1), data = df1)
+#Number of occurences, non-duplicated occurrences, n.localities, EOO or AOO? AOO!
+pairs(log(mature.pop.size) ~ log(EOO.level.1) + log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 bbmle::AICtab(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1),
               lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1),
               lm(log(mature.pop.size) ~ log(total.occs), data = df1),
@@ -202,7 +210,7 @@ bbmle::AICtab(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1),
               lm(log(mature.pop.size) ~ log(Loc.level1) * log(EOO.level.1), data = df1),
               lm(log(mature.pop.size) ~ log(non.dup.occs) * log(EOO.level.1), data = df1))
 
-df2 <- na.omit(df1[,c("mature.pop.size","EOO.level.1","AOO.level.1","taxonomy","habito")])
+df2 <- na.omit(df1[,c("mature.pop.size","EOO.level.1","AOO.level.1","taxonomy","habito","endemic")])
 mod <- lm(log(mature.pop.size) ~ log(EOO.level.1) * 
             log(AOO.level.1), data = df2)
 options(na.action = "na.fail")
@@ -214,7 +222,7 @@ car::avPlots(mod)
 car::vif(mod) ## vif very high for the interaction
 car::vif(lm(log(mature.pop.size) ~ log(EOO.level.1) + log(AOO.level.1), data = df1)) #ok
 
-## Takink into account unequal variance
+## Taking into account unequal variance and random effects
 mod.ols <- stats::lm(log(mature.pop.size) ~ log(EOO.level.1) + #Ordinary Least Squares
                        log(AOO.level.1), data = df2)
 mod.rob <- MASS::rlm(log(mature.pop.size) ~ log(EOO.level.1) + #Robust lm
@@ -232,66 +240,130 @@ mod.gls.fix1 <- nlme::gls(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least 
 mod.mix <- nlme::lme(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least Squares 
                             log(AOO.level.1), random = (~1|taxonomy), data = df2, weights = nlme::varFixed(~log(EOO.level.1)))
 mod.mix1 <- nlme::lme(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least Squares 
-                       log(AOO.level.1) + as.factor(habito), random = (~1|taxonomy), data = df2, weights = nlme::varFixed(~log(EOO.level.1)))
+                       log(AOO.level.1) + as.factor(habito), random = (~1|taxonomy), data = df2, weights = nlme::varFixed(~log(AOO.level.1)))
+mod.mix2 <- nlme::lme(log(mature.pop.size) ~ log(AOO.level.1) + as.factor(habito), 
+                      random = (~1|taxonomy), data = df2, weights = nlme::varPower())
+mod.mix3 <- nlme::lme(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least Squares 
+                        log(AOO.level.1) + as.factor(habito), random = (~1|endemic), data = df2, weights = nlme::varFixed(~log(AOO.level.1)))
+mod.mix4 <- nlme::lme(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least Squares 
+                        log(AOO.level.1) + as.factor(habito), random = list(~1|taxonomy, ~1|endemic), data = df2, weights = nlme::varFixed(~log(AOO.level.1)))
+mod.mix5 <- nlme::lme(log(mature.pop.size) ~ log(EOO.level.1) + #Gen. Least Squares 
+                        log(AOO.level.1) + as.factor(habito), random = (~log(AOO.level.1)|endemic), data = df2, weights = nlme::varFixed(~log(AOO.level.1)))
+mod.gls.fix2 <- nlme::gls(log(mature.pop.size) ~ log(AOO.level.1) + as.factor(endemic) +
+                            as.factor(habito), data = df2, weights = nlme::varPower())
+mod.gls.fix3 <- nlme::gls(log(mature.pop.size) ~ log(AOO.level.1) * as.factor(endemic) +
+                            as.factor(habito), data = df2, weights = nlme::varPower())
+mod.gls.fix4 <- nlme::gls(log(mature.pop.size) ~ log(EOO.level.1) + log(AOO.level.1) * as.factor(endemic) +
+                            as.factor(habito), data = df2, weights = nlme::varPower())
+mod.mix6 <- lme4::lmer(log(mature.pop.size) ~ log(AOO.level.1) + (log(AOO.level.1)|taxonomy) + 
+                        as.factor(endemic) + as.factor(habito), data = df2, REML = TRUE)
+mod.mix7 <- lme4::lmer(log(mature.pop.size) ~ log(AOO.level.1) + (log(AOO.level.1)|taxonomy) + 
+                         log(EOO.level.1) + as.factor(endemic) + as.factor(habito), data = df2, REML = TRUE)
+mod.mix8 <- lme4::lmer(log(mature.pop.size) ~ log(AOO.level.1) + (log(AOO.level.1)|endemic) +
+                         (log(AOO.level.1)|taxonomy) + log(EOO.level.1) + as.factor(habito), data = df2, REML = TRUE)
 
 bbmle::AICtab(mod.ols, mod.rob, mod.gls, 
-              mod.gls.pow, mod.gls.exp, mod.gls.fix, mod.gls.fix1,
-              mod.mix, mod.mix1)
-summary(mod.rob)$sigma
-summary(mod.gls)$sigma
-summary(mod.ols)$sigma
-summary(mod.gls.fix)$sigma
-summary(mod.gls.fix1)$sigma
-summary(mod.gls.pow)$sigma
-summary(mod.gls.exp)$sigma
-summary(mod.mix)$sigma
-summary(mod.mix1)$sigma
+              mod.gls.pow, mod.gls.exp, mod.gls.fix, mod.gls.fix1, mod.gls.fix2, mod.gls.fix3, mod.gls.fix4,
+              mod.mix, mod.mix1, mod.mix2, mod.mix3, mod.mix4, mod.mix5, mod.mix6, mod.mix7, mod.mix8)
+car::Anova(mod.mix7)
+car::vif(mod.mix7)
+plot(mod.mix7)
+car::avPlot(mod.mix7)
+summary(mod.mix7)
 
-car::Anova(mod.mix1)
-car::vif(mod.mix1)
-plot(mod.mix1)
-car::avPlots(mod.mix1)
-summary(mod.mix1)
+par(mfrow=c(1,1))
+plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1, xlim=c(0,10),ylim = c(0,20))
+abline(lm(log(mature.pop.size) ~ log(AOO.level.1) - 1, data = df1), lwd=2, col=6)
+abline(v=log(4), lty=3); abline(h=log(1000), lty=3) 
+curve(5.56 + 1.19*x, add=TRUE, lwd=2, col="red") #gls fixed 2
+curve(5.44 + 1.21*x, add=TRUE, lwd=2, col="green") #gls fixed 3
+curve(6.57 + 1.45*x, add=TRUE, lwd=2, col="blue") #gls fix 4
+curve(6.38 + 1.128*x, add=TRUE, lwd=2, col="cyan") # mixed 6 (average per order)
+curve(7.448 + 1.28*x, add=TRUE, lwd=2, col="orange") # mixed 7
+curve(7.25 + 1.42*x, add=TRUE, lwd=2, col="purple") # mixed 8
+## EVEN AT THE MINIMUM AOO (i.e log(4)) THE MODELS PREDICT MORE THEN 1000 INDIVIDUALS... 
+
+
+## Inspecting the predicted values of each model
+# par(mfrow=c(2,3))
+# plot(exp(predict(mod.mix4)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+# plot(exp(predict(mod.mix6)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+# plot(exp(predict(mod.mix7)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+# plot(exp(predict(mod.gls.fix2)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+# plot(exp(predict(mod.gls.fix3)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+# plot(exp(predict(mod.gls.fix4)) ~ df2$mature.pop.size,
+#      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
+
 
 #### MAKING THE PREDICTIONS OF POP. SIZE FOR SPECIES WITHOUT ABUNDANCE DATA
 df.miss <- taxonomy[!taxonomy$species %in% df1$species,c("classname","ordername","family","species")]
+df.miss <- merge(df.miss, spp1, by.x = "species", by.y = "species.correct2",
+             all.x = TRUE, sort = FALSE)
+df.miss <- merge(df.miss, hab[,c("Name_submitted","life.form","dispersal.syndrome","SeedMass_g","habito")],
+             by.x = "species", by.y = "Name_submitted", all.x = TRUE, sort= FALSE)
+df.miss <- merge(df.miss, end[,c("species","endemic")],
+             by = "species", all.x = TRUE, sort= FALSE)
 df.miss$taxonomy <- df.miss$classname
 df.miss$taxonomy[df.miss$taxonomy %in% "Magnoliopsida"] <-
   df.miss$ordername[df.miss$taxonomy %in% "Magnoliopsida"]
 df.miss$taxonomy[grepl("palm",df.miss$life.form)] <- "Palms"
 df.miss$taxonomy[grepl("ucculent",df.miss$life.form)] <- "Cactus"
-df.miss <- merge(df.miss, spp1, by.x = "species", by.y = "species.correct2",
-             all.x = TRUE, sort = FALSE)
-df.miss <- merge(df.miss, hab[,c("Name_submitted","life.form","dispersal.syndrome","SeedMass_g","habito")],
-             by.x = "species", by.y = "Name_submitted", all.x = TRUE, sort= FALSE)
 
 ##Getting the predictions
-library(merTools)
-new.dat <- na.omit(df.miss[,c("species","EOO.level.1","AOO.level.1","taxonomy","habito")])
-new.dat$EOO.level.1 <- log(new.dat$EOO.level.1)
-new.dat$AOO.level.1 <- log(new.dat$AOO.level.1)
-new.dat$pred <-
-  predict(mod.mix1, new.dat, re.form=NULL)  # predictions using new data, including random effects
+new.dat <- na.omit(df.miss[,c("species","EOO.level.1","AOO.level.1","habito","endemic","taxonomy")])
+summary(exp(predict(mod.gls.fix2, new.dat, re.form=NULL))) # dAIC: 117 (media: 94,000)
+summary(exp(predict(mod.gls.fix3, new.dat, re.form=NULL))) # dAIC: 96 (media: 106,690) # high vifs...
+summary(exp(predict(mod.gls.fix4, new.dat, re.form=NULL))) # dAIC: 62 (media: 114,859) # high vifs...
+summary(exp(predict(mod.mix6, new.dat, re.form=NULL))) # dAIC: 55.6 (media: 110,185)
+summary(exp(predict(mod.mix7, new.dat, re.form=NULL))) # dAIC: 32.1 (media: 122,775)
+summary(exp(predict(mod.mix8, new.dat, re.form=NULL))) # best model (media: 126,255)
+best.model <- mod.mix8
+preds <- exp(merTools::predictInterval(tmp1, new.dat1, include.resid.var = TRUE,
+                                    which = "full", level = 0.9, n.sims = 5000))
+new.dat1 <- cbind.data.frame(new.dat, preds, 
+                             stringsAsFactors = FALSE)
+names(new.dat1)[(dim(new.dat1)[2]-2):dim(new.dat1)[2]] <- c("pred","pred.high","pred.low")
 
-#create design matrix
-Designmat <- model.matrix(eval(eval(mod.mix1$call$fixed)[-2]), new.dat[,2:5])
+# #create design matrix
+# Designmat <- model.matrix(eval(eval(best.model$call$fixed)[-2]), new.dat[,2:5])
+# 
+# #compute standard error for predictions
+# predvar <- diag(Designmat %*% best.model$varFix %*% t(Designmat))
+# new.dat$SE <- sqrt(predvar) 
+# new.dat$SE2 <- sqrt(predvar + best.model$sigma^2)
+# new.dat$low <- new.dat$pred - 2*new.dat$SE
+# new.dat$high <- new.dat$pred + 2*new.dat$SE
+# new.dat$low2 <- new.dat$pred - 2*new.dat$SE2
+# new.dat$high2 <- new.dat$pred + 2*new.dat$SE2
 
-#compute standard error for predictions
-predvar <- diag(Designmat %*% mod.mix1$varFix %*% t(Designmat))
-new.dat$SE <- sqrt(predvar) 
-new.dat$SE2 <- sqrt(predvar + mod.mix1$sigma^2)
-new.dat$low <- new.dat$pred - 2*new.dat$SE
-new.dat$high <- new.dat$pred + 2*new.dat$SE
-new.dat$low2 <- new.dat$pred - 2*new.dat$SE2
-new.dat$high2 <- new.dat$pred + 2*new.dat$SE2
+# #re-tranforming
+# new.dat$pred <- exp(new.dat$pred)
+# new.dat$low <- exp(new.dat$low)
+# new.dat$high <- exp(new.dat$high)
+# new.dat$low2 <- exp(new.dat$low2)
+# new.dat$high2 <- exp(new.dat$high2)
 
-#re-tranforming
-new.dat$pred <- exp(new.dat$pred)
-new.dat$low <- exp(new.dat$low)
-new.dat$high <- exp(new.dat$high)
-new.dat$low2 <- exp(new.dat$low2)
-new.dat$high2 <- exp(new.dat$high2)
+## SUMMARY ##
+par(mfrow=c(1,2))
+hist(log(df2$mature.pop.size), nclass=40, probability = TRUE, ylim=c(0,0.5), 
+     col= adjustcolor("grey", alpha.f = 0.3), main="",xlab="log(Population size)")
+hist(log(new.dat1$pred), nclass=20, add=TRUE, border=4, probability = TRUE,
+     col= adjustcolor("blue", alpha.f = 0.3))
+hist(log(new.dat1$pred.low), nclass=20, add=TRUE, border=2, probability = TRUE,
+     col= adjustcolor("red", alpha.f = 0.3))
+abline(v = log(c(50,250,1000)), lty=2)
+table(new.dat1$pred.low < 1000)
+table(new.dat1$pred.low < 250)
+table(new.dat1$pred.low < 50)
+
+boxplot(log(new.dat1$pred) ~ new.dat1$endemic, varwidth = TRUE, notch= TRUE)
 
 
-#### SUMMARY ####
-table(new.dat$low<1000)
+#### Saving ####
+saveRDS(all.GL2, "data/criterionD_all_prop_mature.rds")
+saveRDS(new.dat1, "data/estimated_pop_size_no_abundance.rds")

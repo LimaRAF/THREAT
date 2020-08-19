@@ -6,6 +6,9 @@ rm(list=ls())
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
 library("ConR")
 require(rgeos)
+require(sf)
+require(fields)
+require(dplyr)
 source("./R/suggestions_for_ConR.r")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
@@ -17,9 +20,9 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.p
 # oc.data <- readRDS("data/threat_occ_data.rds")
 # ## Reading/editing inventory data
 # inv.data <- readRDS("data/threat_inventory_data.rds")
-# inv.data$year_data[is.na(inv.data$year_data)] <- 
-#   inv.data$year[is.na(inv.data$year_data)] 
-# inv.data$numTombo[is.na(inv.data$numTombo)] <- 
+# inv.data$year_data[is.na(inv.data$year_data)] <-
+#   inv.data$year[is.na(inv.data$year_data)]
+# inv.data$numTombo[is.na(inv.data$numTombo)] <-
 #   paste0("ordem_",inv.data$ordem[is.na(inv.data$numTombo)])
 # inv.data$DetDate <- gsub("\\\n","",inv.data$DetDate)
 # 
@@ -41,13 +44,13 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.p
 # #### CALCULATING EOO USING DIFFERENT CONFIDENCE LEVELS OF THE OCCURRENCES ####
 # #teste <- MyData[grepl("Persea",MyData$tax), ]
 # sens <- EOO.sensitivity (MyData[,c("ddlat", "ddlon", "tax", "tax.check2")],
-#                          levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
+#                             levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
 #                             occ.based = TRUE,
 #                             exclude.area = TRUE,
 #                             country_map = neotrop.simp,
 #                             method.range = "convex.hull",
 #                             parallel = TRUE,
-#                             NbeCores = 5,
+#                             NbeCores = 6,
 #                             show_progress = TRUE,
 #                             proj_user = 5641,
 #                             value = "dist")
