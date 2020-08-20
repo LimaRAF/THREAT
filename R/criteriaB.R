@@ -131,9 +131,9 @@ rm(EOO.hull.sensitivity); gc()
 #From Rivers et al. 2010: The ideal radius of the buffer is debatable; however when dispersal
 #characteristics of the species are unknown then a sliding scale, such as the 1/10th maximum inter-point distance, is the preferred choice, as it is species-specific and not sensitive to collection density
 radius = subpop.radius(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
-                       factor.div = 10, quant.max = 0.95)
+                       factor.div = 10, quant.max = 0.9)
 radius1 = subpop.radius(MyData[, c(1:3)], 
-                       factor.div = 10, quant.max = 0.95)
+                       factor.div = 10, quant.max = 0.9)
 
 #Getting family-specific radius for missing estimates (only high confidence level)
 tmp <- merge(radius, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
@@ -142,8 +142,10 @@ fam.radius <- aggregate(as.double(tmp$radius), list(tmp$family), median, na.rm =
 radius.new <- merge(tmp, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
 radius.new$radius[is.na(radius.new$radius)] <- 
   radius.new$x[is.na(radius.new$radius)]
+radius.new$radius[as.double(radius.new$radius) < 4] <- 4
 radius.new <- radius.new[order(radius.new$tax), ]
 table(radius$tax == radius$tax)
+hist(as.double(radius.new$radius), nclass = 40)
 
 #Getting family-specific radius for missing estimates (any confidence level)
 tmp1 <- merge(radius1, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
@@ -152,8 +154,17 @@ fam.radius <- aggregate(as.double(tmp1$radius), list(tmp1$family), median, na.rm
 radius.new1 <- merge(tmp1, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
 radius.new1$radius[is.na(radius.new1$radius)] <- 
   radius.new1$x[is.na(radius.new1$radius)]
+radius.new1$radius[as.double(radius.new1$radius) < 4] <- 4
 radius.new1 <- radius.new1[order(radius.new1$tax), ]
 table(radius1$tax == radius1$tax)
+hist(as.double(radius.new1$radius), nclass = 40)
+
+##Saving the information on subpopulation radius
+tmp2 <- merge(radius.new1[,-4], radius.new[,-c(1,4)], by="tax", all.x= TRUE, sort = FALSE)
+names(tmp2)[3:4] <- c("est.radius.level.1", "est.radius.level.2")
+tmp2 <- tmp2[,c("family","tax","est.radius.level.1", "est.radius.level.2")]
+tmp2 <- tmp2[order(tmp2$tax),]
+saveRDS(tmp2, "data/est.radius.subpops.rds")
 
 #Getting the subpopulations
 SUB <- my.subpop.comp(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
@@ -226,28 +237,28 @@ strict.ucs <- readRDS("data/StrictUCsNeotrop_simplified_clipped.rds")
 types <- vapply(sf::st_geometry(strict.ucs), function(x) { class(x)[2]}, "")
 polys <- strict.ucs[ grepl("*POLYGON", types), ]
 polys.sp <- as(polys, "Spatial")
-geom.col <- strict.ucs[ grepl("GEOMETRYCOLLECTION", types), ]
-polys.sp1<- list("vector", length(geom.col))
-for (i in 1:length(geom.col)){
-  tmp <- sf::st_cast(geom.col[i,], "GEOMETRY")
-  #tmp1 <- sf::st_cast(tmp)
-  tmp1 <- tmp
-  types <- vapply(sf::st_geometry(tmp1), function(x) { class(x)[2]}, "")
-  tmp2 <- tmp1[ grepl("*POLYGON", types), ]
-  tmp3 <- sf::st_cast(tmp2, "MULTIPOLYGON")
-  polys.sp1[[i]] <- tmp3
-}
-polys.sp1 <- do.call(rbind, polys.sp1)
-polys.sp1 <- as(polys.sp1, "Spatial")
-strict.ucs.spdf <- rbind(polys.sp, polys.sp1)
+# geom.col <- strict.ucs[ grepl("GEOMETRYCOLLECTION", types), ]
+# polys.sp1<- list("vector", length(geom.col))
+# for (i in 1:length(geom.col)){
+#   tmp <- sf::st_cast(geom.col[i,], "GEOMETRY")
+#   tmp1 <- sf::st_cast(tmp)
+#   types <- vapply(sf::st_geometry(tmp), function(x) { class(x)[2]}, "")
+#   tmp2 <- tmp1[ grepl("*POLYGON", types), ]
+#   tmp3 <- sf::st_cast(tmp2, "MULTIPOLYGON")
+#   polys.sp1[[i]] <- tmp3
+# }
+# polys.sp1 <- do.call(rbind, polys.sp1)
+# polys.sp1 <- as(polys.sp1, "Spatial")
+# strict.ucs.spdf <- rbind(polys.sp, polys.sp1)
+strict.ucs.spdf <- polys.sp
 rm(polys, polys.sp, polys.sp1,geom.col,strict.ucs)
 
 system.time(
 locs <- my.locations.comp(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3),], 
                                 method = "fixed_grid",
-                                nbe_rep = 0, # number of raster with random starting position
-                                Cell_size_locations = 2, #grid size in kilometres used for estimating the number of location
-                                Rel_cell_size=0.05,
+                                nbe_rep = 30, # number of raster with random starting position
+                                Cell_size_locations = 10, #grid size in kilometres used for estimating the number of location
+                                Rel_cell_size = 0.05, 
                                 protec.areas = strict.ucs.spdf, #a SpatialPolygonsDataFrame, shapefile with protected areas.
                                 ID_shape_PA= "NAME", # field name of protec.areas with ID
                                 method_protected_area="no_more_than_one", 
@@ -260,8 +271,8 @@ saveRDS(cbind.data.frame(locs[[3]],locs[4]), "data/tmp.rds")
 system.time(
 locs1 <- my.locations.comp(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c(1:3),], 
                             method = "fixed_grid",
-                            nbe_rep = 0, # number of raster with random starting position
-                            Cell_size_locations = 2, #grid size in kilometres used for estimating the number of location
+                            nbe_rep = 30, # number of raster with random starting position
+                            Cell_size_locations = 10, #grid size in kilometres used for estimating the number of location
                             Rel_cell_size=0.05,
                             protec.areas = strict.ucs.spdf, #a SpatialPolygonsDataFrame, shapefile with protected areas.
                             ID_shape_PA= "NAME", # field name of protec.areas with ID
