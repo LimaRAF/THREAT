@@ -90,11 +90,12 @@ subpop.radius = function(XY, factor.div = 10, quant.max = 1) {
     x = cbind.data.frame(lon, lat)
     if(dim(x)[1]>3) {
       projWSG = crs("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-      projEAC = crs("+proj=cea +lon_0=Central Meridian+lat_ts=Standard Parallel+x_0=False Easting+y_0=False Northing +ellps=WGS84")
+      #projEAC = crs("+proj=cea +lon_0=Central Meridian+lat_ts=Standard Parallel+x_0=False Easting+y_0=False Northing +ellps=WGS84")
+      projSIRGAS <- CRS("+init=epsg:5641")
       #x <- as.data.frame(XY.dt[tax == "Acalypha diversifolia"])
       coordinates(x) <- ~ lon + lat 
       proj4string(x) <- projWSG
-      coordEAC <- as.data.frame(coordinates(spTransform(x, projEAC)))
+      coordEAC <- as.data.frame(coordinates(spTransform(x, projSIRGAS)))
       d.inter = as.character(round(quantile(as.double(dist(coordEAC)/1000), prob=quant.max, na.rm = TRUE)/fact,2))
     } else {
       d.inter = NA_character_

@@ -8,14 +8,17 @@ rm(list=ls())
 
 
 #### LOADING PACKAGES ###
-#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
-devtools::install_github("gdauby/ConR@devel")
+devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
+#devtools::install_github("gdauby/ConR@devel", force = TRUE)
 library("ConR")
 require(data.table)
 source("./R/suggestions_for_ConR.r")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
 source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
-
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//subpop.comp.R")
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//proj_crs.R")
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//coord.check.R")
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//subpop.estimation.R")
 
 #### LOADING THE NEOTROPICS MAP ###
 neotrop.simp <- readRDS("data/Contour_Neotrop_simplified_tol_005_no_small.rds")
@@ -38,8 +41,8 @@ rm(oc.data)
 #MyData <- MyData[ids,] 
 
 #### OBTAINING THE NAME AND NUMBER OF OCCURRENCES (TOTAL AND SPATIALLY-UNIQUE) PER SPECIES ####
-resultado <- readRDS("assess_iucn_spp.rds")
-names(resultado)[1:2] <- c("family","tax")
+resultado <- readRDS("data/assess_iucn_spp.rds")
+names(resultado)[which(names(resultado) %in% c("family.correct1","species.correct2"))] <- c("family","tax")
 
 
 ####################################
@@ -107,20 +110,18 @@ rm(EOO.hull.sensitivity); gc()
 ## Alpha-Hull method
 #### GILLES I AM GETTING AN ERROR HERE: ####
 #"Evaluation error: TopologyException: Input geom 1 is invalid: Self-intersection at or near point -68.779132918930316 -14.59956504251698 at -68.779132918930316 -14.59956504251698."
-
-EOO.alpha <- EOO.computing(MyData[grepl("high", MyData$tax.check.final),], 
-                                  method.range = "alpha.hull", alpha = 1, # maybe 2 looks like a better compromise
-                                  exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                                  write_results=FALSE, # If TRUE, a csv fiel is created in the working directory
-                                  parallel = TRUE, NbeCores = 7) # run on parallel? How many cores?
-EOO.alpha1 <- EOO.computing(MyData[grepl("high", MyData$tax.check.final),], 
-                            method.range = "alpha.hull", alpha = 2, # maybe 2 looks like a better compromise
-                            exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                            write_results=FALSE, # If TRUE, a csv fiel is created in the working directory
-                            parallel = TRUE, NbeCores = 7) # run on parallel? How many cores?
-
-
-#rm(EOO.alpha,EOO.alpha1,EOO.alpha.sensitivity); gc()
+# 
+# EOO.alpha <- EOO.computing(MyData[grepl("high", MyData$tax.check.final),], 
+#                                   method.range = "alpha.hull", alpha = 1, # maybe 2 looks like a better compromise
+#                                   exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
+#                                   write_results=FALSE, # If TRUE, a csv fiel is created in the working directory
+#                                   parallel = TRUE, NbeCores = 7) # run on parallel? How many cores?
+# EOO.alpha1 <- EOO.computing(MyData[grepl("high", MyData$tax.check.final),], 
+#                             method.range = "alpha.hull", alpha = 2, # maybe 2 looks like a better compromise
+#                             exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
+#                             write_results=FALSE, # If TRUE, a csv fiel is created in the working directory
+#                             parallel = TRUE, NbeCores = 7) # run on parallel? How many cores?
+# rm(EOO.alpha,EOO.alpha1,EOO.alpha.sensitivity); gc()
 
 
 ########################
@@ -136,7 +137,6 @@ radius1 = subpop.radius(MyData[, c(1:3)],
 
 #Getting family-specific radius for missing estimates (only high confidence level)
 tmp <- merge(radius, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
-tmp$family[tmp$tax == "Ilex cognata"] <- "Aquifoliaceae"
 tmp <- tmp[order(tmp$tax),]
 fam.radius <- aggregate(as.double(tmp$radius), list(tmp$family), median, na.rm = TRUE)
 radius.new <- merge(tmp, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
@@ -147,7 +147,6 @@ table(radius$tax == radius$tax)
 
 #Getting family-specific radius for missing estimates (any confidence level)
 tmp1 <- merge(radius1, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
-tmp1$family[tmp1$tax == "Ilex cognata"] <- "Aquifoliaceae"
 tmp1 <- tmp1[order(tmp1$tax),]
 fam.radius <- aggregate(as.double(tmp1$radius), list(tmp1$family), median, na.rm = TRUE)
 radius.new1 <- merge(tmp1, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
@@ -196,14 +195,16 @@ rm(tmp,tmp1,radius,radius1,radius.new,radius.new1,SUB,SUB1,n.sub.pop,n.sub.pop1)
 #################################
 #only high confidence level
 system.time(
-AOO <- AOO.computing(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3)], Cell_size_AOO = 2, # Size of the grid cell in kilometers
+AOO <- AOO.computing(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3)], 
+                          Cell_size_AOO = 2, # Size of the grid cell in kilometers
                     nbe.rep.rast.AOO = 30, # number of raster with random starting position for estimating the AOO
                     parallel = TRUE, NbeCores = 7, 
                     show_progress= TRUE, export_shp=FALSE)
 )
 #any confidence level
 system.time(
-AOO1 = AOO.computing(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c(1:3)], Cell_size_AOO = 2, # Size of the grid cell in kilometers
+AOO1 = AOO.computing(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c(1:3)], 
+                     Cell_size_AOO = 2, # Size of the grid cell in kilometers
                     nbe.rep.rast.AOO = 30, # number of raster with random starting position for estimating the AOO
                     parallel = TRUE, NbeCores = 7, 
                     show_progress= TRUE, export_shp=FALSE)
@@ -214,7 +215,6 @@ names(tmp2) <- c("tax","AOO.level.1", "AOO.level.2")
 tmp2 <- tmp2[order(tmp2$tax),]
 saveRDS(tmp2, "data/AOO.rds")
 rm(AOO, AOO1, tmp2); gc()
-
 
 
 #############################
@@ -230,7 +230,8 @@ geom.col <- strict.ucs[ grepl("GEOMETRYCOLLECTION", types), ]
 polys.sp1<- list("vector", length(geom.col))
 for (i in 1:length(geom.col)){
   tmp <- sf::st_cast(geom.col[i,], "GEOMETRY")
-  tmp1 <- sf::st_cast(tmp)
+  #tmp1 <- sf::st_cast(tmp)
+  tmp1 <- tmp
   types <- vapply(sf::st_geometry(tmp1), function(x) { class(x)[2]}, "")
   tmp2 <- tmp1[ grepl("*POLYGON", types), ]
   tmp3 <- sf::st_cast(tmp2, "MULTIPOLYGON")
@@ -250,11 +251,11 @@ locs <- my.locations.comp(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & g
                                 protec.areas = strict.ucs.spdf, #a SpatialPolygonsDataFrame, shapefile with protected areas.
                                 ID_shape_PA= "NAME", # field name of protec.areas with ID
                                 method_protected_area="no_more_than_one", 
-                                parallel=TRUE, NbeCores=6)
+                                parallel=TRUE, NbeCores=7)
 )
 
 table(names(locs[[3]]) == names(locs[[4]]))
-#saveRDS(cbind.data.frame(locs[[3]],locs[4]), "data/temporary/tmp.rds")
+saveRDS(cbind.data.frame(locs[[3]],locs[4]), "data/tmp.rds")
 
 system.time(
 locs1 <- my.locations.comp(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c(1:3),], 
@@ -265,10 +266,10 @@ locs1 <- my.locations.comp(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c
                             protec.areas = strict.ucs.spdf, #a SpatialPolygonsDataFrame, shapefile with protected areas.
                             ID_shape_PA= "NAME", # field name of protec.areas with ID
                             method_protected_area="no_more_than_one", 
-                            parallel=TRUE, NbeCores=6)
+                            parallel=TRUE, NbeCores=7)
 )
 table(names(locs1[[3]]) == names(locs1[[4]]))
-#saveRDS(cbind.data.frame(locs1[[3]],locs1[4]), "data/temporary/tmp1.rds")
+saveRDS(cbind.data.frame(locs1[[3]],locs1[4]), "data/temporary/tmp1.rds")
 
 ##Combining the results
 tmp <- cbind.data.frame(locs[[3]],locs[4])
@@ -282,7 +283,7 @@ localities <- localities[order(localities$tax),]
 saveRDS(localities, "data/number_localities.rds")
 
 
-#### MERGING ALL RESULTS AD SAVING CRITERIA B PARAMETERS ####
+#### MERGING ALL RESULTS AND SAVING CRITERIA B PARAMETERS ####
 EOO <- readRDS("data/EOO.convex.hull.rds")
 AOO <- readRDS("data/AOO.rds")
 subpops <- readRDS("data/number.subpops.rds")
@@ -307,27 +308,21 @@ critB_low <- cbind.data.frame(EOO[, c("Species", "Occs.level.1", "EOO.level.1")]
 names(critB_high)[1:3] <- names(critB_low)[1:3] <- c("tax", "Nbe_occs", "EOO")
 critB_high <- critB_high[,c("tax","EOO","AOO","Nbe_subPop","Nbe_loc","Nbe_loc_PA","Nbe_occs")]
 critB_low <- critB_low[,c("tax","EOO","AOO","Nbe_subPop","Nbe_loc","Nbe_loc_PA","Nbe_occs")]
-saveRDS(critB_high, "data/criteriaB_high_confidence.rds")
-saveRDS(critB_low, "data/criteriaB_low_confidence.rds")
+saveRDS(critB_high, "data/criteriaB_metrics_high_confidence.rds")
+saveRDS(critB_low, "data/criteriaB_metrics_low_confidence.rds")
 
-### END (NOT RUN) ###
 
-##########################
-#### IUCN ASSESSMENTS ####
-##########################
+#########################################################################################################################################################
+#########################################################################################################################################################
+#############################
+#### APPLYING CRITERIA B ####
+#############################
+critB_high <- readRDS("data/criteriaB_metrics_high_confidence.rds")
+critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
 
-# obtaining the results using 
-# IUCN = IUCN.eval(MyData[ids,], country_map = neotrop.simp.spdf, Cell_size_AOO = 2, Cell_size_locations = 2, 
-#                  Resol_sub_pop = 30, method_locations = "fixed_grid", Rel_cell_size = 0.05, 
-#                  DrawMap = FALSE, add.legend = TRUE, 
-#                  file_name = NULL, export_shp = FALSE, write_shp = FALSE, 
-#                  write_results = FALSE, protec.areas = NULL, map_pdf = FALSE, draw.poly.EOO=TRUE,
-#                  exclude.area = TRUE, method_protected_area = "no_more_than_one", 
-#                  ID_shape_PA = "WDPA_PID", 
-#                  buff_width = 0.1, SubPop=TRUE, alpha=1, buff.alpha=0.1, 
-#                  method.range="convex.hull", nbe.rep.rast.AOO=0,
-#                  showWarnings=TRUE, write_file_option="excel", 
-#                  parallel=TRUE, NbeCores=6)
+args(criteria.B)
+
+
 
 #### GILLES EXTRA CODES ####
 
