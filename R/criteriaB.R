@@ -51,6 +51,9 @@ names(resultado)[which(names(resultado) %in% c("family.correct1","species.correc
 
 ## Convex Hull method - took 2.5 and 23.5 min in mine machine without saving the
 #species maps, using the very light and the ok-resolution Neotropical map, respectively
+
+## GILLES COMMENT: Are you sure you want to crop the EOO (exclude area)? IUCN guidelines suggest to not do it for criterion B
+
 system.time(
 EOO.hull <- EOO.computing(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
                                  method = "convex.hull",
@@ -333,34 +336,59 @@ critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
 
 args(criteria.B)
 
+devtools::install_github("gdauby/ConR", ref = "devel", force = TRUE)
+library(ConR)
+library(dplyr)
+
+critB_high <- 
+  critB_high %>% 
+  as_tibble() %>% 
+  mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
+  mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
+
+results_Cb <- 
+  cat_criterion_b(
+  EOO = critB_high$EOO,
+  AOO = critB_high$AOO,
+  locations = critB_high$nbe_loc_total,
+  protected = critB_high$protected
+)
+
+table(results_Cb$ranks_B12a)
+
+critB_high <- 
+  critB_high %>% 
+  mutate(cb_category = results_Cb$ranks_B12a)
+
+
+critB_high %>% 
+  group_by(cb_category) %>% 
+  summarise(count = n())
 
 
 #### GILLES EXTRA CODES ####
 
 library(tidyverse)
+library(ConR)
 
 # all_source <- 
 #   list.files("D:/MonDossierR/ConR_orig/R/", full.names = T)
 # for (i in 1:length(all_source)) source(all_source[i])
 
-oc.data_tb <- 
-  oc.data %>% 
-  as_tibble() %>% 
-  dplyr::select(ddlat, ddlon, tax)
 
 ## list of species with at least one georeferenced occurrence
-oc.data_tb %>% 
+MyData %>% 
   filter(!is.na(ddlat), !is.na(ddlon)) %>% 
   distinct(tax)
 
 ## list of species with no georeferenced occurrences
-oc.data_tb %>% 
+MyData %>% 
   filter(is.na(ddlat) | is.na(ddlon)) %>% 
   distinct(tax)
 
 ## no paralleling 2224.4 secondes
 system.time(results_cb <- 
-              criterion_B(x = oc.data_tb))
+              criterion_B(x = MyData))
 ## paralleling
 system.time(results_cb <- 
               criterion_B(x = oc.data_tb, parallel = T))
