@@ -331,30 +331,57 @@ saveRDS(critB_low, "data/criteriaB_metrics_low_confidence.rds")
 #############################
 #### APPLYING CRITERIA B ####
 #############################
-critB_high <- readRDS("data/criteriaB_metrics_high_confidence.rds")
-critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
-
-args(criteria.B)
-
+#Loading packages
 devtools::install_github("gdauby/ConR", ref = "devel", force = TRUE)
 library(ConR)
 library(dplyr)
 
+#Getting the estimates for criterion B
+critB_high <- readRDS("data/criteriaB_metrics_high_confidence.rds")
+critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
+
+#Getting estimates of species continuing decline
+#GET MISSING DECLINE FROM AOO DECLINE (Criteria A)
+critC <- readRDS("data/criterionC_all_prop_mature.rds")
+est.decline <- sapply(strsplit(critC$cont.decline,"\\|"), tail, 1)  
+est.decline <- gsub("\\(|\\)|[0-9]", "", est.decline)
+est.decline <- gsub(" -", "", est.decline)
+table(est.decline, critC$any.decline, useNA = "always")
+critC$decline <- critC$any.decline
+critC$decline[!critC$decline %in% "Decreasing" & est.decline %in% "Decreasing"] <- "Decreasing" 
+  
+critB_high <- merge(critB_high, critC[,c("species","decline")],
+                    by.x = "tax", by.y = "species", all.x = TRUE, sort = FALSE)
+critB_high <- critB_high[order(critB_high$tax),]
+critB_low <- merge(critB_low, critC[,c("species","decline")],
+                    by.x = "tax", by.y = "species", all.x = TRUE, sort = FALSE)
+critB_low <- critB_low[order(critB_low$tax),]
+
+##For assuming, that all other species (rarer) are decreasing as well
+critB_high$decline[is.na(critB_high$decline)] <- "Decreasing"
+critB_low$decline[is.na(critB_low$decline)] <- "Decreasing"
+
+#Combining the info on number of localities and % in PAs
 critB_high <- 
   critB_high %>% 
   as_tibble() %>% 
   mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
   mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
+critB_low <- 
+  critB_low %>% 
+  as_tibble() %>% 
+  mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
+  mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
 
-results_Cb <- 
-  cat_criterion_b(
-  EOO = critB_high$EOO,
-  AOO = critB_high$AOO,
-  locations = critB_high$nbe_loc_total,
-  protected = critB_high$protected
+#Perfoming the assessments
+results_Cb_high <- cat_criterion_b(EOO = critB_high$EOO,
+                              AOO = critB_high$AOO,
+                              locations = critB_high$nbe_loc_total,
+                              #protected = critB_high$protected, 
+                              decline = critB_high$decline,
+                              protected.threshold = 100 ## Gilles, maybe set a minimun number of occurrences as well? Most of 100%PA species had <3 occurrences (90% of the time)
 )
-
-table(results_Cb$ranks_B12a)
+table(results_Cb_high$ranks_B12a) #20.75%
 
 critB_high <- 
   critB_high %>% 

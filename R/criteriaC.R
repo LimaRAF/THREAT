@@ -8,6 +8,7 @@ rm(list=ls())
 #### LOADING PACKAGES ###
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
 #devtools::install_github("gdauby/ConR@devel") # new version on GitHub
+detach("package:ConR", unload=TRUE)
 install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
  repos = NULL, 
  type = "source")
@@ -24,8 +25,6 @@ high.pop.sizes <- readRDS("data/threat_high_pop_sizes_for_ConR.rds")
 
 #Putting data in the ConR format
 spp <- names(res.means)
-spp <- gsub("_"," ", spp)
-spp <- gsub("\\.","-", spp)
 nrows <- length(spp)
 decline.models <- matrix(NA, ncol = 2, nrow = nrows,
                          dimnames = list(spp, c("Before 1992", "After 1992")))
@@ -59,20 +58,37 @@ rm(res.means)
 
 #### NEED TO RUN FOR low and high POP SIZES?
 
+## Getting info on the number of subpopulations for each species
+subpops <- readRDS("data/number.subpops.rds")
+subpops <- merge(mean.pop.sizes[,c("species","2018")], subpops,
+                 by.x = "species", by.y = "tax", all.x = TRUE, sort= FALSE)
+subpops <- subpops[order(subpops$species),]
+table(mean.pop.sizes$species == subpops$species)
+subpop.sizes <- vector("list", dim(subpops)[1])
+names(subpop.sizes) <- subpops$species
+for(i in 1:length(subpop.sizes)) {
+  subpop.sizes[[i]] <- rep(subpops$`2018`[i]/subpops$Number.subpops.level.2[i],
+                           subpops$Number.subpops.level.2[i])
+}
+#Testing
+table(round(mean.pop.sizes[, which(names(mean.pop.sizes) == 2018)],0) == round(sapply(subpop.sizes, sum),0))
+
 ##Running the criterion C for the optimal parameters (GL and p)
 system.time(
-critC <- criterion_C(mean.pop.sizes,
+critC <- criterion_C(x = mean.pop.sizes,
                      assess.year = 2018,
                      project.years = NULL,
                      project = FALSE,
                      ignore.years = c(1718,1748,1778,1793,1808,1818,1823,1838),
-                     subcriteria = c("C1"),
+                     subcriteria = c("C1", "C2"),
                      generation.time = PopData$GenerationLength.range,
                      prop.mature = PopData$p.est,
+                     subpop.size = subpop.sizes,
                      parallel = TRUE,
                      NbeCores = 7)
-) ## took 18.3 min with all statistical models, 5130 spp and 7 cores 
-#saveRDS(critC, "data/criterionC_optmim_params.rds")
+) ## took 24.3 min with all statistical models, 5130 spp and 7 cores 
+saveRDS(critC, "data/criterionC_optmim_params.rds")
+critC <- readRDS("data/criterionC_optmim_params.rds")
 
 ##Running the criterion C for GL = 25 ys and the optimal p
 critC.gl25 <- criterion_C(mean.pop.sizes,
@@ -80,14 +96,16 @@ critC.gl25 <- criterion_C(mean.pop.sizes,
                        project.years = NULL,
                        project = FALSE,
                        ignore.years = c(1718,1748,1778,1793,1808,1818,1823,1838),
-                       subcriteria = c("C1"),
+                       subcriteria = c("C1","C2"),
                        generation.time = 25,
                        prop.mature = PopData$p.est,
+                       subpop.size = subpop.sizes,
                        parallel = TRUE,
                        NbeCores = 7)
-#saveRDS(critC.gl25, "data/criterionC_GL_25ys.rds")
+saveRDS(critC.gl25, "data/criterionC_GL_25ys.rds")
+critC.gl25 <- readRDS("data/criterionC_GL_25ys.rds")
 
-### RUNNINGG ASSESSMENTS FOR DIFFERENT VALUES OF p ###
+### RUNNING ASSESSMENTS FOR DIFFERENT VALUES OF p ###
 ps <- sort(c(1,.85,.72,.60,.49,.51,.58,.31,.25,.33,.64,.45,.35,.28,0.18,0.4), decreasing = TRUE)
 
 # Optimal params
@@ -122,7 +140,7 @@ res.high <- do.call(cbind.data.frame, res.high)
 colnames(res.high) <- paste0("C1.p",colnames(res.high), ".high")
 critC.all <- cbind.data.frame(critC, res, res.low, res.high)
 
-# Optimal params
+# GenLeng = 25 years
 df <- cbind.data.frame(critC.gl25[,c("assess.pop.size", "cont.decline")],
                        critC.gl25[,grepl("reduction", names(critC.gl25))],
                        stringsAsFactors = FALSE)
@@ -157,20 +175,20 @@ critC.all.gl25 <- cbind.data.frame(critC.gl25, res, res.low, res.high)
 
 ## Calculating the Red List Index for subcriterion A1 and A2
 #Optmimal params
-all.GL1 <- critC.all[,c(1:11,13:14,12,15:62)]
-for(i in 14:62) all.GL1[,i] <- as.character(all.GL1[,i])
-for(i in 14:62) all.GL1[,i] <- gsub("LC or NT", "LC", all.GL1[,i])
+all.GL1 <- critC.all[,c(1:15,18:19,16,17,20:67)]
+for(i in 18:67) all.GL1[,i] <- as.character(all.GL1[,i])
+for(i in 18:67) all.GL1[,i] <- gsub("LC or NT", "LC", all.GL1[,i])
 
-rli.all1 <- apply(all.GL1[,14:62], 2, red::rli, boot = TRUE, runs = 4999)
-apply(all.GL1[,14:62], 2, table)[1:2]
+rli.all1 <- apply(all.GL1[,18:67], 2, red::rli, boot = TRUE, runs = 4999)
+apply(all.GL1[,18:67], 2, table)[1:2]
 
 #Gl 25ys
-all.GL1.gl25 <- critC.all.gl25[,c(1:11,13:14,12,15:62)]
-for(i in 14:62) all.GL1.gl25[,i] <- as.character(all.GL1.gl25[,i])
-for(i in 14:62) all.GL1.gl25[,i] <- gsub("LC or NT", "LC", all.GL1.gl25[,i])
+all.GL1.gl25 <- critC.all.gl25[,c(1:15,18:19,16,17,20:67)]
+for(i in 18:67) all.GL1.gl25[,i] <- as.character(all.GL1.gl25[,i])
+for(i in 18:67) all.GL1.gl25[,i] <- gsub("LC or NT", "LC", all.GL1.gl25[,i])
 
-rli.all1.gl25 <- apply(all.GL1.gl25[,14:62], 2, red::rli, boot = TRUE, runs = 4999)
-apply(all.GL1.gl25[,14:62], 2, table)[1:2]
+rli.all1.gl25 <- apply(all.GL1.gl25[,18:67], 2, red::rli, boot = TRUE, runs = 4999)
+apply(all.GL1.gl25[,18:67], 2, table)[1:2]
 
 ###################
 #### FIGURE SY ####

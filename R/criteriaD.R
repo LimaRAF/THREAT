@@ -122,23 +122,23 @@ for(i in 2:length(ps)){
 
 ## Calculating the Red List Index for subcriterion A1 and A2
 #Optmimal params
-all.GL2 <- critD.all[,c(1:4,6:9,5,10:25)]
-for(i in 9:25) all.GL2[,i] <- as.character(all.GL2[,i])
-for(i in 9:25) all.GL2[,i] <- gsub("LC or NT", "LC", all.GL2[,i])
+all.GL2 <- critD.all[,c(1:4,6:9,5,10:27)]
+for(i in 9:27) all.GL2[,i] <- as.character(all.GL2[,i])
+for(i in 9:27) all.GL2[,i] <- gsub("LC or NT", "LC", all.GL2[,i])
 
-rli.all2 <- apply(all.GL2[,9:25], 2, red::rli, boot = TRUE, runs = 4999)
-apply(all.GL2[,9:25], 2, table)
+rli.all2 <- apply(all.GL2[,9:27], 2, red::rli, boot = TRUE, runs = 4999)
+apply(all.GL2[,9:27], 2, table)
 
 ###################
 #### FIGURE SZ ####
 ###################
 
-jpeg(filename = "figures/Figure_SZ.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_SZ.jpg", width = 2500, height = 2000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 #par(mfrow=c(1,2))
 par(mar=c(4,4,0.75,0.5), mgp=c(2.5,0.25,0),tcl=-0.2,las=1)
 #optimum GL
-plot(rev(rli.all2[2, grepl("D\\.", colnames(rli.all2))]) ~ rev(ps), #type = "b",
+plot(rev(rli.all2[2, grepl("D\\.[0-9]", colnames(rli.all2))]) ~ rev(ps), #type = "b",
      #xaxp = c(1890, 2018, 5), yaxp = c(60, 220, 6), 
      xaxt = "n",# yaxt = "n", 
      cex.lab = 1.2,
@@ -147,8 +147,8 @@ plot(rev(rli.all2[2, grepl("D\\.", colnames(rli.all2))]) ~ rev(ps), #type = "b",
 #axis(1, at=rev(ps), cex.axis = 1)
 axis(1, at=seq(0.2,1,0.1), cex.axis = 1)
 #axis(2, at=c(60,80,100,120,140,160,180,200,220), cex.axis = 1)
-arrows(x0=rev(ps), y0 = rev(rli.all2[1,grepl("D\\.", colnames(rli.all2))]), #using mean CIs
-       y1 = rev(rli.all2[3,grepl("D\\.", colnames(rli.all2))]),
+arrows(x0=rev(ps), y0 = rev(rli.all2[1,grepl("D\\.[0-9]", colnames(rli.all2))]), #using mean CIs
+       y1 = rev(rli.all2[3,grepl("D\\.[0-9]", colnames(rli.all2))]),
        code = 3, angle = 90, length = 0.05)
 #arrows(x0=rev(ps), y0 = rev(rli.all1[1,grepl("\\.p", colnames(rli.all1))][17:32]), #using low and high CIs
 #       y1 = rev(rli.all1[3,grepl("\\.p", colnames(rli.all1))][33:48]),
@@ -269,7 +269,7 @@ car::Anova(mod.mix7)
 car::vif(mod.mix7)
 plot(mod.mix7)
 car::avPlot(mod.mix7)
-summary(mod.mix7)
+summary(mod.mix8)
 
 par(mfrow=c(1,1))
 plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1, xlim=c(0,10),ylim = c(0,20))
@@ -323,7 +323,7 @@ summary(exp(predict(mod.mix6, new.dat, re.form=NULL))) # dAIC: 55.6 (media: 110,
 summary(exp(predict(mod.mix7, new.dat, re.form=NULL))) # dAIC: 32.1 (media: 122,775)
 summary(exp(predict(mod.mix8, new.dat, re.form=NULL))) # best model (media: 126,255)
 best.model <- mod.mix8
-preds <- exp(merTools::predictInterval(tmp1, new.dat1, include.resid.var = TRUE,
+preds <- exp(merTools::predictInterval(best.model, new.dat, include.resid.var = TRUE,
                                     which = "full", level = 0.9, n.sims = 5000))
 new.dat1 <- cbind.data.frame(new.dat, preds, 
                              stringsAsFactors = FALSE)
