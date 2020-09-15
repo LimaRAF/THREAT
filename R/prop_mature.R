@@ -131,7 +131,9 @@ for(i in c(1,3,5,7)) {
     }
   }
 }
-af.p <- af.p[,c(1,2,4,5,3,15:18)]
+#af.p <- af.p[,c(1,2,4,5,3,15:18)]
+af.p <- af.p[,c(2,4:6,3,15:18)]
+
 
 for(i in c(1,3,5,7)) {
   eg <- egs[i]
@@ -149,7 +151,8 @@ for(i in c(1,3,5,7)) {
     }
   }
 }
-af.p1 <- af.p1[,c(1,2,4,5,3,15:18)]
+#af.p1 <- af.p1[,c(1,2,4,5,3,15:18)]
+af.p1 <- af.p1[,c(2,4:6,3,15:18)]
 
 #Selecting the info for each Dcrit
 res <- res1 <- matrix(NA, ncol = 4, nrow = 2)
@@ -193,10 +196,10 @@ result1$p[result1$GF %in% "large_tree" & result1$ecol.group %in% "climax"] <-
   result1$dbh.20[result1$GF %in% "large_tree" & result1$ecol.group %in% "climax"]
 
 result1$dbh.crit[result1$GF %in% "large_shrub"] <- 5
-result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "pioneer"] <- 6
-result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "early_secondary"] <- 7
-result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "late_secondary"] <- 8
-result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "climax"] <- 9
+result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "pioneer"] <- 7
+result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "early_secondary"] <- 8
+result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "late_secondary"] <- 9
+result1$dbh.crit[result1$GF %in% "small_tree" & result1$ecol.group %in% "climax"] <- 10
 
 result1$dbh.crit[result1$GF %in% "large_tree" & result1$ecol.group %in% "pioneer"] <- 10
 result1$dbh.crit[result1$GF %in% "large_tree" & result1$ecol.group %in% "early_secondary"] <- 12.5
@@ -256,9 +259,9 @@ combo[,2] <- gsub('[0-9:]\\.',"", combo[,2])
 
 #Prop. mature
 combo$p.est <- c(1, 1, 1, 1, 1, # for shrubs
-             af.p[1,1], af.p[3,2], af.p[5,3], af.p[7,4], 0.5122, # for small trees
+             af.p[1,1], af.p[3,2], af.p[5,3], af.p[7,4], 0.4617, # for small trees
              af.p[1,6], af.p[3,7], af.p[5,8], af.p[7,9], 0.3342, # for large trees
-             0.6371, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
+             0.5871, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
 combo$str.match <- paste(combo$EG,combo$GF,sep = "_") 
 result1$str.match <- paste(result1$ecol.group,result1$GF,sep = "_")
 result.final <- dplyr::left_join(result1, combo[,c("str.match","p.est")], by= "str.match") 
@@ -273,7 +276,7 @@ result.final[result.final$species.correct %in% "Tapirira guianensis",] # dbh.cri
 result.final$p[result.final$species.correct %in% "Tapirira guianensis"] <- 0.5842
 result.final[result.final$species.correct %in% "Cecropia glaziovii",] # dbh.crit == 10
 plot(result.final$p.est[result.final$N>30] ~ result.final$p[result.final$N>30])
-abline(lm(result.final$p.est[result.final$N>30] ~ result.final$p[result.final$N>30]), lwd=2, col=2)
+abline(lm(result.final$p.est[result.final$N>30] ~ result.final$p[result.final$N>30]), lwd=2, col=2); abline(0,1, lty=3)
 
 ## Saving...
 write.csv(result.final,"data/prop_mature.csv", row.names = FALSE)

@@ -1,8 +1,8 @@
-###################################################
-###################################################
-#### ASSESSING POPULATION DECLINE - CRITERIA C ####
-###################################################
-###################################################
+####################################################
+####################################################
+#### ASSESSING POPULATION DECLINE - CRITERION C ####
+####################################################
+####################################################
 rm(list=ls())
 
 #### LOADING PACKAGES ###
@@ -80,6 +80,7 @@ critC <- criterion_C(x = mean.pop.sizes,
                      project.years = NULL,
                      project = FALSE,
                      ignore.years = c(1718,1748,1778,1793,1808,1818,1823,1838),
+                     recent.year = 2000,
                      subcriteria = c("C1", "C2"),
                      generation.time = PopData$GenerationLength.range,
                      prop.mature = PopData$p.est,
@@ -96,6 +97,7 @@ critC.gl25 <- criterion_C(mean.pop.sizes,
                        project.years = NULL,
                        project = FALSE,
                        ignore.years = c(1718,1748,1778,1793,1808,1818,1823,1838),
+                       recent.year = 2000,
                        subcriteria = c("C1","C2"),
                        generation.time = 25,
                        prop.mature = PopData$p.est,
@@ -165,11 +167,11 @@ for(i in 1:length(ps)){
   res.high[[i]] <- as.character(all_ranks$ranks_C)
 }
 res <- do.call(cbind.data.frame, res)
-colnames(res) <- paste0("C1.p",colnames(res))
+colnames(res) <- paste0("C1.p", colnames(res))
 res.low <- do.call(cbind.data.frame, res.low)
-colnames(res.low) <- paste0("C1.p",colnames(res.low), ".low")
+colnames(res.low) <- paste0("C1.p", colnames(res.low), ".low")
 res.high <- do.call(cbind.data.frame, res.high)
-colnames(res.high) <- paste0("C1.p",colnames(res.high), ".high")
+colnames(res.high) <- paste0("C1.p", colnames(res.high), ".high")
 critC.all.gl25 <- cbind.data.frame(critC.gl25, res, res.low, res.high)
 
 
@@ -189,6 +191,14 @@ for(i in 18:67) all.GL1.gl25[,i] <- gsub("LC or NT", "LC", all.GL1.gl25[,i])
 
 rli.all1.gl25 <- apply(all.GL1.gl25[,18:67], 2, red::rli, boot = TRUE, runs = 4999)
 apply(all.GL1.gl25[,18:67], 2, table)[1:2]
+
+## Renaming the LC category
+all.GL1[] <- lapply(all.GL1, gsub, pattern = "^LC$", replacement = "LC or NT")
+all.GL1.gl25[] <- lapply(all.GL1.gl25, gsub, pattern = "^LC$", replacement = "LC or NT")
+
+#### Saving ####
+saveRDS(all.GL1, "data/criterionC_all_prop_mature.rds")
+#saveRDS(all.GL1.gl25, "data/criterionC_all_prop_mature.rds")
 
 ###################
 #### FIGURE SY ####
@@ -240,6 +250,3 @@ legend("topright", c("Group-specific", "Fixed"),
        bty = "n", lwd=2)
 dev.off()
 
-
-#### Saving ####
-saveRDS(all.GL1, "data/criterionC_all_prop_mature.rds")

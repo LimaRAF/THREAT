@@ -15,3 +15,4 @@ data/StrictUCsNeotrop_simplified_clipped.rds
 data/threat_inventory_data.rds
 doi_10.5061_dryad.bs332__v1/
 doi_10.5061_dryad.8t026__v1/
+data/spp.convex.hull.polys_sf_cropped.rds

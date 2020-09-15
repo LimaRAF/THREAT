@@ -5231,7 +5231,6 @@
 "Lonchocarpus cultratus","Lonchocarpus guilleminianus","Lonchocarpus guilleminianus","(Tul.) Malme",NA,NA,NA
 "Lonchocarpus cultratus","Derris guilleminiana","Derris guilleminiana","(Tul.) J.F.Macbr.",NA,NA,NA
 "Lonchocarpus cultratus","Pterocarpus cultratus","Pterocarpus cultratus","Vell.",NA,NA,NA
-"Lonchocarpus guillemineanus",NA,"NA NA",NA,NA,NA,NA
 "Lonchocarpus latifolius","Derris latifolia","Derris latifolia","(Willd.) Ducke",NA,NA,NA
 "Lonchocarpus latifolius","Lonchocarpus discolor","Lonchocarpus discolor","Huber",NA,NA,NA
 "Lonchocarpus latifolius","Lonchocarpus heptaphyllus","Lonchocarpus heptaphyllus","(Poir.) DC.",NA,NA,NA
@@ -5595,17 +5594,10 @@
 "Margaritopsis hassleriana","Rudgea hassleriana","Rudgea hassleriana","Chodat",NA,NA,NA
 "Marlierea acuminatissima","Eugeniopsis acuminatissima","Eugeniopsis acuminatissima","O.Berg",NA,NA,NA
 "Marlierea clausseniana","Eugeniopsis clausseniana","Eugeniopsis clausseniana","O.Berg",NA,NA,NA
-"Marlierea eugenioides","Calyptromyrcia eugenioides","Calyptromyrcia eugenioides","(Cambess.) O.Berg",NA,NA,NA
-"Marlierea eugenioides","Eugeniopsis ovata","Eugeniopsis ovata","O.Berg",NA,NA,NA
-"Marlierea eugenioides","Marlierea ovata","Marlierea ovata","(O.Berg) Nied.",NA,NA,NA
-"Marlierea eugenioides","Myrcia eugenioides","Myrcia eugenioides","Cambess.",NA,NA,NA
 "Marlierea excoriata","Marlierea parviflora","Marlierea parviflora","O.Berg",NA,NA,NA
 "Marlierea gardneriana","Eugeniopsis gardneriana","Eugeniopsis gardneriana","O.Berg",NA,NA,NA
 "Marlierea gaudichaudiana","Eugeniopsis gaudichaudiana","Eugeniopsis gaudichaudiana","O.Berg",NA,NA,NA
 "Marlierea involucrata","Rubachia involucrata","Rubachia involucrata","O.Berg",NA,NA,NA
-"Marlierea laevigata","Eugeniopsis laevigata","Eugeniopsis laevigata","(DC.) O.Berg",NA,NA,NA
-"Marlierea laevigata","Eugenia laevigata","Eugenia laevigata",NA,NA,NA,NA
-"Marlierea laevigata","Myrcia multipunctata","Myrcia multipunctata","Mazine",NA,NA,NA
 "Marlierea luschnathiana","Eugeniopsis luschnathiana","Eugeniopsis luschnathiana","O.Berg",NA,NA,NA
 "Marlierea obscura","Marlierea warmingiana","Marlierea warmingiana","Kiaersk.",NA,NA,NA
 "Marlierea polygama","Eugeniopsis polygama","Eugeniopsis polygama","O.Berg",NA,NA,NA
@@ -5650,7 +5642,6 @@
 "Metrodorea nigra","Metrodorea brevifolia","Metrodorea brevifolia","(Engl.) Engl.",NA,NA,NA
 "Metrodorea nigra","Metrodorea pubescens","Metrodorea pubescens","A.St.-Hil. & Tul.",NA,NA,NA
 "Metrodorea nigra","Metrodorea selloana","Metrodorea selloana","Engl.",NA,NA,NA
-"Metternichia princeps",NA,"NA NA",NA,NA,NA,NA
 "Metternichia principis","Metternichia princeps","Metternichia princeps",NA,NA,NA,NA
 "Mezilaurus crassiramea","Oreodaphne crassiramea","Oreodaphne crassiramea","Meisn.",NA,NA,NA
 "Mezilaurus crassiramea","Misanteca crassiramea","Misanteca crassiramea","(Meisn.) Benth.",NA,NA,NA
@@ -7239,7 +7230,6 @@
 "Ocotea lobbii","Ocotea opaca","Ocotea opaca","Mez",NA,NA,NA
 "Ocotea longifolia","Ocotea grandifolia","Ocotea grandifolia","(Nees) Mez",NA,NA,NA
 "Ocotea longifolia","Ocotea opifera","Ocotea opifera","Mart.",NA,NA,NA
-"Ocotea lucida",NA,"NA NA",NA,NA,NA,NA
 "Ocotea mandioccana","Cinnamomum riedelianum","Cinnamomum riedelianum","Kosterm.",NA,NA,NA
 "Ocotea mosenii","Ocotea conferta","Ocotea conferta","Coe-Teix.",NA,NA,NA
 "Ocotea nectandrifolia","Ocotea kuhlmannii","Ocotea kuhlmannii","Vattimo-Gil",NA,NA,NA
@@ -7879,7 +7869,6 @@
 "Piptocarpha leprosa","Piptocarpha pellucida","Piptocarpha pellucida","(Sch. Bip.) Baker",NA,NA,NA
 "Piptocarpha macropoda","Piptocarpha pannosa","Piptocarpha pannosa","Baker",NA,NA,NA
 "Piptocarpha notata","Piptocarpha cinerea","Piptocarpha cinerea","(Sch. Bip.) Baker",NA,NA,NA
-"Piptocarpha regnelii",NA,"NA NA",NA,NA,NA,NA
 "Piptocarpha robusta","Piptocarpha santosii","Piptocarpha santosii","H. Rob.",NA,NA,NA
 "Piptocarpha sellowii","Piptocarpha senescens","Piptocarpha senescens","Baker",NA,NA,NA
 "Piptolepis monticola","Piptolepis pseudomyrtus","Piptolepis pseudomyrtus",NA,NA,NA,NA
@@ -7897,7 +7886,8 @@
 "Pleradenophora membranifolia","Sebastiania rhombifolia","Sebastiania rhombifolia","(Rusby) Jabl.",NA,NA,NA
 "Pleroma arboreum","Tibouchina arborea","Tibouchina arborea","(Gardner) Cogn.",NA,NA,NA
 "Pleroma candolleanum","Tibouchina candolleana","Tibouchina candolleana","(Mart. ex DC.) Cogn.",NA,NA,NA
-"Pleroma echinata",NA,"NA NA",NA,NA,NA,NA
+"Pleroma echinatum","Tibouchina gardneriana","Tibouchina gardneriana","(Triana) Cogn.",NA,NA,NA
+"Pleroma echinatum","Tibouchina alba","Tibouchina alba","Cogn.",NA,NA,NA
 "Pleroma elegans","Tibouchina elegans","Tibouchina elegans","(Gardner) Cogn.",NA,NA,NA
 "Pleroma elegans","Tibouchina weddellii","Tibouchina weddellii","Cogn.",NA,NA,NA
 "Pleroma fissinervium","Tibouchina fissinervia","Tibouchina fissinervia","(Schrank & Mart. ex DC.) Cogn.",NA,NA,NA
@@ -7913,7 +7903,8 @@
 "Pleroma trichopodum","Tibouchina trichopoda","Tibouchina trichopoda","(DC.) Baill.",NA,NA,NA
 "Pleroma velutinum","Tibouchina velutina","Tibouchina velutina","(Naudin) Cogn.",NA,NA,NA
 "Pleroma villosissimum","Tibouchina villosissima","Tibouchina villosissima","(Triana) Cogn.",NA,NA,NA
-"Pleroma viminea",NA,"NA NA",NA,NA,NA,NA
+"Pleroma vimineum","Tibouchina corymbosa","Tibouchina corymbosa","(Raddi) Cogn.",NA,NA,NA
+"Pleroma vimineum","Tibouchina viminea","Tibouchina viminea","Cogn.",NA,NA,NA
 "Plinia anonyma","Myrciaria plicatocostata","Myrciaria plicatocostata","O.Berg",NA,NA,NA
 "Plinia anonyma","Plinia plicatocostata","Plinia plicatocostata","(O.Berg) Amshoff",NA,NA,NA
 "Plinia cauliflora","Plinia jaboticaba","Plinia jaboticaba","(Vell.) Kausel",NA,NA,NA
@@ -10611,7 +10602,6 @@
 "Trichilia pseudostipularis","Trichilia microphyllina","Trichilia microphyllina","C.DC.",NA,NA,NA
 "Trichilia pseudostipularis","Trichilia microstachya","Trichilia microstachya","C.DC.",NA,NA,NA
 "Trichilia silvatica","Trichilia cuspidata","Trichilia cuspidata","C.DC.",NA,NA,NA
-"Trichipteris dicomatolepis",NA,"NA NA",NA,NA,NA,NA
 "Trigonia fasciculata","Trigonia nivea var. fasciculata","Trigonia nivea",NA,"var.","(Griseb.) Lleras","fasciculata"
 "Trigonia microcarpa","Trigonia laevis var. microcarpa","Trigonia laevis",NA,"var.","Sagot","microcarpa"
 "Trigonia microcarpa","Trigonia parviflora","Trigonia parviflora","Benth.",NA,NA,NA
