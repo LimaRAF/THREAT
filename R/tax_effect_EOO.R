@@ -3,7 +3,8 @@
 ##############################################################
 rm(list=ls())
 
-#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
+detach("package:ConR", unload=TRUE)
+devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
 library("ConR")
 require(rgeos)
 require(sf)
@@ -46,8 +47,8 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.p
 # sens <- EOO.sensitivity (MyData[,c("ddlat", "ddlon", "tax", "tax.check2")],
 #                             levels.order = c("FALSE", "cannot_check", "TRUE_TBC","TRUE_OTHER", "TRUE"),
 #                             occ.based = TRUE,
-#                             exclude.area = TRUE,
-#                             country_map = neotrop.simp,
+#                             exclude.area = FALSE,
+#                             country_map = NULL,
 #                             method.range = "convex.hull",
 #                             parallel = TRUE,
 #                             NbeCores = 6,
@@ -58,11 +59,11 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.p
 # table(MyData$tax == sens[[2]]$tax)
 # MyData$dist.eoo <- sens[[2]]$prop.dist.eoo
 # saveRDS(MyData, "data/threat_occ_data_new.rds")
-# saveRDS(sens$EOO.change, "data/eoo.change_preliminar.rds")
+# saveRDS(sens$EOO.change, "data/eoo.change_preliminar_uncropped.rds")
 # rm(sens, MyData, neotrop.simp)
 
 ## Reading previously saved files
-resultado <- readRDS("data/eoo.change_preliminar.rds")
+resultado <- readRDS("data/eoo.change_preliminar_uncropped.rds")
 
 #### CLASSYFYING SPECIES ACCORDING TO 3 CRITERIA ####
 

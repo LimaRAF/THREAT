@@ -3,7 +3,7 @@
 #### PREPARING DATA FROM THREAT IUCN ASSESSMENTS ####
 #####################################################
 #####################################################
-#rm(list=ls())
+rm(list=ls())
 
 #### LOADING PACKAGES ####
 library(data.table)
@@ -102,10 +102,11 @@ spp.af <- spp.af[!spp.af$TreeCo_status %in% c("remove","remove?","remove? Unreso
 #names confirmed for the Atlantic Forest
 spp.af.true <- spp.af[af.check2 %in% "TRUE", species.correct2]
 #Adding some missing names (don't know why they were excluded; probably due to missing valid determinations or coordinates)
-miss.spp = c("Agonandra brasiliensis","Aiouea bracteata","Aspidosperma brasiliense",
+miss.spp = c("Agonandra brasiliensis","Aiouea bracteata","Alsophila dicomatolepis","Aspidosperma brasiliense",
              "Aspidosperma quirandy","Brasiliopuntia schulzii","Cochlospermum vitifolium","Derris leucanthus","Ficus pakkensis","Handroanthus selachidentatus",
              "Handroanthus spongiosus","Ilex cognata","Luetzelburgia purpurea","Mezilaurus synandra","Mimosa caesalpiniifolia",
              "Ocotea grandifructa","Palicourea subcuspidata","Palicourea didymocarpos","Persea punctata","Piptadenia killipii","Piranhea securinega",
+             "Piptocarpha regnellii","Pleroma echinatum","Pleroma vimineum", 
              "Quillaja lancifolia","Quillaja lanceolata","Quillaja sellowiana",
              "Tovomita longifolia","Trischidium decipiens","Zanthoxylum unifoliolatum")
 oc.data <- oc.data[species.correct2 %in% c(spp.af.true, miss.spp),] # occurrences inside the AF
@@ -123,12 +124,26 @@ oc.data[species.correct2 %in% spp2rep, species.correct2 := "Palicourea didymocar
 spp2rep <- c("Quillaja brasiliensis","Quillaja lancifolia","Quillaja lanceolata","Quillaja sellowiana")
 oc.data[species.correct2 %in% spp2rep, species.correct2 := "Quillaja lancifolia"]
 oc.data[loc.correct %like% "brazil" & species.correct2 %in% "Ixora grandifolia", species.correct2 := "Ixora muelleri"]
+oc.data[species.correct2 %in% "Misanteca duartei", status := "ok"]
 oc.data[species.correct2 %in% "Misanteca duartei", species.correct2 := "Licaria guianensis"]
 oc.data[species.correct2 %like% "Zanthoxylum" & numTombo %in% c("jpb_54464","ase_6935","ase_29975","ase_30740","ase_35130"), species.correct2 := "Zanthoxylum unifoliolatum"]
 oc.data[species.correct2 %in% c("Calyptranthes grandifolia","Calyptranthes brasiliensis"), species.correct2 := "Calyptranthes brasiliensis"]
 oc.data[species.correct2 %in% c("Ossaea loligomorpha","Miconia loligomorpha"), species.correct2 := "Leandra loligomorpha"]
 oc.data[species.correct2 %in% c("Plinia brachybotrya","Plinia pseudodichasiantha"), species.correct2 := "Plinia pseudodichasiantha"]
-#oc.data[,uniqueN(species.correct2)] # 5178 species
+oc.data[species.correct2 %in% "Metternichia princeps", status := "ok"]
+oc.data[species.correct2 %in% "Metternichia princeps", species.correct2 := "Metternichia principis"]
+oc.data[species.correct2 %in% "Lonchocarpus guillemineanus", species.correct2 := "Lonchocarpus cultratus"]
+oc.data[species.correct2 %in% "Marlierea eugenioides", species.correct2 := "Myrcia eugenioides"]
+oc.data[species.correct2 %in% "Marlierea laevigata", status := "ok"]
+oc.data[species.correct2 %in% "Marlierea laevigata", species.correct2 := "Myrcia multipunctata"]
+oc.data[species.correct2 %in% "Piptocarpha regnelii", status := "ok"]
+oc.data[species.correct2 %in% "Piptocarpha regnelii", species.correct2 := "Piptocarpha regnellii"]
+oc.data[species.correct2 %in% "Pleroma echinata", species.correct2 := "Pleroma echinatum"]
+oc.data[species.correct2 %in% "Pleroma viminea", species.correct2 := "Pleroma vimineum"]
+oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), status := "ok"]
+oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), species.correct2 := "Cyathea dichromatolepis"]
+oc.data[species.correct2 %in% "Ocotea lucida" & coletor.last.name %in% "gardner", species.correct2 := "Ocotea brachybotrya"]
+#oc.data[,uniqueN(species.correct2)] # 5172 species
 
 #### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF) ###
 rm.spp <- c("Annona calophylla","Bauhinia galpinii","Bunchosia glandulifera","Cereus repandus","Eugenia acapulcensis",      
@@ -141,7 +156,7 @@ oc.data <- oc.data[!species.correct2 %in% rm.spp,] # occurrences inside the AF
 
 ### Removing all woody bamboos - No abudance data ###
 oc.data <- oc.data[!family.correct1 %in% "Poaceae",]
-#oc.data[,uniqueN(species.correct2)] # 5101 species
+#oc.data[,uniqueN(species.correct2)] # 5095 species
 
 #### REMOVING DUPLICATES ###
 gc()
@@ -159,7 +174,7 @@ oc.data <- unique(oc.data, by = "dup.ID1")
 #removing the extra column created for ranking
 #oc.data[,dup.ID1:=NULL] 
 toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 730,297 (23.68%) removed
-# oc.data[,uniqueN(species.correct2)] # 5101 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING DATA NOT GEOGRAPHICALLY VALIDATED ###
@@ -168,7 +183,7 @@ gc()
 toto2 = dim(oc.data)[1]
 oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" | 
                      (geo.check1 %like% "ok_state" & af.check2 == TRUE)]
-#oc.data[,uniqueN(species.correct2)] # 5101 species
+#oc.data[,uniqueN(species.correct2)] # 5095 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING MISSING COORDINATES ###
@@ -184,7 +199,7 @@ oc.data$latitude.work1[oc.data$longitude.work1 %in% "no_coord" | oc.data$latitud
 # range(as.double(oc.data$longitude.work1), na.rm = TRUE)
 toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 961,869 (40.87% of the non-duplicated) removed
 100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.19% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5101 species
+#oc.data[,uniqueN(species.correct2)] # 5095 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL DUPLICATES ###
@@ -198,7 +213,7 @@ oc.data[,coord.string:=NULL]
 oc.data[,spat.dups:=NULL] 
 toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 572,540 (24.33% of remaining records) removed
 100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.57% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5101 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL OUTLIERS  ###
@@ -226,7 +241,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 gc()
 toto4 = dim(oc.data)[1]
 oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3117 true outliers
-# oc.data[,uniqueN(species.correct2)] # 5101 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 ## REMOVING PROBABLE OUTLIERS ##
@@ -238,7 +253,7 @@ tmp1 <- data.table(tmp[probable.out %in% TRUE])
 oc.data <- oc.data[!numTombo %in% tmp1$numTombo]
 toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3170 (0.23% of remaining records) removed
 100*(toto4 - dim(oc.data)[1])/toto1 ## extra 0.1% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5101 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #3- remover non-core specimens for heavily cultivated native species (e.g. Araucaria angustifolia): rob.out.99 == FALSE
@@ -271,7 +286,7 @@ extra.neotrop.spp = table(oc.data[neotrop.check == FALSE & af.check2 %in% c("can
 oc.data <- oc.data[neotrop.check == TRUE | is.na(neotrop.check) |(neotrop.check == FALSE & af.check2 %in% c("TRUE","FALSE"))]
 toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 485 (0.11% of remaining records) removed
 100*(toto5 - dim(oc.data)[1])/toto1 ## extra 0.02% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5101 species
+#oc.data[,uniqueN(species.correct2)] # 5095 species
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation ### 
@@ -312,7 +327,7 @@ oc.data[determinador.name %in% taxonomists & tax.check2 %in% "FALSE", tax.check2
 
 #Validating all occurrences of TBC
 oc.data[species.correct1 %in% tbc & tax.check2 %in% c("FALSE","cannot_check"), tax.check2 := "TRUE_TBC",]
-#oc.data[,uniqueN(species.correct2)] # 5101 species
+#oc.data[,uniqueN(species.correct2)] # 5095 species
 #table(is.na(oc.data$latitude.work1))
 
 #some last minute validation to avoid the removal of species from the checklist
@@ -533,6 +548,7 @@ miss.spp = c("Agonandra brasiliensis","Aiouea bracteata","Aspidosperma brasilien
              "Aspidosperma quirandy","Cochlospermum vitifolium","Ficus pakkensis","Handroanthus selachidentatus",
              "Handroanthus spongiosus","Ilex cognata","Luetzelburgia purpurea","Mezilaurus synandra","Mimosa caesalpiniifolia",
              "Ocotea grandifructa","Persea punctata","Piptadenia killipii","Piranhea securinega","Quillaja lancifolia",
+             "Piptocarpha regnellii","Pleroma echinatum","Pleroma vimineum", 
              "Tovomita longifolia","Trischidium decipiens")
 trees.final <- trees.final[trees.final$species.correct2 %in% c(spp.af.true, miss.spp),]
 
@@ -640,7 +656,7 @@ abline(MASS::rlm(log(resultado$total.occs+1) ~ log(resultado$pop.size.2018+1)), 
 
 ## Which specie swe have population sizes which are not in the checklist?
 miss.sp <- tmp$species.correct2[!tmp$species.correct2 %in% resultado$species.correct2]
-length(miss.sp) # 215 species; most are non-AF species
+length(miss.sp) # 217 species; most are non-AF species
 # tmp <- flora::get.taxa(miss.sp, life.form = TRUE, vegetation.type = TRUE, establishment = TRUE)
 # tmp1 <- flora::get_domains(tmp)
 # tmp2 <- tmp1[grepl("ata Atl", tmp1$domain),]
@@ -655,6 +671,12 @@ saveRDS(resultado, "data/assess_iucn_spp.rds")
 
 
 #### PREPARING THE DATA FOR THE ASSESSMENTS USING ConR ###
+detach("package:ConR", unload=TRUE)
+install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
+                 repos = NULL, 
+                 type = "source")
+library("ConR")
+
 mean.pop.sizes <- sapply(pop.sizes, function(x) apply(x$mean, 2, sum, na.rm = TRUE))
 low.pop.sizes <- sapply(pop.sizes, function(x) apply(x$low, 2, sum, na.rm = TRUE))
 high.pop.sizes <- sapply(pop.sizes, function(x) apply(x$high, 2, sum, na.rm = TRUE))
@@ -674,7 +696,6 @@ miss.years2 <- miss.years[miss.years >= 1992]
 require(snow)
 require(doSNOW)
 require(foreach)
-require(ConR)
 
 dados <- list(mean.pop.sizes, low.pop.sizes, high.pop.sizes)
 results <- vector("list", length(dados))
@@ -1316,18 +1337,20 @@ combo$GL <- c(10, 20, 25, 35, 25, # for shrubs
               25, 45, 50, 60, 50) # for trees unknown
 #Diameter at onset of maturity
 combo$DBH <- c(5, 5, 5, 5, 5, # for shrubs
-               6, 7, 8, 9, 7.5, # for small trees
+               #6, 7, 8, 9, 7.5, # for small trees
+               7, 8, 9, 10, 8, # for small trees
                10, 12.5, 15, 20, 12.5, # for large trees
-               7.5, 10, 12.5, 15, 10) # for trees unknown
+               8, 10, 12.5, 15, 10) # for trees unknown
 #Prop. mature
 combo$p.est <- c(1, 1, 1, 1, 1, # for shrubs
-                 0.7213, 0.5998, 0.4927, 0.2868, 0.5122, # for small trees
+                 #0.7213, 0.5998, 0.4927, 0.2868, 0.5122, # for small trees (old dbh.crit: 6, 7, 8, 9, 7.5cm)
+                 0.6391, 0.4693, 0.3935, 0.24598, 0.4617, # for small trees (new dbh.crit: 7, 8, 9, 10, 8cm)
                  0.5842, 0.4498, 0.3047, 0.2533, 0.3342, # for large trees
-                 0.6371, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
+                 0.5871, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
 combo$p.ci <- c("0.99-1.1", "0.975-1.075", "0.95-1.05", "0.90-1.025", "0.95-1.05", # for shrubs
-                 "0.5838-0.8587", "0.5212-0.6783", "0.4304-0.555", "0.1829-0.3906", "0.4737-0.5507", # for small trees
+                 "0.4941-0.7841", "0.3848-0.5538", "0.3282-0.4588", "0.1470-0.3525", "0.4226-0.5008", # for small trees
                  "0.5141-0.6544", "0.417-0.4825", "0.2756-0.3338", "0.1827-0.3238", "0.3161-0.3524", # for large trees
-                 "0.6206-0.6536", "0.4352-0.4707", "0.3306-0.3646", "0.2624-0.2949", "0.4352-0.4707") # for trees unknown
+                 "0.5699-0.6043", "0.4352-0.4707", "0.3306-0.3646", "0.2624-0.2949", "0.4352-0.4707") # for trees unknown
 #Merging the info
 combo$str.match <- paste(combo$EG, combo$GF, sep = "_") 
 hab$str.match <- paste(hab$ecol.group, hab$GF, sep = "_")
@@ -1381,16 +1404,55 @@ names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfie
   
 #GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName:	(e.g. Habitat description, e.g. Shrubland ->Shrubland - Temperate)
 hab1$vt <- hab1$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup
-hab1$vt <- gsub("^1.5$", "Subtropical/Tropical Dry Forest", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^1.6$", "Subtropical/Tropical Moist Lowland Forest", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^1.7$", "Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^1.8$", "Subtropical/Tropical Swamp Forest", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^2.1$", "Dry Savanna", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^3.5$", "Subtropical/Tropical Dry Shrubland", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^4.6$", "Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^4.7$", "Subtropical/Tropical High Altitude Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1\\.5$", "Subtropical/Tropical Dry Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1\\.5\\|", "Subtropical/Tropical Dry Forest|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.5$", "|Subtropical/Tropical Dry Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.5\\|", "|Subtropical/Tropical Dry Forest|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^1\\.6$", "Subtropical/Tropical Moist Lowland Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1\\.6\\|", "Subtropical/Tropical Moist Lowland Forest|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.6$", "|Subtropical/Tropical Moist Lowland Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.6\\|", "|Subtropical/Tropical Moist Lowland Forest|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^1\\.7$", "Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1\\.7\\|", "Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.7$", "|Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.7\\|", "|Subtropical/Tropical Mangrove Forest Vegetation Above High Tide Level|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^1\\.8$", "Subtropical/Tropical Swamp Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^1\\.8\\|", "Subtropical/Tropical Swamp Forest|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.8$", "|Subtropical/Tropical Swamp Forest", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|1\\.8\\|", "|Subtropical/Tropical Swamp Forest|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^2\\.1$", "Dry Savanna", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^2\\.1\\|", "Dry Savanna|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|2\\.1$", "|Dry Savanna", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|2\\.1\\|", "|Dry Savanna|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^3\\.5$", "Subtropical/Tropical Dry Shrubland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^3\\.5\\|", "Subtropical/Tropical Dry Shrubland|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|3\\.5$", "|Subtropical/Tropical Dry Shrubland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|3\\.5\\|", "|Subtropical/Tropical Dry Shrubland|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^4\\.6$", "Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^4\\.6\\|", "Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|4\\.6$", "|Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|4\\.6\\|", "|Subtropical/Tropical Seasonally Wet/Flooded Lowland Grassland|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^4\\.7$", "Subtropical/Tropical High Altitude Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^4\\.7\\|", "Subtropical/Tropical High Altitude Grassland|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|4\\.7$", "|Subtropical/Tropical High Altitude Grassland", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|4\\.7\\|", "|Subtropical/Tropical High Altitude Grassland|", hab1$vt, perl = TRUE)
+
 hab1$vt <- gsub("^6$", "Inland Rocky Areas", hab1$vt, perl = TRUE)
-hab1$vt <- gsub("^14.5$", "Urban Areas", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^6\\|", "Inland Rocky Areas|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|6$", "|Inland Rocky Areas", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|6\\|", "|Inland Rocky Areas|", hab1$vt, perl = TRUE)
+
+hab1$vt <- gsub("^14\\.5$", "Urban Areas", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("^14\\.5\\|", "Urban Areas|", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|14\\.5$", "|Urban Areas", hab1$vt, perl = TRUE)
+hab1$vt <- gsub("\\|14\\.5\\|", "|Urban Areas|", hab1$vt, perl = TRUE)
 names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName"
 
 

@@ -8,12 +8,14 @@ rm(list=ls())
 #### LOADING PACKAGES ###
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
 #devtools::install_github("gdauby/ConR@devel") # new version on GitHub
+detach("package:ConR", unload=TRUE)
 install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
  repos = NULL, 
  type = "source")
 library("ConR")
 library("red")
 library("circlize")
+
 
 #### LOADING THREAT POPULATION SIZE DATA (TREECO) ###
 #Already with pop. sizes estimated for all necessary years
@@ -171,7 +173,31 @@ critA.gl25[critA$species %in% "Cedrela fissilis",]
 critA[critA$species %in% "Cecropia pachystachya",]
 critA.gl25[critA$species %in% "Cecropia pachystachya",]
 
-#### CHORD DIAGRAM ####
+## Renaming columns
+names(all.GL)[grepl("\\.1$", names(all.GL))] <- gsub("\\.1$", ".10ys", names(all.GL)[grepl("\\.1$", names(all.GL))])
+names(all.GL)[grepl("\\.2$", names(all.GL))] <- gsub("\\.2$", ".20ys", names(all.GL)[grepl("\\.2$", names(all.GL))])
+names(all.GL)[grepl("\\.3$", names(all.GL))] <- gsub("\\.3$", ".25ys", names(all.GL)[grepl("\\.3$", names(all.GL))])
+names(all.GL)[grepl("\\.4$", names(all.GL))] <- gsub("\\.4$", ".30ys", names(all.GL)[grepl("\\.4$", names(all.GL))])
+names(all.GL)[grepl("\\.5$", names(all.GL))] <- gsub("\\.5$", ".35ys", names(all.GL)[grepl("\\.5$", names(all.GL))])
+names(all.GL)[grepl("\\.6$", names(all.GL))] <- gsub("\\.6$", ".40ys", names(all.GL)[grepl("\\.6$", names(all.GL))])
+names(all.GL)[grepl("\\.7$", names(all.GL))] <- gsub("\\.7$", ".45ys", names(all.GL)[grepl("\\.7$", names(all.GL))])
+names(all.GL)[grepl("\\.8$", names(all.GL))] <- gsub("\\.8$", ".50ys", names(all.GL)[grepl("\\.8$", names(all.GL))])
+names(all.GL)[grepl("\\.9$", names(all.GL))] <- gsub("\\.9$", ".55ys", names(all.GL)[grepl("\\.9$", names(all.GL))])
+
+## Renaming the LC category
+all.GL[] <- lapply(all.GL, gsub, pattern = "^LC$", replacement = "LC or NT")
+
+#### Saving ####
+saveRDS(all.GL, "data/criterionA_all_GLs.rds")
+
+
+#### CHORD DIAGRAMS ####
+require(circlize)
+
+# SUBCRITERIA A1
+jpeg(filename = "figures/Figure_SW.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
+     res = 300, family = "sans", type="cairo", bg="white")
+
 mat <- as.matrix(table(paste0(critA.gl25$A1,"_25"), paste0(critA$A1,"_opt")))
 mat <- mat[c(1,2,4,3), c(3,4,2,1)]
 colnames(mat) <- gsub(" ", "", colnames(mat))
@@ -188,12 +214,14 @@ mat[mat < 10] = mat[mat < 10]*2
 mat[mat > 0 & mat < 5] = 10
 
 #plotting the diagram
+par(mfrow=c(1,1))
+par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
 circos.clear()
 circos.par(start.degree = 90)
 visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
 #diag(visible) = FALSE
 lava::revdiag(visible) = FALSE
-chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight = mm_h(4),
+chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
              grid.col = grid.col, col = col_mat,
              self.link = 1, link.visible = visible,
              #h=0.9,
@@ -205,7 +233,7 @@ chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight 
              #w2=0.5,
              #rou=0.2
              #point1 = rep(0,16)
-             )
+)
 #Putting legends on
 sec.ind <- c("CR","EN","VU","LC or NT","LC or NT","VU","EN","CR")
 for(si in get.all.sector.index()) {
@@ -223,19 +251,68 @@ for(si in get.all.sector.index()) {
                 facing = "bending", niceFacing = TRUE, col = "black")
   }  
 }
-legend("topleft","Optimal gen. lenght", bty="n")
-legend("topright","Gen. lenght = 25 years", bty="n")
+legend("topleft","Optimal gen. lenght", bty="n", cex=1.2)
+legend("topright","Gen. lenght = 25 years", bty="n", cex=1.2)
+dev.off()
 
-## Renaming columns
-names(all.GL)[grepl("\\.1$", names(all.GL))] <- gsub("\\.1$", ".10ys", names(all.GL)[grepl("\\.1$", names(all.GL))])
-names(all.GL)[grepl("\\.2$", names(all.GL))] <- gsub("\\.2$", ".20ys", names(all.GL)[grepl("\\.2$", names(all.GL))])
-names(all.GL)[grepl("\\.3$", names(all.GL))] <- gsub("\\.3$", ".25ys", names(all.GL)[grepl("\\.3$", names(all.GL))])
-names(all.GL)[grepl("\\.4$", names(all.GL))] <- gsub("\\.4$", ".30ys", names(all.GL)[grepl("\\.4$", names(all.GL))])
-names(all.GL)[grepl("\\.5$", names(all.GL))] <- gsub("\\.5$", ".35ys", names(all.GL)[grepl("\\.5$", names(all.GL))])
-names(all.GL)[grepl("\\.6$", names(all.GL))] <- gsub("\\.6$", ".40ys", names(all.GL)[grepl("\\.6$", names(all.GL))])
-names(all.GL)[grepl("\\.7$", names(all.GL))] <- gsub("\\.7$", ".45ys", names(all.GL)[grepl("\\.7$", names(all.GL))])
-names(all.GL)[grepl("\\.8$", names(all.GL))] <- gsub("\\.8$", ".50ys", names(all.GL)[grepl("\\.8$", names(all.GL))])
-names(all.GL)[grepl("\\.9$", names(all.GL))] <- gsub("\\.9$", ".55ys", names(all.GL)[grepl("\\.9$", names(all.GL))])
 
-#### Saving ####
-saveRDS(all.GL, "data/criterionA_all_GLs.rds")
+# SUBCRITERIA A2
+jpeg(filename = "figures/Figure_SWb.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
+     res = 300, family = "sans", type="cairo", bg="white")
+
+mat <- as.matrix(table(paste0(critA.gl25$A2,"_25"), paste0(critA$A2,"_opt")))
+mat <- mat[c(1,2,4,3), c(3,4,2,1)]
+colnames(mat) <- gsub(" ", "", colnames(mat))
+rownames(mat) <- gsub(" ", "", rownames(mat))
+
+#Defining the colors of tracks and links
+grid.col = c(CR_25 = "red", EN_25 = "darkorange", VU_25 = "gold", LCorNT_25 = "khaki",
+             CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
+col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
+col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
+#col_mat[mat < 5] = "#00000000"
+mat[mat < 15] = mat[mat < 15]*2
+mat[mat > 0 & mat < 5] = 10
+
+#plotting the diagram
+par(mfrow=c(1,1))
+par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
+circos.clear()
+circos.par(start.degree = 90)
+visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
+#diag(visible) = FALSE
+lava::revdiag(visible) = FALSE
+chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
+             grid.col = grid.col, col = col_mat,
+             self.link = 1, link.visible = visible,
+             #h=0.9,
+             #w=1,
+             #direction.type = "arrows", link.arr.length = 0.2, link.arr.width = 0.1, directional = -1,
+             link.lwd = 4
+             #h.ratio = 0.7
+             #reduce_to_mid_line = FALSE,
+             #w2=0.5,
+             #rou=0.2
+             #point1 = rep(0,16)
+)
+#Putting legends on
+sec.ind <- c("CR","EN","VU","LC or NT","LC or NT","VU","EN","CR")
+for(si in get.all.sector.index()) {
+  lab <- sec.ind[which(si == get.all.sector.index())]
+  xlim = get.cell.meta.data("xlim", sector.index = si, track.index = 1)
+  ylim = get.cell.meta.data("ylim", sector.index = si, track.index = 1)
+  if(si == "VU_25") {
+    circos.text(mean(xlim), mean(ylim), labels = "VU", 
+                sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
+                facing = "bending", niceFacing = FALSE, col = "black")
+    
+  } else {
+    circos.text(mean(xlim), mean(ylim), labels = lab, 
+                sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
+                facing = "bending", niceFacing = TRUE, col = "black")
+  }  
+}
+legend("topleft","Optimal gen. lenght", bty="n", cex=1.2)
+legend("topright","Gen. lenght = 25 years", bty="n", cex=1.2)
+dev.off()
