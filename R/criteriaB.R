@@ -11,17 +11,17 @@ rm(list=ls())
 
 #### LOADING PACKAGES ###
 devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
-#devtools::install_github("gdauby/ConR@devel", force = TRUE)
-detach("package:ConR", unload=TRUE)
-install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
-                 repos = NULL, 
-                 type = "source")
+# devtools::install_github("gdauby/ConR@devel", force = TRUE)
+# detach("package:ConR", unload=TRUE)
+# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
+#                  repos = NULL, 
+#                  type = "source")
 library("ConR")
 require(data.table)
 require(raster)
 source("./R/suggestions_for_ConR.r")
-source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
-source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
+source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//EOO.sensitivity.R")
+source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//over.valid.poly.R")
 # source("C://Users//renato//Documents//raflima//R_packages//ConR//R//subpop.comp.R")
 # source("C://Users//renato//Documents//raflima//R_packages//ConR//R//proj_crs.R")
 # source("C://Users//renato//Documents//raflima//R_packages//ConR//R//coord.check.R")
@@ -38,8 +38,9 @@ MyData <- oc.data[, c("ddlat","ddlon",
                       "tax","higher.tax.rank",
                       "coly","vouchers",
                       "detBy","dety",
-                      "tax.check.final","UC",
+                      "tax.check2","tax.check.final","UC",
                       "dist.eoo","tax.conf","source")]
+MyData$tax.check2 <- MyData$tax.check2 %in% "TRUE" # the super,hyper high confidence level
 rm(oc.data)
 
 # For testing...
@@ -63,7 +64,7 @@ names(resultado)[which(names(resultado) %in% c("family.correct1","species.correc
 ## RENATO UPDATE: EOO is now computed without excluding the sea areas of EOO
 
 system.time(
-  EOO.hull <- EOO.computing(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
+  EOO.hull <- ConR:::EOO.computing(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
                             method = "convex.hull",
                             method.less.than3 = "not comp",
                             export_shp = TRUE,
@@ -71,24 +72,28 @@ system.time(
                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
                             parallel = TRUE, NbeCores = 6) # run on parallel? How many cores?
-)
+) #Took 22 secs!
 
 #extracting the EOO from the object
 EOO <- do.call(rbind.data.frame, EOO.hull[grepl("EOO", names(EOO.hull))])
 sp_names <- unique(MyData$tax[grepl("high", MyData$tax.check.final)])
 dimnames(EOO) <- list(sp_names, "EOO")
+# EOO <- EOO.hull[[1]]
+# EOO1 <- EOO.hull1[[1]]
 
 shps <- EOO.hull[grepl("spatial.polygon", names(EOO.hull))]
 for (i in 1:length(shps))
   slot(slot(shps[[i]], "polygons")[[1]], "ID") <- sp_names[!is.na(EOO$EOO)][i]
 shps <- do.call(rbind, shps)
 shps_df <- SpatialPolygonsDataFrame(shps, data.frame(tax = names(shps), row.names = names(shps)))
-shps_df$tax <- as.character(shps_df$tax) 
+#shps_df <-EOO.hull[[2]]
+shps_df$taxa <- as.character(shps_df$taxa) 
 
 #inpecting
 par(mar=c(1,0,1,0))
 sp <- "Abarema limae" # restrictd range
 sp <- "Anadenanthera peregrina" # more widespread
+# plot(sf::st_geometry(shps_df[shps_df$taxa %in% sp,1]))
 plot(shps_df[sp,])
 points(MyData[MyData$tax %in% sp, 2:1], pch=21)
 points(MyData[grepl("high", MyData$tax.check.final) & MyData$tax %in% sp, 2:1],
@@ -103,9 +108,10 @@ rm(EOO.hull, EOO, shps, shps_df, shps_df_sf); gc()
 
 ## Convex Hull method for each class of confidence level 
 # took 8.25 and 73.3 minutes in my machine with the very ligth and with the ok-resolution Neotropical maps, respectively!
+# took 96 secs without the map (7 cores)
 system.time(
-  EOO.hull.sensitivity <- EOO.sensitivity (MyData[, c(1:3,9)],
-                                           levels.order = c("low", "medium", "high"),
+  EOO.hull.sensitivity <- EOO.sensitivity (MyData[, c(1:3,10)],
+                                           levels.order = c("low", "medium", "high"), # high here is the optimum scheme described in the methods
                                            occ.based = FALSE,
                                            exclude.area = FALSE,
                                            country_map = NULL,
@@ -115,6 +121,25 @@ system.time(
                                            NbeCores = 7,
                                            show_progress = TRUE)
 )
+EOO.hull.sensitivity1 <- EOO.sensitivity (MyData[, c(1:3,9)],
+                                                  levels.order = c(FALSE, TRUE),
+                                                  occ.based = FALSE,
+                                                  exclude.area = FALSE,
+                                                  country_map = NULL,
+                                                  method.range = "convex.hull",
+                                                  write_results=FALSE,
+                                                  parallel = TRUE,
+                                                  NbeCores = 7,
+                                                  show_progress = TRUE)
+
+## Merging the info (all occurrences, optimum, and high) and re-organizing
+EOO.hull.sensitivity1 <- EOO.hull.sensitivity1[,c("Species","Occs.level.2","EOO.level.2","EOO.increase.1")]
+names(EOO.hull.sensitivity1) <- c("Species","Occs.level.4","EOO.level.4","EOO.increase.1.1")
+EOO.hull.sensitivity <- merge(EOO.hull.sensitivity, EOO.hull.sensitivity1, by="Species", all = TRUE, sort = FALSE)
+EOO.hull.sensitivity <- EOO.hull.sensitivity[,c("Species","Occs.level.1","Occs.level.2","Occs.level.3","Occs.level.4",
+                                                "EOO.level.1","EOO.level.2","EOO.level.3","EOO.level.4",
+                                                "EOO.increase.1","EOO.increase.2","EOO.increase.1.1")]
+EOO.hull.sensitivity <- EOO.hull.sensitivity[order(EOO.hull.sensitivity$Species),]
 saveRDS(EOO.hull.sensitivity, "data/EOO.convex.hull_uncropped.rds")
 rm(EOO.hull.sensitivity); gc()
 
@@ -138,25 +163,41 @@ rm(EOO.hull.sensitivity); gc()
 ########################
 #### SUBPOPULATIONS ####
 ########################
+detach("package:ConR", unload=TRUE)
+install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local
+                 repos = NULL,
+                 type = "source")
+library("ConR")
+
+
 #This function applies the method called circular buffer method for estimating the number of subpopulation (Rivers et al., 2010).
 #From Rivers et al. 2010: The ideal radius of the buffer is debatable; however when dispersal
 #characteristics of the species are unknown then a sliding scale, such as the 1/10th maximum inter-point distance, is the preferred choice, as it is species-specific and not sensitive to collection density
-radius = subpop.radius(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
+radius <- subpop.radius(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
                        factor.div = 10, quant.max = 0.9)
-radius1 = subpop.radius(MyData[, c(1:3)], 
+radius1 <- subpop.radius(MyData[, c(1:3)], 
+                        factor.div = 10, quant.max = 0.9)
+radius2 <- subpop.radius(MyData[MyData$tax.check2, c(1:3)], 
                         factor.div = 10, quant.max = 0.9)
 
-#Getting family-specific radius for missing estimates (only high confidence level)
+
+#Getting family-specific radius for missing estimates (only optimum confidence level) 
 tmp <- merge(radius, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
 tmp <- tmp[order(tmp$tax),]
+tmp$genus <- as.character(sapply(strsplit(tmp$tax, " "), function(x) x[1]))
+gen.radius <- aggregate(as.double(tmp$radius), list(tmp$genus), median, na.rm = TRUE)
 fam.radius <- aggregate(as.double(tmp$radius), list(tmp$family), median, na.rm = TRUE)
-radius.new <- merge(tmp, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
+radius.new <- merge(tmp, gen.radius, by.x = 'genus', by.y = "Group.1", all.x = TRUE, sort=FALSE)
+radius.new <- merge(radius.new, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
 radius.new$radius[is.na(radius.new$radius)] <- 
-  radius.new$x[is.na(radius.new$radius)]
-radius.new$radius[as.double(radius.new$radius) < 4] <- 4
+  radius.new$x.x[is.na(radius.new$radius)]
+radius.new$radius[is.na(radius.new$radius)] <- 
+  radius.new$x.y[is.na(radius.new$radius)]
+radius.new$radius.final <- as.double(radius.new$radius)
+radius.new$radius.final[radius.new$radius.final < 4] <- 4
 radius.new <- radius.new[order(radius.new$tax), ]
-table(radius$tax == radius$tax)
-hist(as.double(radius.new$radius), nclass = 40)
+table(radius$tax == tmp$tax)
+hist(as.double(radius.new$radius.final), nclass = 40)
 
 #Getting family-specific radius for missing estimates (any confidence level)
 tmp1 <- merge(radius1, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
@@ -169,6 +210,20 @@ radius.new1$radius[as.double(radius.new1$radius) < 4] <- 4
 radius.new1 <- radius.new1[order(radius.new1$tax), ]
 table(radius1$tax == radius1$tax)
 hist(as.double(radius.new1$radius), nclass = 40)
+
+#Getting family-specific radius for missing estimates (only high confidence level)
+tmp2 <- merge(radius2, resultado[,c("family","tax")], by = 'tax', all.x = TRUE, sort=FALSE)
+tmp2 <- tmp2[order(tmp2$tax),]
+fam.radius <- aggregate(as.double(tmp2$radius), list(tmp2$family), median, na.rm = TRUE)
+radius.new2 <- merge(tmp2, fam.radius, by.x = 'family', by.y = "Group.1", all.x = TRUE, sort=FALSE)
+radius.new2$radius[is.na(radius.new2$radius)] <- 
+  radius.new2$x[is.na(radius.new2$radius)]
+radius.new1$radius[as.double(radius.new1$radius) < 4] <- 4
+radius.new1 <- radius.new1[order(radius.new1$tax), ]
+table(radius1$tax == radius1$tax)
+hist(as.double(radius.new1$radius), nclass = 40)
+
+
 
 ##Saving the information on subpopulation radius
 tmp2 <- merge(radius.new1[,-4], radius.new[,-c(1,4)], by="tax", all.x= TRUE, sort = FALSE)
@@ -448,23 +503,14 @@ output <-
 
 snow::stopCluster(cl)
 
-ConR:::get.patches(MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3),],
-            cell_size = 2,
-            nbe_rep = 0,
-            proj_type = "cea",
-            Resol_sub_pop = 10,
-            subpop_poly = NULL,
-            dist_isolated
-)
 
-  
 #################################################################################################################################################################################################H    
 #################################################################################################################################################################################################H    
 ##############################################################  
 #### MERGING ALL RESULTS AND SAVING CRITERIA B PARAMETERS ####
 ##############################################################
 
-EOO <- readRDS("data/EOO.convex.hull.rds")
+EOO <- readRDS("data/EOO.convex.hull_uncropped.rds")
 AOO <- readRDS("data/AOO.rds")
 subpops <- readRDS("data/number.subpops.rds")
 localities <- readRDS("data/number_localities.rds")
