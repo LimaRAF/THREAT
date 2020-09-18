@@ -221,7 +221,7 @@ circos.par(start.degree = 90)
 visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
 #diag(visible) = FALSE
 lava::revdiag(visible) = FALSE
-chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
+chordDiagram(mat, big.gap = 15, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
              grid.col = grid.col, col = col_mat,
              self.link = 1, link.visible = visible,
              #h=0.9,
@@ -283,7 +283,7 @@ circos.par(start.degree = 90)
 visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
 #diag(visible) = FALSE
 lava::revdiag(visible) = FALSE
-chordDiagram(mat, big.gap = 20, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
+chordDiagram(mat, big.gap = 15, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
              grid.col = grid.col, col = col_mat,
              self.link = 1, link.visible = visible,
              #h=0.9,

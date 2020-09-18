@@ -5,6 +5,12 @@
 ##############################################################
 rm(list=ls())
 
+## Colors for each category
+c(CR = "red", EN = "darkorange", VU = "gold", NT = "yellowgreen", LC = "forestgreen", DD = "grey")
+
+#LC = "green4"?
+#NT = "palegreen4"?
+
 ## Loading packages ##
 
 

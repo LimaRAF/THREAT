@@ -1,4 +1,5 @@
 .Rproj.user
+*.Rproj
 .Rhistory
 .RData
 .Ruserdata
@@ -6,6 +7,7 @@
 *.pdf 
 HMSC/
 *.xls
+*.tif
 data/threat_occ_data.rds
 data/threat_occ_data_new.rds
 data/spp.convex.hull.polys_sf.rds
