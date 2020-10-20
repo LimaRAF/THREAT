@@ -74,8 +74,8 @@ spp1$EOO.level.1[!is.na(spp1$EOO.level.1) & spp1$EOO.level.1 < spp1$AOO.level.1]
   spp1$AOO.level.1[!is.na(spp1$EOO.level.1) & spp1$EOO.level.1 < spp1$AOO.level.1]
 spp1$EOO.level.2[!is.na(spp1$EOO.level.2) & spp1$EOO.level.2 < spp1$AOO.level.2] <-
   spp1$AOO.level.2[!is.na(spp1$EOO.level.2) & spp1$EOO.level.2 < spp1$AOO.level.2]
-spp1$EOO.level.3[!is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3] <-
-  spp1$AOO.level.3[!is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3]
+spp1$EOO.level.3[!is.na(spp1$AOO.level.3) &!is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3] <-
+  spp1$AOO.level.3[!is.na(spp1$AOO.level.3) & !is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3]
 
 
 #Creating and merging the df for analysis
@@ -89,7 +89,7 @@ df1 <- merge(df, spp1, by.x = "species", by.y = "species.correct2",
 
 ### ASSESSMENTS ###
 #Optimal params
-critD <- criterion_D(pop.size = df1$pop.size, 
+critD <- ConR::criterion_D(pop.size = df1$pop.size, 
                      Name_Sp = df1$species, 
                      AOO = df1$AOO.level.2,
                      n.Locs = df1$Loc.level2,
@@ -97,11 +97,11 @@ critD <- criterion_D(pop.size = df1$pop.size,
                      subcriteria = c("D", "D2"),
                      D.threshold = c(1000, 250, 50), 
                      AOO.threshold = 16, Loc.threshold = 2)
-critD$D.low <- criterion_D(pop.size = df1$pop.size.low,
+critD$D.low <- ConR::criterion_D(pop.size = df1$pop.size.low,
                            Name_Sp = df1$species,
                            prop.mature = df1$p, subcriteria = c("D"),
                            D.threshold = c(1000, 250, 50))$D
-critD$D.high <- criterion_D(pop.size = df1$pop.size.high,
+critD$D.high <- ConR::criterion_D(pop.size = df1$pop.size.high,
                             Name_Sp = df1$species,
                             prop.mature = df1$p, subcriteria = c("D"),
                             D.threshold = c(1000, 250, 50))$D
@@ -137,6 +137,10 @@ names(all.GL2)[grepl("D\\.[0-9]", names(all.GL2))] <-
 
 ## Renaming the LC category
 all.GL2[] <- lapply(all.GL2, gsub, pattern = "^LC$", replacement = "LC or NT")
+
+## Adding the low population estimates
+table(all.GL2$species == df1$species)
+all.GL2$pop.size.low <- df1$pop.size.low * df1$p
 
 #### Saving ####
 saveRDS(all.GL2, "data/criterionD_all_prop_mature.rds")

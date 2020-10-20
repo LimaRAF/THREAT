@@ -11,8 +11,11 @@ require(sf)
 require(fields)
 require(dplyr)
 source("./R/suggestions_for_ConR.r")
-source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
-source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.sensitivity.R")
+# source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.poly.R")
+source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//EOO.sensitivity.R")
+source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//over.valid.poly.R")
+
 
 # ## Reading the Neotropics shapefile ##
 # neotrop.simp <- readRDS("data/Contour_Neotrop_simplified.rds")
@@ -34,6 +37,7 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//over.valid.p
 #                            higher.tax.rank = c(oc.data$family.correct1, inv.data$family),
 #                            coly = as.double(c(oc.data$ano, inv.data$year_data)),
 #                            vouchers = c(oc.data$dup.ID1, inv.data$numTombo),
+#                            typeStatus = c(oc.data$typeStatus, inv.data$typeStatus),
 #                            detBy = c(oc.data$determinador.name, inv.data$DetBy),
 #                            dety = c(oc.data$ano.det, inv.data$DetDate),
 #                            tax.check2 = c(oc.data$tax.check2, inv.data$tax_check2),

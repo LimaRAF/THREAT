@@ -10,7 +10,8 @@ source("C://Users//renato//Documents//raflima//R_packages//ConR//R//EOO.habitat.
 path <- "E://ownCloud//W_GIS" # Renato's path
 
 #### GETTING SPECIES EOOs ####
-EOO.poly <- readRDS(file = "data/spp.convex.hull.polys_sf_uncropped.rds")
+#EOO.poly <- readRDS(file = "data/spp.convex.hull.polys_sf_uncropped.rds")
+EOO.poly <- readRDS(file = "data/spp.convex.hull.polys_sf_cropped.rds")
 
 #### ESA land-use cover: forest cover as habitat ####
 ## Getting forest cover classes fro ESA LC map
@@ -41,18 +42,29 @@ toto.2 <- EOO.habitat(EOO.poly[1001:2000,], hab.map, hab.class = hab.class, year
                       parallel = TRUE, NbeCores = 5)
 toto.3 <- EOO.habitat(EOO.poly[2001:3000,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
-toto.4 <- EOO.habitat(EOO.poly[3001:4000,], hab.map, hab.class = hab.class, years = anos,
+toto.4.1 <- EOO.habitat(EOO.poly[3001:3305,], hab.map, hab.class = hab.class, years = anos,
+                      parallel = TRUE, NbeCores = 5)
+toto.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
 toto.5 <- EOO.habitat(EOO.poly[4001:4862,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
 toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4, toto.5,
                           stringsAsFactors = FALSE)
+tmp <- toto.1[1,]
+tmp$tax <- EOO.poly$tax[3306]
+tmp[,2:dim(tmp)[2]] <- NA
+toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4.1, tmp, toto.4.2, toto.5,
+                         stringsAsFactors = FALSE)
+
 toto0<- merge(data.frame(tax = EOO.poly$tax, stringsAsFactors = FALSE), 
               toto, by = "tax", all = TRUE, sort = FALSE)
 toto0<-toto0[order(toto0$tax),] 
+# saveRDS(toto0, 
+#         paste0("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo Extincao na MA/data analysis/data/EOO_hab_loss_",
+#                ano1,"_2015.rds"))
 saveRDS(toto0, 
         paste0("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo Extincao na MA/data analysis/data/EOO_hab_loss_",
-               ano1,"_2015.rds"))
+               ano1,"_2015_cropped.rds"))
 
 #Any rate (habitat loss > 0.1%)
 table(toto0$rate.loss>0.1)
@@ -67,7 +79,8 @@ rm(polys, strict.ucs)
 
 toto1 <- EOO.habitat(EOO.poly, hab.map, hab.class = NULL, years = NULL, ID_shape = "WDPAID",
                     parallel = TRUE, NbeCores = 6)
-saveRDS(toto1, "data/EOO_StrictUCs.rds")
+# saveRDS(toto1, "data/EOO_StrictUCs.rds")
+saveRDS(toto1, "data/EOO_StrictUCs_cropped.rds")
 
 
 #### HUMAN INFLUENCES #### 
@@ -81,15 +94,24 @@ toto2.2 <- EOO.habitat(EOO.poly[1001:2000,], hab.map, hab.class = NULL, years = 
                        parallel = TRUE, NbeCores = 6)
 toto2.3 <- EOO.habitat(EOO.poly[2001:3000,], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
-toto2.4 <- EOO.habitat(EOO.poly[3001:4000,], hab.map, hab.class = NULL, years = NULL,
+toto2.4.1 <- EOO.habitat(EOO.poly[3001:3305,], hab.map, hab.class = NULL, years = NULL,
+                       parallel = TRUE, NbeCores = 6)
+toto2.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
 toto2.5 <- EOO.habitat(EOO.poly[4001:length(EOO.poly$geometry),], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
-toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4, toto2.5,
-                          stringsAsFactors = FALSE)
-#Sys.time() - t0
-saveRDS(toto2, "data/EOO_HII.rds")
+# toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4, toto2.5,
+#                           stringsAsFactors = FALSE)
+tmp <- toto2.1[1,]
+tmp$tax <- EOO.poly$tax[3306]
+tmp[,2:dim(tmp)[2]] <- NA
+toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4.1, tmp, toto2.4.2, toto2.5,
+                         stringsAsFactors = FALSE)
+toto2 <- toto2[order(toto2$tax),] 
 
+#Sys.time() - t0
+# saveRDS(toto2, "data/EOO_HII.rds")
+saveRDS(toto2, "data/EOO_HII_cropped.rds")
 
 #### EOO inside the Atlantic Forest limits ####
 af <- rgdal::readOGR(dsn=paste(path,"//AF_limites_milton",sep=""),layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
@@ -104,7 +126,9 @@ rm(af)
 toto3 <- EOO.habitat(EOO.poly, hab.map, hab.class = NULL, years = NULL, ID_shape = "OBJECTID",
                      parallel = TRUE, NbeCores = 6)
 toto3$prop.EOO[!is.na(toto3$prop.EOO) & toto3$prop.EOO>100] <- 100
-saveRDS(toto3, "data/EOO_AtlanticForest.rds")
+# saveRDS(toto3, "data/EOO_AtlanticForest.rds")
+saveRDS(toto3, "data/EOO_AtlanticForest_cropped.rds")
+
 
 #### Agricultural Land Use in Brazil ####
 #Note: 1940 until 2014

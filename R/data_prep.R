@@ -143,6 +143,8 @@ oc.data[species.correct2 %in% "Pleroma viminea", species.correct2 := "Pleroma vi
 oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), status := "ok"]
 oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), species.correct2 := "Cyathea dichromatolepis"]
 oc.data[species.correct2 %in% "Ocotea lucida" & coletor.last.name %in% "gardner", species.correct2 := "Ocotea brachybotrya"]
+oc.data[species.correct2 %in% "Myrcia oreioeca", status := "ok"]
+oc.data[species.correct2 %in% "Myrcia oreioeca", species.correct2 := "Myrcia aethusa"]
 #oc.data[,uniqueN(species.correct2)] # 5172 species
 
 #### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF) ###
@@ -335,6 +337,27 @@ oc.data[species.correct2 %in% "Agonandra brasiliensis" & determinador.name1 %lik
 oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("Baitello|Lorea"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Quillaja lancifolia" & determinador.name1 %in% c("Luebert, F."), tax.check2 := "TRUE" ]
 oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.|Espirito Santo, F.S.|Santo, F.E.|Silva-Castro|ilva, M.M."), tax.check2 := "TRUE" ]
+
+## VALIDATING VOUCHER INFO FROM REFLORA
+vouchers <- readRDS("data/vouchers_reflora.rds")
+
+#### CHECK HERE ####
+#By the 'Número de tombo'
+for(i in 1:length(unique(vouchers$tax))) {
+  spi <- unique(vouchers$tax)[i]
+  vouc.list <- vouchers$numTombo[vouchers$tax %in% spi]
+  oc.data[species.correct2 %in% spi & numTombo %in% vouc.list, tax.check2 := "TRUE" ]
+}
+
+#By coletor last name and number
+for(i in 1:length(unique(vouchers$tax))) {
+  spi <- unique(vouchers$tax)[i]
+  lst.name <- tolower(vouchers$recordBy[vouchers$tax %in% spi])
+  col.numb <- vouchers$colNumber[vouchers$tax %in% spi]
+  oc.data[species.correct2 %in% spi & 
+            coletor.last.name %in% lst.name & 
+            coletor.number %in% col.numb, tax.check2 := "TRUE" ]
+}
 
 #### TRYING TO OBTAIN INFORMATION ON CONSERVATION UNITS FROM LOCALITY INFO ###
 locals <- oc.data$locality
@@ -612,6 +635,11 @@ cols = c("lat1","long1","species.correct2","family",
   "country","state","county","locality","locality1",
   "species.correct","N","accession","record","year","Reference","ordem")
 trees.final = trees.final[,cols]
+
+#Creating the typeStatus column
+trees.final$typeStatus <- NA
+trees.final$typeStatus[grepl("paratipo|paratype|type specimen", trees.final$notes)] <-
+  trees.final$notes[grepl("paratipo|paratype|type specimen", trees.final$notes)]
 
 ## Saving ##
 saveRDS(trees.final, file = "data/threat_inventory_data.rds", compress = "gzip")
@@ -1635,10 +1663,101 @@ end.final <- rbind.data.frame(end1, end.prob1,
                               stringsAsFactors = FALSE)
 end.final <- end.final[order(end.final$species),]
 
+##Getting the endemism in Brazil (no CNCFlora 'jurisidction')
+tmp <- flora::get.taxa(end.final$species)
+tmp1 <- flora::get_endemism(tmp)
+
 ## Saving
-saveRDS(end.final, "data/threat_endeism_levels.rds")
+saveRDS(end.final, "data/threat_endemism_levels.rds")
 
 
+#####################################################################################################################################################################H
+#####################################################################################################################################################################H
+###################################
+#### INFO FROM REFLORA WEBSITE ####
+###################################
+
+source("C:/Users/renato/Documents/raflima/R_packages/plantR/R/getFlora.R")
+tax  <- readRDS("data/assess_iucn_spp.rds")[,1:3]
+flora.info <- getFlora(tax$species.correct2)
+tmp <- cbind.data.frame(tax, flora.info)
+
+## Saving
+tmp$collectors[tmp$species.correct2 %in% "Miconia flammea"] <-
+  gsub("Silva, M.F.O. \\| Prieto, P.V.", "Silva, M.F.O.; Prieto, P.V.", tmp$collectors[tmp$species.correct2 %in% "Miconia flammea"])
+saveRDS(tmp, "data/threat_flora_info.rds")
+
+## Isolating and editing voucher information from Reflora
+tmp1 <- strsplit(tmp$tombos, "\\|")
+names(tmp1) <- tax$species.correct2
+tmp1 <- unlist(tmp1)
+
+tmp2 <- strsplit(tmp$collectors, "\\|")
+tmp2 <- sapply(tmp2, stringr::str_trim)
+names(tmp2) <- tax$species.correct2
+tmp2 <- unlist(tmp2)
+
+vouchers <- data.frame(tax = names(tmp1), 
+                   voucher = tmp1,
+                   collect = tmp2,
+                   stringsAsFactors = FALSE, row.names = NULL)
+vouchers$tax <- gsub("[0-9]$","", vouchers$tax)
+##Tombo
+vouchers$voucher <- sapply(strsplit(vouchers$voucher, ","), function(x) x[1])
+##Tipos
+vouchers$typus <- FALSE
+vouchers$typus[grepl('><b>Typus</b></font',vouchers$collect)] <- TRUE
+vouchers$collect <- gsub(", <font color='red'><b>Typus</b></font>", "", vouchers$collect)
+##Coletor
+vouchers$recordBy <- stringr::str_trim(sapply(strsplit(vouchers$collect, ","), function(x) x[1]))
+vouchers$recordBy <- gsub("   ", " ", vouchers$recordBy)
+vouchers$recordBy <- gsub("  ", " ", vouchers$recordBy)
+tmp3 <- stringr::str_trim(sapply(strsplit(vouchers$collect, ","), function(x) x[2]))
+tmp4 <- stringr::str_trim(sapply(strsplit(vouchers$collect, ","), function(x) x[3]))
+##Iniciais do Coletors
+vouchers$recordBy.init <- NA
+vouchers$recordBy.init[grepl("\\D", tmp3)] <-
+  tmp3[grepl('\\D', tmp3)]
+vouchers$recordBy.init[is.na(vouchers$recordBy.init) & grepl("\\D", tmp4)] <-
+  tmp4[is.na(vouchers$recordBy.init) & grepl('\\D', tmp4)]
+vouchers$recordBy.init[vouchers$recordBy.init %in% "s.n."] <- NA
+##Número de coleta
+vouchers$colNumber <- NA
+vouchers$colNumber[grepl("\\d", tmp3) | tmp3 %in% "s.n."] <-
+  tmp3[grepl('\\d', tmp3) | tmp3 %in% "s.n."]
+vouchers$colNumber[is.na(vouchers$colNumber) & (grepl("\\d", tmp4) | tmp4 %in% "s.n.")] <-
+  tmp4[is.na(vouchers$colNumber) & (grepl('\\d', tmp4) | tmp4 %in% "s.n.")]
+
+##Final edits
+vouchers$recordBy[grepl(" & ", vouchers$recordBy)] <- 
+  sapply(strsplit(vouchers$recordBy[grepl(" & ", vouchers$recordBy)], " & "), 
+         function(x) x[1])
+vouchers$recordBy <- gsub(" \\(Brother\\) ", " ",vouchers$recordBy)
+vouchers$recordBy[grepl(" \\(", vouchers$recordBy)] <- 
+  sapply(strsplit(vouchers$recordBy[grepl(" \\(", vouchers$recordBy)], " \\("), 
+         function(x) x[1])
+vouchers$voucher[grepl("[A-Z] [0-9][0-9]", vouchers$recordBy.init) &
+                         vouchers$voucher %in% "NA"] <- 
+  vouchers$recordBy.init[grepl("[A-Z] [0-9][0-9]", vouchers$recordBy.init) &
+                         vouchers$voucher %in% "NA"]
+vouchers$recordBy.init[vouchers$recordBy.init %in% vouchers$colNumber] <- NA
+ids <- is.na(vouchers$recordBy.init) & grepl("\\. ", vouchers$recordBy)
+vouchers$recordBy.init[ids] <- 
+  sapply(strsplit(vouchers$recordBy[ids], "\\. "), function(x) paste0(paste(head(x, -1), collapse="."),".")) 
+vouchers$recordBy[ids] <- 
+  sapply(strsplit(vouchers$recordBy[ids], "\\. "), function(x) tail(x,1)) 
+vouchers$recordBy <- gsub(" et al\\.$", "", vouchers$recordBy)
+
+##PlantR columns
+#Tombo
+vouchers$numTombo <- sapply(strsplit(vouchers$voucher, " "), 
+                            function(x) paste0(tolower(x[1]),"_",x[2]))
+vouchers$numTombo[grepl("_NA$", vouchers$numTombo)] <- NA 
+#Last name
+
+##Saving
+saveRDS(vouchers, "data/vouchers_reflora.rds")
+  
 #####################################################################################################################################################################H
 #####################################################################################################################################################################H
 ##################################################

@@ -66,6 +66,8 @@ names(resultado)[which(names(resultado) %in% c("family.correct1","species.correc
 
 ## GILLES COMMENT: Are you sure you want to crop the EOO (exclude area)? IUCN guidelines suggest to not do it for criterion B
 ## RENATO UPDATE: EOO is now computed without excluding the sea areas of EOO
+## RENATO UPDATE 2: EOO is now also computed excluding the sea areas of EOO 
+#for obtaining the protected areas, forest cover and HII within species EOO
 
 system.time(
   EOO.hull <- ConR:::EOO.computing(MyData[grepl("high", MyData$tax.check.final), c(1:3)], 
@@ -76,7 +78,7 @@ system.time(
                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
                             parallel = TRUE, NbeCores = 6) # run on parallel? How many cores?
-) #Took 22 secs!
+) #Took 22 secs! 26 minutes if we exclude the sea areas
 
 #extracting the EOO from the object
 EOO <- do.call(rbind.data.frame, EOO.hull[grepl("EOO", names(EOO.hull))])
@@ -91,7 +93,7 @@ for (i in 1:length(shps))
 shps <- do.call(rbind, shps)
 shps_df <- SpatialPolygonsDataFrame(shps, data.frame(tax = names(shps), row.names = names(shps)))
 #shps_df <-EOO.hull[[2]]
-shps_df$taxa <- as.character(shps_df$taxa) 
+shps_df$tax <- as.character(shps_df$tax) 
 
 #inpecting
 par(mar=c(1,0,1,0))
