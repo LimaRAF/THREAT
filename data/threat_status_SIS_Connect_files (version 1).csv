@@ -1,0 +1,22 @@
+﻿Order,File,Type,Script,Obs,Script_order,Status,,,,
+1,taxonomy.csv,required,02_prep_species_info,,1,ok,,,allfields.csv,required
+2,commonnames.csv,required,02_prep_species_info,,2,ok,,,assessments.csv,required
+3,synonyms.csv,required,02_prep_species_info,,3,ok,,ok,commonnames.csv,required
+4,habitats.csv,required,02_prep_species_info,,4,ok,,,conservationneeded.csv,required
+17,plantspecific.csv,required,02_prep_species_info,,5,ok,,ok,countries.csv,required
+10,countries.csv,required,02_prep_species_info,,6,ok,,ok,credits.csv,required
+5,previous_assessments.csv,optional,02_prep_species_info,,7,ok,,ok,habitats.csv,required
+6,endemism_level.csv,optional,02_prep_species_info,,8,ok,,ok,plantspecific.csv,required
+7,flora_info.csv,optional,02_prep_species_info,,9,check,,,references.csv,required
+8,vouchers_reflora,optional,02_prep_species_info,,9,check,,,researchneeded.csv,required
+9,cites.csv,optional,02_prep_species_info,,10,to be done,,ok,synonyms.csv,required
+11,usetrade.csv,required,02_prep_species_info,,11,ok,,ok,taxonomy.csv,required
+12,threats.csv,required,02_prep_species_info,,12,ok,,ok,threats.csv,required
+18,conservationneeded.csv,required,,,14,finish,,ok,usetrade.csv,required
+19,researchneeded.csv,required,,,15,finish,,,,
+15,credits.csv,required,,Hans and Gilles as Assessors?,16,ok,,,,
+14,references.csv,required,,,17,to be done,,,,
+13,assessments.csv,required,,,18,to be done,,,,
+16,allfields.csv,required,,,19,to be done,,,,
+20,fao.csv,not_required,,,NA,NA,,,,
+21,lme.csv,not_required,,,NA,NA,,,,
