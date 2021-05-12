@@ -1,0 +1,688 @@
+﻿order,code,description,iso2c
+1,100.1,OLD - Serbia and Montenegro,
+2,100.2,OLD - Northern Provinces,
+3,100.3,OLD - Reunion (main island group),
+4,100.4,"OLD - United Kingdom, Chanel Is.",
+5,ABT-OO,Alberta,
+6,AD,Andorra,
+7,AE,United Arab Emirates,
+8,AF,Afghanistan,
+9,AG,Antigua and Barbuda,
+10,AGE-BA,Buenos Aires,AR
+11,AGE-CH,Chaco,AR
+12,AGE-CN,Corrientes,AR
+13,AGE-CO,Córdoba,AR
+14,AGE-DF,Argentina Distrito Federal,AR
+15,AGE-ER,Entre Ríos,AR
+16,AGE-FO,Formosa,AR
+17,AGE-LP,La Pampa,AR
+18,AGE-MI,Misiones,AR
+19,AGE-SF,Santa Fé,AR
+20,AGS-CB,Chubut,AR
+21,AGS-NE,Neuquén,AR
+22,AGS-RN,Rio Negro,AR
+23,AGS-SC,Santa Cruz,AR
+24,AGS-TF,Tierra del Fuego,AR
+25,AGW-CA,Catamarca,AR
+26,AGW-JU,Jujuy,AR
+27,AGW-LR,La Rioja,AR
+28,AGW-ME,Mendoza,AR
+29,AGW-SA,Salta,AR
+30,AGW-SE,Santiago del Estero,AR
+31,AGW-SJ,San Juan,AR
+32,AGW-SL,San Luis,AR
+33,AGW-TU,Tucumán,AR
+34,AI,Anguilla,
+35,AL,Albania,
+36,ALA-OO,Alabama,
+37,ALD-OO,Aldabra,
+38,ALT-OO,Altay,
+39,ALU-OO,Aleutian Is.,
+40,AM,Armenia,
+41,AMU-OO,Amur,
+42,AND-AN,Andaman Is.,
+43,AND-CO,Coco Is.,
+44,ANG-OO,Angola,
+45,AO,Angola,
+46,AQ,Antarctica,
+47,AR,Argentina,
+48,ARI-OO,Arizona,
+49,ARK-OO,Arkansas,
+50,AS,American Samoa,
+51,ASC-OO,Ascension,
+52,ASK-OO,Alaska,
+53,ASP-OO,Amsterdam-St. Paul Is.,
+54,ASS-AS,Assam,
+55,ASS-MA,Manipur,
+56,ASS-ME,Meghalaya,
+57,ASS-MI,Mizoram,
+58,ASS-NA,Nagaland,
+59,ASS-TR,Tripura,
+60,AT,Austria,
+61,ATP-OO,Antipodean Is.,
+62,AU,Australia,
+63,AW,Aruba,
+64,AX,Åland Islands,
+65,AZ,Azerbaijan,
+66,AZO-OO,Azores,
+67,BA,Bosnia and Herzegovina,
+68,BAL-OO,Baleares,
+69,BB,Barbados,
+70,BD,Bangladesh,
+71,BE,Belgium,
+72,BF,Burkina Faso,
+73,BG,Bulgaria,
+74,BH,Bahrain,
+75,BI,Burundi,
+76,BIS-OO,Bismarck Archipelago,
+77,BJ,Benin,
+78,BL,Saint Barthélemy,
+79,BLT-KA,Kaliningrad,
+80,BM,Bermuda,
+81,BN,Brunei Darussalam,
+82,BO,"Bolivia, Plurinational States of",
+83,BOR-KA,Kalimantan,
+84,BOR-SB,Sabah,
+85,BOR-SR,Sarawak,
+86,BQ,"Bonaire, Sint Eustatius and Saba",
+87,BR,Brazil,
+88,BRC-OO,British Columbia,
+89,BRY-OO,Buryatiya,
+90,BS,Bahamas,
+91,BT,Bhutan,
+92,BV,Bouvet Island,
+93,BW,Botswana,
+94,BY,Belarus,
+95,BZ,Belize,
+96,BZC-DF,Brasília Distrito Federal,BR
+97,BZC-GO,Goiás,BR
+98,BZC-MS,Mato Grosso do Sul,BR
+99,BZC-MT,Mato Grosso,BR
+100,BZE-AL,Alagoas,BR
+101,BZE-BA,Bahia,BR
+102,BZE-CE,Ceará,BR
+103,BZE-FN,Fernando de Noronha,BR
+104,BZE-MA,Maranhão,BR
+105,BZE-PB,Paraíba,BR
+106,BZE-PE,Pernambuco,BR
+107,BZE-PI,Piauí,BR
+108,BZE-RN,Rio Grande do Norte,BR
+109,BZE-SE,Sergipe,BR
+110,BZL-ES,Espírito Santo,BR
+111,BZL-MG,Minas Gerais,BR
+112,BZL-RJ,Rio de Janeiro,BR
+113,BZL-SP,São Paulo,BR
+114,BZL-TR,Trindade,BR
+115,BZN-AC,Acre,BR
+116,BZN-AP,Amapá,BR
+117,BZN-AZ,Amazonas,BR
+118,BZN-PA,Pará,BR
+119,BZN-RM,Roraima,BR
+120,BZN-RO,Rondônia,BR
+121,BZN-TO,Tocantins,BR
+122,BZS-PR,Paraná,BR
+123,BZS-RS,Rio Grande do Sul,BR
+124,BZS-SC,Santa Catarina,BR
+125,CA,Canada,
+126,CAB-OO,Cabinda,
+127,CAL-OO,California,
+128,CC,Cocos (Keeling) Islands,
+129,CD,"Congo, The Democratic Republic of the",
+130,CF,Central African Republic,
+131,CG,Congo,
+132,CGS-OO,Chagos Archipelago,
+133,CH,Switzerland,
+134,CHC-CQ,Chongqing,CN
+135,CHC-GZ,Guizhou,CN
+136,CHC-HU,Hubei,CN
+137,CHC-SC,Sichuan,CN
+138,CHC-YN,Yunnan,CN
+139,CHH-OO,Hainan,CN
+140,CHI-NM,Nei Mongol,CN
+141,CHI-NX,Ningxia,CN
+142,CHM-HJ,Heilongjiang,CN
+143,CHM-JL,Jilin,CN
+144,CHM-LN,Liaoning,CN
+145,CHN-BJ,Beijing,CN
+146,CHN-GS,Gansu,CN
+147,CHN-HB,Hebei,CN
+148,CHN-SA,Shaanxi,CN
+149,CHN-SD,Shandong,CN
+150,CHN-SX,Shanxi,CN
+151,CHN-TJ,Tianjin,CN
+152,CHQ-OO,Qinghai,CN
+153,CHS-AH,Anhui,CN
+154,CHS-FJ,Fujian,CN
+155,CHS-GD,Guangdong,CN
+156,CHS-GX,Guangxi,CN
+157,CHS-HE,Henan,CN
+158,CHS-HN,Hunan,CN
+159,CHS-JS,Jiangsu,CN
+160,CHS-JX,Jiangxi,CN
+161,CHS-KI,Kin-Men,CN
+162,CHS-MP,Ma-tsu-Pai-chuan,CN
+163,CHS-SH,Shanghai,CN
+164,CHS-ZJ,Zhejiang,CN
+165,CHT-OO,Tibet [or Xizang],CN
+166,CHX-OO,Xinjiang,CN
+167,CI,Côte d'Ivoire,
+168,CK,Cook Islands,
+169,CL,Chile,
+170,CLC-BI,Biobío,CL
+171,CLC-CO,Coquimbo,CL
+172,CLC-LA,La Araucania,CL
+173,CLC-MA,Maule,CL
+174,CLC-OH,O'Higgins,CL
+175,CLC-SA,Santiago,CL
+176,CLC-VA,Valparaíso,CL
+177,CLM-OO,Colombia (mainland),
+178,CLN-AN,Antofagasta,CL
+179,CLN-AT,Atacama,CL
+180,CLN-TA,Tarapacá,CL
+181,CLS-AI,Aisén,CL
+182,CLS-LL,Los Lagos,CL
+183,CLS-MG,Magellanes,CL
+184,CM,Cameroon,
+185,CN,China,
+186,CNT-OO,Connecticut,
+187,CNY-OO,Canary Is.,
+188,CO,Colombia,
+189,COL-OO,Colorado,
+190,COO-OO,Cook Is.,
+191,COR-OO,Corsica,
+192,COS-OO,Costa Rica (mainland),
+193,CPI-CL,Clipperton I.,
+194,CPI-CO,Cocos I.,
+195,CPI-MA,Malpelo I.,
+196,CPP-EC,Eastern Cape Province,
+197,CPP-NC,Northern Cape Province,
+198,CPP-WC,Western Cape,
+199,CPV-OO,Caprivi Strip,
+200,CR,Costa Rica,
+201,CRZ-OO,Crozet Is.,
+202,CTA-OO,Chita,
+203,CTM-OO,Chatham Is.,
+204,CU,Cuba,
+205,CV,Cabo Verde,
+206,CW,Curaçao,
+207,CX,Christmas Island,
+208,CY,Cyprus,
+209,CZ,Czechia,
+210,DE,Germany,
+211,DEL-OO,Delaware,
+212,DJ,Djibouti,
+213,DK,Denmark,
+214,DM,Dominica,
+215,DO,Dominican Republic,
+216,DSV-OO,Desventurados Is.,
+217,DT,Disputed Territory,
+218,DZ,Algeria,
+219,EAI-OO,East Aegean Is.,
+220,EAS-OO,Easter Is.,
+221,EC,Ecuador,
+222,ECU-OO,Ecuador (mainland),
+223,EE,Estonia,
+224,EG,Egypt,
+225,EGY-OO,Egypt (African part),
+226,EH,Western Sahara,
+227,EHM-AP,Arunachal Pradesh,
+228,EHM-DJ,Darjiling,
+229,EHM-SI,Sikkim,
+230,EQG-OO,Equatorial Guinea (mainland),
+231,ER,Eritrea,
+232,ES,Spain,
+233,ET,Ethiopia,
+234,FI,Finland,
+235,FJ,Fiji,
+236,FK,Falkland Islands (Malvinas),
+237,FLA-OO,Florida,
+238,FM,"Micronesia, Federated States of",
+239,FO,Faroe Islands,
+240,FR,France,
+241,FRA-FR,France (mainland),
+242,GA,Gabon,
+243,GAL-OO,Galápagos,
+244,GB,United Kingdom,
+245,GD,Grenada,
+246,GE,Georgia,
+247,GEO-OO,Georgia,
+248,GF,French Guiana,
+249,GG,Guernsey,
+250,GGI-AN,Annobón,
+251,GGI-BI,Bioko,
+252,GGI-PR,Principe,
+253,GGI-ST,Sâo Tomé,
+254,GH,Ghana,
+255,GI,Gibraltar,
+256,GIL-OO,Gilbert Is.,
+257,GL,Greenland,
+258,GM,Gambia,
+259,GN,Guinea,
+260,GP,Guadeloupe,
+261,GQ,Equatorial Guinea,
+262,GR,Greece,
+263,GRB-OO,Great Britain,
+264,GRC-OO,Greece (mainland),
+265,GS,South Georgia and the South Sandwich Islands,
+266,GT,Guatemala,
+267,GU,Guam,
+268,GW,Guinea-Bissau,
+269,GY,Guyana,
+270,HAI-NI,Navassa I.,
+271,HAW-HI,Hawaiian Is.,
+272,HAW-JI,Johnston I.,
+273,HAW-MI,Midway Is.,
+274,HBI-OO,Howland-Baker Is.,
+275,HK,Hong Kong,
+276,HM,Heard Island and McDonald Islands,
+277,HN,Honduras,
+278,HON-OO,Honduras (mainland),
+279,HR,Croatia,
+280,HT,Haiti,
+281,HU,Hungary,
+282,ID,Indonesia,
+283,IDA-OO,Idaho,
+284,IE,Ireland,
+285,IL,Israel,
+286,ILL-OO,Illinois,
+287,IM,Isle of Man,
+288,IN,India,
+289,IND-AP,Andhra Pradesh,IN
+290,IND-BI,Bihar,IN
+291,IND-CH,Chandigarh,IN
+292,IND-CT,Chattisgarh,IN
+293,IND-DD,Dadra-Nagar-Haveli,IN
+294,IND-DE,Delhi,IN
+295,IND-DI,Diu,IN
+296,IND-DM,Daman,IN
+297,IND-GO,Goa,IN
+298,IND-GU,Gujarat,IN
+299,IND-HA,Haryana,IN
+300,IND-JK,Jharkand,IN
+301,IND-KE,Kerala,IN
+302,IND-KL,Karaikal,IN
+303,IND-KT,Karnataka,IN
+304,IND-MH,Mahé,IN
+305,IND-MP,Madhya Pradesh,IN
+306,IND-MR,Maharashtra,IN
+307,IND-OR,Orissa,IN
+308,IND-PO,Pondicherry,IN
+309,IND-PU,Punjab,IN
+310,IND-RA,Rajasthan,IN
+311,IND-TN,Tamil Nadu,IN
+312,IND-UP,Uttar Pradesh,IN
+313,IND-WB,West Bengal,IN
+314,IND-YA,Yanam,IN
+315,INI-OO,Indiana,
+316,IO,British Indian Ocean Territory,
+317,IOW-OO,Iowa,
+318,IQ,Iraq,
+319,IR,"Iran, Islamic Republic of",
+320,IRE-NI,Northern Ireland,
+321,IRK-OO,Irkutsk,
+322,IS,Iceland,
+323,IT,Italy,
+324,ITA-IT,Italy (mainland),
+325,JAP-HK,Hokkaido,JP
+326,JAP-HN,Honshu,JP
+327,JAP-KY,Kyushu,JP
+328,JAP-SH,Shikoku,JP
+329,JAW-OO,Jawa,
+330,JE,Jersey,
+331,JM,Jamaica,
+332,JNF-OO,Juan Fernández Is.,
+333,JO,Jordan,
+334,JP,Japan,
+335,KAM-OO,Kamchatka,
+336,KAN-OO,Kansas,
+337,KE,Kenya,
+338,KEG-OO,Kerguelen,
+339,KER-OO,Kermadec Is.,
+340,KG,Kyrgyzstan,
+341,KH,Cambodia,
+342,KHA-OO,Khabarovsk,
+343,KI,Kiribati,
+344,KM,Comoros,
+345,KN,Saint Kitts and Nevis,
+346,KP,"Korea, Democratic People's Republic of",
+347,KR,"Korea, Republic of",
+348,KRA-OO,Krasnoyarsk,
+349,KRI-OO,Kriti,
+350,KRY-OO,Krym,
+351,KTY-OO,Kentucky,
+352,KUR-OO,Kuril Is.,
+353,KW,Kuwait,
+354,KY,Cayman Islands,
+355,KZ,Kazakhstan,
+356,KZN-OO,Kazan-retto,
+357,LA,Lao People's Democratic Republic,
+358,LAB-OO,Labrador,
+359,LB,Lebanon,
+360,LC,Saint Lucia,
+361,LDV-OO,Laccadive Is.,
+362,LEE-AV,Aves I.,
+363,LI,Liechtenstein,
+364,LIN-KI,Kiribati Line Is.,
+365,LIN-US,US Line Is.,
+366,LK,Sri Lanka,
+367,LOU-OO,Louisiana,
+368,LR,Liberia,
+369,LS,Lesotho,
+370,LSI-BA,Bali,
+371,LSI-LS,Lesser Sunda Is.,
+372,LT,Lithuania,
+373,LU,Luxembourg,
+374,LV,Latvia,
+375,LY,Libya,
+376,MA,Morocco,
+377,MAG-OO,Magadan,
+378,MAI-OO,Maine,
+379,MAN-OO,Manitoba,
+380,MAQ-OO,Macquarie Is.,
+381,MAS-OO,Massachusetts,
+382,MAU-OO,Mauritius (main island),
+383,MC,Monaco,
+384,MCI-OO,Mozambique Channel Is.,
+385,MCS-OO,Marcus I.,
+386,MD,Moldova,
+387,MDR-OO,Madeira,
+388,ME,Montenegro,
+389,MF,Saint Martin (French part),
+390,MG,Madagascar,
+391,MH,Marshall Islands,
+392,MIC-OO,Michigan,
+393,MIN-OO,Minnesota,
+394,MK,North Macedonia,
+395,ML,Mali,
+396,MLY-PM,Peninsular Malaysia,
+397,MM,Myanmar,
+398,MN,Mongolia,
+399,MNT-OO,Montana,
+400,MO,Macao,
+401,MOL-OO,Maluku,
+402,MOR-SP,Spanish North African Territories,
+403,MP,Northern Mariana Islands,
+404,MPE-OO,Marion-Prince Edward Is.,
+405,MQ,Martinique,
+406,MR,Mauritania,
+407,MRQ-OO,Marquesas,
+408,MRY-OO,Maryland,
+409,MS,Montserrat,
+410,MSI-OO,Mississippi,
+411,MSO-OO,Missouri,
+412,MT,Malta,
+413,MU,Mauritius,
+414,MV,Maldives,
+415,MW,Malawi,
+416,MX,Mexico,
+417,MXC-DF,México Distrito Federal,MX
+418,MXC-ME,México State,MX
+419,MXC-MO,Morelos,MX
+420,MXC-PU,Puebla,MX
+421,MXC-TL,Tlaxcala,MX
+422,MXE-AG,Aguascalientes,MX
+423,MXE-CO,Coahuila,MX
+424,MXE-CU,Chihuahua,MX
+425,MXE-DU,Durango,MX
+426,MXE-GU,Guanajuato,MX
+427,MXE-HI,Hidalgo,MX
+428,MXE-NL,Nuevo León,MX
+429,MXE-QU,Querétaro,MX
+430,MXE-SL,San Luis Potosí,MX
+431,MXE-TA,Tamaulipas,MX
+432,MXE-ZA,Zacatecas,MX
+433,MXG-VC,Veracruz,MX
+434,MXI-GU,Guadalupe I.,MX
+435,MXI-RA,Rocas Alijos,MX
+436,MXI-RG,Revillagigedo Is.,MX
+437,MXN-BC,Baja California,MX
+438,MXN-BS,Baja California Sur,MX
+439,MXN-SI,Sinaloa,MX
+440,MXN-SO,Sonora,MX
+441,MXS-CL,Colima,MX
+442,MXS-GR,Guerrero,MX
+443,MXS-JA,Jalisco,MX
+444,MXS-MI,Michoacán,MX
+445,MXS-NA,Nayarit,MX
+446,MXS-OA,Oaxaca,MX
+447,MXT-CA,Campeche,MX
+448,MXT-CI,Chiapas,MX
+449,MXT-QR,Quintana Roo,MX
+450,MXT-TB,Tabasco,MX
+451,MXT-YU,Yucatán,MX
+452,MY,Malaysia,
+453,MYA-OO,Myanmar (mainland),
+454,MZ,Mozambique,
+455,NA,Namibia,
+456,NAM-OO,Namibia (main part),
+457,NAT-OO,KwaZulu-Natal,
+458,NBR-OO,New Brunswick,
+459,NC,New Caledonia,
+460,NCA-OO,North Carolina,
+461,NCB-OO,Nicobar Is.,
+462,NCS-CH,Chechnya,
+463,NCS-DA,Dagestan,
+464,NCS-IN,Ingushetiya,
+465,NCS-KB,Kabardino-Balkariya,
+466,NCS-KC,Karachaevo-Cherkessiya,
+467,NCS-KR,Krasnodar,
+468,NCS-SO,Severo-Osetiya,
+469,NCS-ST,Stavropol,
+470,NDA-OO,North Dakota,
+471,NE,Niger,
+472,NEB-OO,Nebraska,
+473,NEV-OO,Nevada,
+474,NF,Norfolk Island,
+475,NFK-LH,Lord Howe Is.,
+476,NFL-NE,Newfoundland I,
+477,NG,Nigeria,
+478,NI,Nicaragua,
+479,NIC-OO,Nicaragua (mainland),
+480,NL,Netherlands,
+481,NLA-BO,Bonaire,
+482,NLA-SA,Saba,
+483,NLA-SE,Sint Eustatius,
+484,NNS-OO,Nansei-shoto,
+485,NO,Norway,
+486,NP,Nepal,
+487,NR,Nauru,
+488,NSC-OO,Nova Scotia,
+489,NSW-CT,Australian Capital Territory,
+490,NSW-NS,New South Wales,
+491,NTA-OO,Northern Territory,
+492,NU,Niue,
+493,NUN-OO,Nunavut,
+494,NWG-IJ,Papua,
+495,NWG-PN,Papua New Guinea (main island group),
+496,NWH-OO,New Hampshire,
+497,NWJ-OO,New Jersey,
+498,NWM-OO,New Mexico,
+499,NWT-OO,Northwest Territories,
+500,NWY-OO,New York,
+501,NZ,New Zealand,
+502,NZN-OO,North Is.,
+503,NZS-OO,South Is.,
+504,OFS-OO,Free State,
+505,OGA-OO,Ogasawara-shoto,
+506,OHI-OO,Ohio,
+507,OKL-OO,Oklahoma,
+508,OM,Oman,
+509,ONT-OO,Ontario,
+510,ORE-OO,Oregon,
+511,PA,Panama,
+512,PE,Peru,
+513,PEI-OO,Prince Edward I.,
+514,PEN-OO,Pennsylvania,
+515,PF,French Polynesia,
+516,PG,Papua New Guinea,
+517,PH,Philippines,
+518,PHX-OO,Phoenix Is.,
+519,PK,Pakistan,
+520,PL,Poland,
+521,PM,Saint Pierre and Miquelon,
+522,PN,Pitcairn,
+523,POR-OO,Portugal (mainland),
+524,PR,Puerto Rico,
+525,PRM-OO,Primoryi,
+526,PS,"Palestine, State of",
+527,PT,Portugal,
+528,PUE-OO,Puerto Rico (main island),
+529,PW,Palau,
+530,PY,Paraguay,
+531,QA,Qatar,
+532,QLD-CS,Coral Sea Is. Territory,
+533,QLD-QU,Queensland,
+534,QUE-OO,Québec,
+535,RE,Réunion,
+536,RHO-OO,Rhode Island,
+537,RO,Romania,
+538,ROD-OO,Rodrigues,
+539,RS,Serbia,
+540,RU,Russian Federation,
+541,RU-CA,Central Asian Russia,RU
+542,RUC-OO,Central European Russia,RU
+543,RU-EA,Eastern Asian Russia,RU
+544,RUE-OO,East European Russia,RU
+545,RU-EU,European Russia,RU
+546,RUN-OO,North European Russia,RU
+547,RUS-OO,South European Russia,RU
+548,RUW-OO,Northwest European Russia,RU
+549,RW,Rwanda,
+550,SA,Saudi Arabia,
+551,SAK-OO,Sakhalin,
+552,SAM-AS,American Samoa,
+553,SAR-OO,Sardegna,
+554,SAS-OO,Saskatchewan,
+555,SB,Solomon Islands,
+556,SC,Seychelles,
+557,SCA-OO,South Carolina,
+558,SCI-OO,Society Is.,
+559,SCS-PI,Paracel Is.,
+560,SCS-SI,Spratly Is.,
+561,SCZ-OO,Santa Cruz Is.,
+562,SD,Sudan,
+563,SDA-OO,South Dakota,
+564,SE,Sweden,
+565,SEL-OO,Selvagens,
+566,SEY-OO,Seychelles (main island group),
+567,SG,Singapore,
+568,SGE-OO,South Georgia,
+569,SH,"Saint Helena, Ascension and Tristan da Cunha",
+570,SI,Slovenia,
+571,SIC-SI,Sicilia,
+572,SIN-OO,Sinai,
+573,SJ,Svalbard and Jan Mayen,
+574,SK,Slovakia,
+575,SL,Sierra Leone,
+576,SM,San Marino,
+577,SN,Senegal,
+578,SO,Somalia,
+579,SOA-OO,South Australia,
+580,SOC-OO,Socotra,
+581,SOL-NO,North Solomons,
+582,SOL-SO,South Solomons,
+583,SPA-SP,Spain (mainland),
+584,SR,Suriname,
+585,SS,South Sudan,
+586,SSA-OO,South Sandwich Is.,
+587,ST,Sao Tome and Principe,
+588,STH-OO,Saint Helena (main island),
+589,SUL-OO,Sulawesi,
+590,SUM-OO,Sumatera,
+591,SV,El Salvador,
+592,SWC-CC,Colombian Caribbean Is.,
+593,SWC-HC,Honduran Caribbean Is.,
+594,SWC-NC,Nicaraguan Caribbean Is.,
+595,SX,Sint Maarten (Dutch part),
+596,SY,Syrian Arab Republic,
+597,SZ,Eswatini,
+598,TAI-OO,"Taiwan, Province of China (main island)",
+599,TAS-OO,Tasmania,
+600,TC,Turks and Caicos Islands,
+601,TCS-AB,Abkhaziya,
+602,TCS-AD,Adzhariya,
+603,TCS-AR,Armenia,
+604,TCS-GR,Gruziya,
+605,TCS-NA,Nakhichevan,
+606,TCS-NK,Nagorno-Karabakh,
+607,TD,Chad,
+608,TDC-OO,Tristan da Cunha,
+609,TEN-OO,Tennessee,
+610,TEX-OO,Texas,
+611,TF,French Southern Territories,
+612,TG,Togo,
+613,TH,Thailand,
+614,TJ,Tajikistan,
+615,TK,Tokelau,
+616,TL,Timor-Leste,
+617,TM,Turkmenistan,
+618,TN,Tunisia,
+619,TO,Tonga,
+620,TOK-MA,Manihiki Is.,
+621,TOK-SW,Swains Is.,
+622,TR,Turkey,
+623,TT,Trinidad and Tobago,
+624,TUA-OO,Tuamotu,
+625,TUB-OO,Tubuai Is.,
+626,TUE-OO,Turkey-in-Europe,
+627,TUR-OO,Turkey-in-Asia,
+628,TV,Tuvalu,
+629,TVA-OO,Tuva,
+630,TVL-GA,Gauteng,
+631,TVL-MP,Mpumalanga,
+632,TVL-NP,Limpopo Province,
+633,TVL-NW,North-West Province,
+634,TW,"Taiwan, Province of China",
+635,TZ,"Tanzania, United Republic of",
+636,UA,Ukraine,
+637,UG,Uganda,
+638,UKR-UK,Ukraine (main part),
+639,UM,United States Minor Outlying Islands,
+640,US,United States,
+641,UTA-OO,Utah,
+642,UY,Uruguay,
+643,UZ,Uzbekistan,
+644,VA,Holy See (Vatican City State),
+645,VC,Saint Vincent and the Grenadines,
+646,VE,"Venezuela, Bolivarian Republic of",
+647,VEN-OO,Venezuela (mainland),
+648,VER-OO,Vermont,
+649,VG,"Virgin Islands, British",
+650,VI,"Virgin Islands, U.S.",
+651,VIC-OO,Victoria,
+652,VN,Viet Nam,
+653,VNA-OO,Venezuelan Antilles,
+654,VRG-OO,Virginia,
+655,VU,Vanuatu,
+656,WAK-OO,Wake Is.,
+657,WAS-OO,Washington,
+658,WAU-AC,Ashmore-Cartier Is.,
+659,WAU-WA,Western Australia,
+660,WDC-OO,District of Columbia,
+661,WF,Wallis and Futuna,
+662,WHM-HP,Himachal Pradesh,
+663,WHM-JK,Jammu-Kashmir,
+664,WHM-UT,Uttaranchal,
+665,WIS-OO,Wisconsin,
+666,WS,Samoa,
+667,WSB-OO,West Siberia,
+668,WVA-OO,West Virginia,
+669,WYO-OO,Wyoming,
+670,YAK-OO,Yakutiya,
+671,YE,Yemen,
+672,YEM-NY,North Yemen,
+673,YEM-SY,South Yemen,
+674,YT,Mayotte,
+675,YUG-KO,Kosovo,
+676,YUG-SE,Serbia,
+677,YUK-OO,Yukon,
+678,ZA,South Africa,
+679,ZM,Zambia,
+680,ZW,Zimbabwe,
+681,BZC-DF,Distrito Federal,BR
+682,AGE-DF,Ciudad de Buenos Aires,AR
+683,AGE-SF,Santa Fe,AR
+684,AGS-RN,Río Negro,AR
+685,CLC-SA,Región Metropolitana de Santiago,CL
+686,MXC-DF,Distrito Federal,MX
+687,MXC-ME,México,MX

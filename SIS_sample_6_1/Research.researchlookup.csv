@@ -1,0 +1,21 @@
+﻿code,description,threat,definition,examples,exposition,notes
+1,Research,,,,,
+1.1,Taxonomy,depend (if most records are old),,,,Espécie conhecida apenas para a localidade onde o espécimen tipo foi coletado e que não tenha sido re-coletado nos últimos 50 anos. Pode se tratar de uma sinônimo de outra espécie que não tenha recebido o tratamento taxonômico necessário.
+1.2,"Population size, distribution & trends",depend (if no plot data is available),,,There may be some confusion about the difference between researching population trends and monitoring population trends (see 3.2). The distinction is that you may research how population has changed in the past whereas monitoring is more ongoing into the future.,"Espécie não registrada em nehum dos mais de 1100 inventários florestais compilados para a Mata Atlântica, portanto sem estimativas de seu tamanho populacional e possíveis tendências de declínio. Provavelmente representa uma espécie que ocorre em baixas densidades na floresta ou uma espécie associada a um tipo de habitat específico e sub-representado nos inventários florestais compilados."
+1.3,Life history & ecology,,,,,
+1.4,"Harvest, use & livelihoods",,,,,
+1.5,Threats,,,,,
+1.6,Conservation Actions,,,,"Research to determine how to mitigate particular threats (e.g., how to mitigate impacts of long-lining to reduce bycatch), or whether ex-situ breeding is possible",
+2,Conservation Planning,,,,,
+2.1,Species Action/Recovery Plan,depend (if CR or CR PE),,,,Estabelecer um Plano de Ação em escala nacional para recuperar as populações da espécies.
+2.2,Area-based Management Plan,,,,,
+2.3,Harvest & Trade Management Plan,,,,,
+3,Monitoring,,,,,
+3.1,Population trends,depend (if threatened based on C or D),,,There must be baseline information on population already available in order for monitoring of population trends to be selected as a research need. (See also 1.2 on researching population trends).,
+3.2,Harvest level trends,depend (if overharvested),,,,"Espécie com histórico de exploração na Mata Atlântica. Apesar das estimativas do tamanho populacional da espécie (baseadas em perda de área florestal), pouco se conhece sobre a intensidade dessa exploração histórica e de seu impacto no tamanho populacional efetivo ao longo do tempo."
+3.3,Trade trends,depend (if traded)?,,,,"Espécie de uso comercial comum na Mata Atlântica. Contudo, pouco se conhece sobre o impacto desse uso sobre a espécie."
+3.4,Habitat trends,,,,,
+4,Other,,,,,
+4.1,Other,,This could for example be: Enhancing research knowledge and skills of students in a formal degree programme,,,
+100.1,OLD 1.1.1-Policy-base actions->Management plans->Development,,,,,
+100.2,OLD 3-Research actions,,,,,
