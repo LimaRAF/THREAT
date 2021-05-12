@@ -145,12 +145,12 @@ all.crit[!is.na(all.crit$reduction_A12) & !is.na(all.crit$EOO) & !is.na(all.crit
 ##############################################
 
 ## OVERALL ASSESSMENTS 
-#How may species with IUCN assessments
+#How many species with IUCN assessments
 table(all.crit$redlistCategory)
 100*sum(table(all.crit$redlistCategory))/dim(all.crit)[1] # 28.9% with previous IUCN asses.
 table(all.crit$cat.reg.clean, all.crit$redlistCategory)
 
-#How may species with CNCFlora assessments
+#How many species with CNCFlora assessments
 table(all.crit$status.reflora)
 100*sum(table(all.crit$status.reflora))/dim(all.crit)[1]  # 19.7% with previous CNCFlora asses. 
 

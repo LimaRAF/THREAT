@@ -29,6 +29,8 @@ source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//ov
 # inv.data$numTombo[is.na(inv.data$numTombo)] <-
 #   paste0("ordem_",inv.data$ordem[is.na(inv.data$numTombo)])
 # inv.data$DetDate <- gsub("\\\n","",inv.data$DetDate)
+# inv.data$DetDate <- gsub("\\|s\\.d\\.$|^s\\.d\\.\\|","",inv.data$DetDate)
+# inv.data$DetDate <- plantR::getYear(inv.data$DetDate)
 # 
 # #Putting data in the format demanded by the ConR package
 # MyData <- cbind.data.frame(ddlat = as.double(c(oc.data$latitude.work1, inv.data$lat1)),
@@ -188,6 +190,8 @@ oc.data[tax.check.final %in% c("FALSE"), tax.check.final := "low"]
 oc.data[tax.check.final %in% c("TRUE"), tax.check.final := "high"]
 saveRDS(oc.data,"data/threat_occ_data_final.rds")
 
+
+### DO NOT RUN ###################################################################################################################################H
 ### OLD CLASSIFICATION ###
 # tmp <- findInterval(resultado$Occs.level.5, c(15,30,75)) # number of occs indentied by family specialists
 # tmp0 <- findInterval(resultado$Occs.level.4, c(15,30,75)) # number of occs indentied by any specialists

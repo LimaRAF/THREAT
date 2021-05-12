@@ -140,12 +140,18 @@ oc.data[species.correct2 %in% "Piptocarpha regnelii", status := "ok"]
 oc.data[species.correct2 %in% "Piptocarpha regnelii", species.correct2 := "Piptocarpha regnellii"]
 oc.data[species.correct2 %in% "Pleroma echinata", species.correct2 := "Pleroma echinatum"]
 oc.data[species.correct2 %in% "Pleroma viminea", species.correct2 := "Pleroma vimineum"]
-oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), status := "ok"]
-oc.data[species.correct2 %in% c("Alsophila dicomatolepis","Trichipteris dicomatolepis"), species.correct2 := "Cyathea dichromatolepis"]
+spp2rep <- c("Alsophila dicomatolepis","Alsophila dichromatolepis","Trichipteris dicomatolepis","Trichipteris dichromatolepis")
+oc.data[species.correct2 %in% spp2rep, status := "ok"]
+oc.data[species.correct2 %in% spp2rep, species.correct2 := "Cyathea dichromatolepis"]
 oc.data[species.correct2 %in% "Ocotea lucida" & coletor.last.name %in% "gardner", species.correct2 := "Ocotea brachybotrya"]
 oc.data[species.correct2 %in% "Myrcia oreioeca", status := "ok"]
 oc.data[species.correct2 %in% "Myrcia oreioeca", species.correct2 := "Myrcia aethusa"]
 #oc.data[,uniqueN(species.correct2)] # 5172 species
+
+
+### add this one: Sebastiania edwalliana, Gymnanthes edwalliana -> Gymnanthes klotzschiana
+
+
 
 #### REMOVING SPECIES THAT SHOULD NOT BE IN THE LIST (EXOTICS, CULTIVATED OR NOT IN THE AF) ###
 rm.spp <- c("Annona calophylla","Bauhinia galpinii","Bunchosia glandulifera","Cereus repandus","Eugenia acapulcensis",      

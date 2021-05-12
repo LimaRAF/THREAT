@@ -1,7 +1,7 @@
 ####################################################################################
 #### GETTING MEAN VALUES OF PROP. OF MATURE INDIVIDUALS FROM TREECO RAW DATASET ####
 ####################################################################################
-
+rm(list = ls())
 
 ##Loading TreeCo individual-tree data
 rawdata <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species abundances//dados_brutos_treeco.csv", na.strings=c(""," ","NA"),as.is=T)
@@ -15,6 +15,18 @@ rawdata <- rawdata[!grepl(" sp\\.", rawdata$Latin),]
 rawdata <- rawdata[!grepl(" aff\\.", rawdata$Latin),]
 rawdata$Latin <- gsub(" cf\\. "," ", rawdata$Latin)
 rawdata$Latin <- sapply(strsplit(rawdata$Latin," "), function(x) paste(x[1], x[2],sep=" "))
+
+#New synonyms from the Brazilian Flora
+syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)
+syn.br <- syn.br[syn.br$ï..status %in% c("replace", "invert"), ]
+for (i in 1:dim(syn.br)[1]) {
+  sp.i <- syn.br$original.search[i]
+  rpl.i <- syn.br$search.str[i]
+  st.i <- syn.br$ï..status[i]
+  
+  if (st.i == "replace")
+    rawdata$Latin[rawdata$Latin %in% sp.i] <- rpl.i
+}
 
 #Fixing some main identification problems
 rawdata$Latin <- stringr::str_replace_all(rawdata$Latin,
@@ -33,7 +45,8 @@ rawdata$Latin <- stringr::str_replace_all(rawdata$Latin,
                                            "Sloanea stipitata" = "Sloanea guianensis", "Tibouchina trichopoda" = "Pleroma trichopodum",
                                            "Bathysa cuspidata" = "Schizocalyx cuspidatus", "Tibouchina elegans" = "Pleroma elegans",
                                            "Simaba cedron" = "Homalolepis cedron", "Maytenus brasiliensis" = "Monteverdia brasiliensis",
-                                           "Marlierea glazioviana" = "Myrcia insigniflora", "Faramea glaziovii" = "Faramea martiana",
+                                           "Marlierea glazioviana" = "Myrcia insigniflora", "Faramea glaziovii" = "Faramea stipulacea",
+                                           "Faramea martiana" = "Faramea stipulacea",
                                            "Tovomita excelsa" = "Tovomita choisyana", "Caesalpinia echinata" = "Paubrasilia echinata",
                                            "Marlierea glabra" = "Myrcia neoglabra", "Andradaea floribunda" = "Andradea floribunda",
                                            "Calyptranthes grandifolia" = "Calyptranthes brasiliensis", "Crepidospermum atlanticum" = "Protium atlanticum",
@@ -83,8 +96,9 @@ result$dbh.20 <- aggregate(rawdata$dbh, list(rawdata$Latin), function(x) sum(x>=
 #result$dbh.40 <- aggregate(rawdata$dbh, list(rawdata$Latin), function(x) sum(x>=40))$x/result$N
 
 ##Merging with MaxHeight, GRowth form and ecological group data
-result1 <- merge(result, hab[,c("species.correct","habito","life.form","MaxHeight","GF","wsg","ecol.group")]
-                 , by = "species.correct", all.x = TRUE)
+hab <- read.csv("data/threat_habitats_preliminar.csv")
+result1 <- merge(result, hab[,c("Name_submitted","habito","life.form","MaxHeight","GF","wsg","ecol.group")], 
+                 by.x = "species.correct", by.y = "Name_submitted", all.x = TRUE)
 
 ## Summary statistics
 result2 <- result1[result1$N>15,]
@@ -99,8 +113,8 @@ apply(result2[!result2$GF %in% "large_shrub", 3:11], 2 , function(x) confint(lm(
 apply(result1[result1$GF %in% "small_tree", 3:11], 2 , mean, na.rm = TRUE)
 apply(result1[result1$GF %in% "small_tree", 3:11], 2 , function(x) confint(lm(x~1)))
 
-apply(result1[result2$GF %in% "large_tree", 3:11], 2 , mean, na.rm = TRUE)
-apply(result1[result2$GF %in% "large_tree", 3:11], 2 , function(x) confint(lm(x~1)))
+apply(result1[result1$GF %in% "large_tree", 3:11], 2 , mean, na.rm = TRUE)
+apply(result1[result1$GF %in% "large_tree", 3:11], 2 , function(x) confint(lm(x~1)))
 
 
 #p for each GF and each EG
@@ -242,10 +256,37 @@ car::Anova(tmp4)
 
 
 ## RESULTS AVERAGE FOR THE MORE ABUNDANT SPECIES
-ids <- !result1$GF %in% "large_shrub"
+ids <- !result1$GF %in% "large_shrub" & !is.na(result1$p)
 aggregate(result1$p[ids], list(result1$GF[ids], result1$ecol.group[ids]), mean, na.rm=TRUE)
+
+#by growth form
 aggregate(result1$p[ids], list(result1$GF[ids]), mean, na.rm=TRUE)
+aggregate(result1$p[ids], list(result1$GF[ids]), function (x) confint(lm(x~1)))
+
+#by ecological group
 aggregate(result1$p[ids], list(result1$ecol.group[ids]), mean, na.rm=TRUE)
+aggregate(result1$p[ids], list(result1$ecol.group[ids]), function (x) confint(lm(x~1)))
+
+#Overall p for all species (i.e. unknown)
+unk.small <- round(c(apply(result1[result1$GF %in% "small_tree", 3:11], 2 , mean, na.rm = TRUE)["dbh.8"],
+               apply(result1[result1$GF %in% "small_tree", 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.8"]), 4)
+unk.large <- round(c(apply(result1[result1$GF %in% "large_tree", 3:11], 2 , mean, na.rm = TRUE)["dbh.12.5"],
+               apply(result1[result1$GF %in% "large_tree", 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.12.5"]), 4)
+ids <- result1$ecol.group %in% "pioneer" & !result1$GF %in% "large_shrub"
+unk.pion <- round(c(apply(result1[ids, 3:11], 2 , mean, na.rm = TRUE)["dbh.8"],
+               apply(result1[ids, 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.8"]), 4)
+ids <- result1$ecol.group %in% "early_secondary" & !result1$GF %in% "large_shrub"
+unk.early <- round(c(apply(result1[ids, 3:11], 2 , mean, na.rm = TRUE)["dbh.10"],
+              apply(result1[ids, 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.10"]), 4)
+ids <- result1$ecol.group %in% "late_secondary" & !result1$GF %in% "large_shrub"
+unk.late <- round(c(apply(result1[ids, 3:11], 2 , mean, na.rm = TRUE)["dbh.12.5"],
+               apply(result1[ids, 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.12.5"]), 4)
+ids <- result1$ecol.group %in% "climax" & !result1$GF %in% "large_shrub"
+unk.clim <- round(c(apply(result1[ids, 3:11], 2 , mean, na.rm = TRUE)["dbh.15"],
+              apply(result1[ids, 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.15"]), 4)
+ids <- !result1$GF %in% "large_shrub"
+unknown <- round(c(apply(result1[ids, 3:11], 2 , mean, na.rm = TRUE)["dbh.10"],
+             apply(result1[ids, 3:11], 2 , function(x) confint(lm(x~1)))[,"dbh.10"]), 4)
 
 
 ############################
@@ -259,11 +300,11 @@ combo[,2] <- gsub('[0-9:]\\.',"", combo[,2])
 
 #Prop. mature
 combo$p.est <- c(1, 1, 1, 1, 1, # for shrubs
-             af.p[1,1], af.p[3,2], af.p[5,3], af.p[7,4], 0.4617, # for small trees
-             af.p[1,6], af.p[3,7], af.p[5,8], af.p[7,9], 0.3342, # for large trees
-             0.5871, 0.4529, 0.3476, 0.2786, 0.4529) # for trees unknown
-combo$str.match <- paste(combo$EG,combo$GF,sep = "_") 
-result1$str.match <- paste(result1$ecol.group,result1$GF,sep = "_")
+             af.p[1,1], af.p[3,2], af.p[5,3], af.p[7,4], unk.small[1], # for small trees
+             af.p[1,6], af.p[3,7], af.p[5,8], af.p[7,9], unk.large[1], # for large trees
+             unk.pion[1], unk.early[1], unk.late[1], unk.clim[1], unknown[1]) # for trees unknown
+combo$str.match <- paste(combo$EG, combo$GF,sep = "_") 
+result1$str.match <- paste(result1$ecol.group, result1$GF,sep = "_")
 result.final <- dplyr::left_join(result1, combo[,c("str.match","p.est")], by= "str.match") 
 result.final <- result.final[,c("species.correct","N","dbh.crit","p","p.est","str.match")]
 
