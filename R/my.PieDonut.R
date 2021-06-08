@@ -63,6 +63,7 @@ my.PieDonut=function(data,mapping,
                   tidy.legend.donut = NULL,
                   tidy.legend.pie = NULL,
                   plot.piedonut = TRUE,
+                  ratioAccuracy = c("pie" = 0.1, "donut" = 0.1),
                   return = "both"){
   
   # data = pie.df
@@ -131,7 +132,7 @@ my.PieDonut=function(data,mapping,
     # df$label = ifelse(df$ratio >= showRatioThreshold,
     #                 paste0(df$label, "\n(", scales::percent(df$ratio), ")"),
     #                 as.character(df$label))
-    df$label = paste0(df$label, " (", scales::percent(df$ratio), ")")
+    df$label = paste0(df$label, " (", scales::percent(df$ratio, accuracy = ratioAccuracy["pie"]), ")")
     df$label[tidy.legend.pie] = gsub(" \\(", "\n(",df$label[tidy.legend.pie])
     
     
@@ -218,9 +219,9 @@ my.PieDonut=function(data,mapping,
     df3$ratio1 = df3$Freq/total
     df3
     if(ratioByGroup) {
-      df3$ratio=scales::percent(df3$Freq/df3$group)
+      df3$ratio = scales::percent(df3$Freq/df3$group, accuracy = ratioAccuracy["donut"])
     } else {
-      df3$ratio <- scales::percent(df3$ratio1)
+      df3$ratio <- scales::percent(df3$ratio1, accuracy = ratioAccuracy["donut"])
     }
     df3$end <- cumsum(df3$Freq)
     df3

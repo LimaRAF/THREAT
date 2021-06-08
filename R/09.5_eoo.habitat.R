@@ -38,27 +38,45 @@ anos <- 2015 - ano1
 
 toto.1 <- EOO.habitat(EOO.poly[1:1000,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
+saveRDS(toto.1, "data/tmp1.eoo.rds")
 toto.2 <- EOO.habitat(EOO.poly[1001:2000,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
+saveRDS(toto.2, "data/tmp2.eoo.rds")
 toto.3 <- EOO.habitat(EOO.poly[2001:3000,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
-toto.4.1 <- EOO.habitat(EOO.poly[3001:3305,], hab.map, hab.class = hab.class, years = anos,
+saveRDS(toto.3, "data/tmp3.eoo.rds")
+# Problematic species: Myriocarpa cordifolia, Ocotea revolutifolia
+ids <- 3001:4000
+prob.ids <- c(which(EOO.poly$tax %in% c("Myriocarpa cordifolia", "Ocotea revolutifolia")))
+ids <- ids[!ids %in% prob.ids]
+toto.4 <- EOO.habitat(EOO.poly[ids,], hab.map, hab.class = hab.class, years = anos,
+                        parallel = TRUE, NbeCores = 5)
+saveRDS(toto.4, "data/tmp4.eoo.rds")
+# for (i in 3236:3300) {
+#   EOO.habitat(EOO.poly[i,], hab.map, hab.class = hab.class, years = anos,
+#                                        parallel = FALSE, NbeCores = 5)
+#   cat(i, "\n")
+# }
+# toto.4.1 <- EOO.habitat(EOO.poly[3001:3055,], hab.map, hab.class = hab.class, years = anos,
+#                       parallel = TRUE, NbeCores = 5)
+# toto.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = hab.class, years = anos,
+#                       parallel = TRUE, NbeCores = 5)
+toto.5 <- EOO.habitat(EOO.poly[4001:4762,], hab.map, hab.class = hab.class, years = anos,
                       parallel = TRUE, NbeCores = 5)
-toto.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = hab.class, years = anos,
-                      parallel = TRUE, NbeCores = 5)
-toto.5 <- EOO.habitat(EOO.poly[4001:4862,], hab.map, hab.class = hab.class, years = anos,
-                      parallel = TRUE, NbeCores = 5)
-toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4, toto.5,
-                          stringsAsFactors = FALSE)
-tmp <- toto.1[1,]
-tmp$tax <- EOO.poly$tax[3306]
+saveRDS(toto.5, "data/tmp5.eoo.rds")
+# toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4, toto.5,
+#                           stringsAsFactors = FALSE)
+tmp <- toto.1[1:length(prob.ids),]
+tmp$tax <- EOO.poly$tax[prob.ids]
 tmp[,2:dim(tmp)[2]] <- NA
-toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4.1, tmp, toto.4.2, toto.5,
+toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4, tmp, toto.5,
                          stringsAsFactors = FALSE)
+# toto <- rbind.data.frame(toto.1, toto.2, toto.3, toto.4.1, tmp, toto.4.2, toto.5,
+#                          stringsAsFactors = FALSE)
 
-toto0<- merge(data.frame(tax = EOO.poly$tax, stringsAsFactors = FALSE), 
+toto0 <- merge(data.frame(tax = EOO.poly$tax, stringsAsFactors = FALSE), 
               toto, by = "tax", all = TRUE, sort = FALSE)
-toto0<-toto0[order(toto0$tax),] 
+toto0 <- toto0[order(toto0$tax),] 
 # saveRDS(toto0, 
 #         paste0("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo Extincao na MA/data analysis/data/EOO_hab_loss_",
 #                ano1,"_2015.rds"))
@@ -90,22 +108,33 @@ hab.map <- raster::raster(paste(path,"//Am_Lat_Global_Human_Influence_Index_v2//
 #t0 <- Sys.time()
 toto2.1 <- EOO.habitat(EOO.poly[1:1000,], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
+saveRDS(toto2.1, "data/tmp2.1.eoo.rds")
 toto2.2 <- EOO.habitat(EOO.poly[1001:2000,], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
+saveRDS(toto2.2, "data/tmp2.2.eoo.rds")
 toto2.3 <- EOO.habitat(EOO.poly[2001:3000,], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
-toto2.4.1 <- EOO.habitat(EOO.poly[3001:3305,], hab.map, hab.class = NULL, years = NULL,
-                       parallel = TRUE, NbeCores = 6)
-toto2.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = NULL, years = NULL,
-                       parallel = TRUE, NbeCores = 6)
+saveRDS(toto2.3, "data/tmp2.3.eoo.rds")
+# Problematic species: Myriocarpa cordifolia, Ocotea revolutifolia
+ids <- 3001:4000
+prob.ids <- c(which(EOO.poly$tax %in% c("Myriocarpa cordifolia", "Ocotea revolutifolia")))
+ids <- ids[!ids %in% prob.ids]
+toto2.4 <- EOO.habitat(EOO.poly[ids,], hab.map, hab.class = NULL, years = NULL,
+                         parallel = TRUE, NbeCores = 6)
+saveRDS(toto2.4, "data/tmp2.4.eoo.rds")
+# toto2.4.1 <- EOO.habitat(EOO.poly[3001:3305,], hab.map, hab.class = NULL, years = NULL,
+#                        parallel = TRUE, NbeCores = 6)
+# toto2.4.2 <- EOO.habitat(EOO.poly[3307:4000,], hab.map, hab.class = NULL, years = NULL,
+#                        parallel = TRUE, NbeCores = 6)
 toto2.5 <- EOO.habitat(EOO.poly[4001:length(EOO.poly$geometry),], hab.map, hab.class = NULL, years = NULL,
                        parallel = TRUE, NbeCores = 6)
+saveRDS(toto2.5, "data/tmp2.5.eoo.rds")
 # toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4, toto2.5,
 #                           stringsAsFactors = FALSE)
-tmp <- toto2.1[1,]
-tmp$tax <- EOO.poly$tax[3306]
+tmp <- toto2.1[1:length(prob.ids),]
+tmp$tax <- EOO.poly$tax[prob.ids]
 tmp[,2:dim(tmp)[2]] <- NA
-toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4.1, tmp, toto2.4.2, toto2.5,
+toto2 <- rbind.data.frame(toto2.1, toto2.2, toto2.3, toto2.4, tmp, toto2.5,
                          stringsAsFactors = FALSE)
 toto2 <- toto2[order(toto2$tax),] 
 

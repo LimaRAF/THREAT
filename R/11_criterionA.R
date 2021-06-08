@@ -40,7 +40,7 @@ for(x in 1:length(res.means)) {
 ## Includes species info on Generation Length and Proportion of matrue individuals
 hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
-PopData <- PopData[!is.na(PopData$taxon_id),]
+PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
 PopData <- PopData[order(PopData$species),]
 
@@ -52,6 +52,19 @@ high.pop.sizes <- high.pop.sizes[ids,]
 table(mean.pop.sizes$species == PopData$species)
 rm(res.means)
 
+#### LOADING THREAT EXPLOITED SPECIES INFORMATION  ####
+explo <- read.csv("data/threat_exploited_timber_spp.csv", as.is = TRUE, encoding = "UTF-8")
+explo$commercial <- grepl("interesse comercial|construction", explo$obs) |
+                      grepl("International Timber Trade", explo$sources) |
+                        grepl("Especies nativas para fins produtivos", explo$sources)
+PopData <- merge(PopData, explo[,c("species.correct2", "times.cites","commercial")], 
+                 by.x= "species", by.y = "species.correct2", all.x = TRUE)
+PopData <- PopData[order(PopData$species),]
+table(mean.pop.sizes$species == PopData$species)
+timber <- !is.na(PopData$times.cites)
+timber <- ifelse(timber == FALSE, 0, 10)
+timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
+timber[PopData$species %in% "Euterpe edulis"] <- 10
 
 #########################################################################################################################################################
 #########################################################################################################################################################
@@ -62,13 +75,16 @@ rm(res.means)
 ## ASSESSMENTS USING SPECIES-SPECIFIC PROXIES OF GENERATION LENGTH ##
 critA <- criterion_A(mean.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A1","A2"),
-                     generation.time = PopData$GenerationLength.range)
+                     generation.time = PopData$GenerationLength.range,
+                     exploitation = timber)
 critA.low <- criterion_A(low.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A1","A2"),
-                     generation.time = PopData$GenerationLength.range)
+                     generation.time = PopData$GenerationLength.range,
+                     exploitation = timber)
 critA.high <- criterion_A(high.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A1","A2"),
-                     generation.time = PopData$GenerationLength.range)
+                     generation.time = PopData$GenerationLength.range,
+                     exploitation = timber)
 table(critA$A1)
 table(critA.low$A1)
 table(critA.high$A1)
@@ -77,35 +93,35 @@ critA[critA$A1 %in% "VU" & critA.high$A1 %in% "EN",]
 
 ## ASSESSMENTS of the influence of different GENERATION LENGTHS (FIXED FOR ALL SPECIES) ##
 all.GL <- cbind.data.frame(critA,
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 10)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 20)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 25)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 30)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 35)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 40)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 45)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 50)[,c("reduction_A12","A1","A2")],
-                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"),
+                           criterion_A(mean.pop.sizes, assess.year = 2018, subcriteria = c("A1","A2"), exploitation = timber,
                                        generation.time = 55)[,c("reduction_A12","A1","A2")],
                            stringsAsFactors = FALSE, deparse.level = 0
                            )
-all.GL <- all.GL[,c(1:4,6,7,
-                    5,10,13,16,19,22,25,28,31,34,
-                    8,11,14,17,20,23,26,29,32,35,
-                    9,12,15,18,21,24,27,30,33,36)]
-for(i in 17:36) all.GL[,i] <- as.character(all.GL[,i])
-for(i in 17:36) all.GL[,i] <- gsub("LC or NT", "LC", all.GL[,i])
+all.GL <- all.GL[,c(1:4,6,7,10,
+                    5,11,14,17,20,23,26,29,32,35, #Reductions A12
+                    8,12,15,18,21,24,27,30,33,36, #A1
+                    9,13,16,19,22,25,28,31,34,37)] #A2
+for(i in 18:37) all.GL[,i] <- as.character(all.GL[,i])
+for(i in 18:37) all.GL[,i] <- gsub("LC or NT", "LC", all.GL[,i])
 
 ## Calculating the Red List Index for subcriterion A1 and A2
-rli.all <- apply(all.GL[,17:36], 2, red::rli, boot = TRUE, runs = 4999)
+rli.all <- apply(all.GL[,18:37], 2, red::rli, boot = TRUE, runs = 4999)
 
 ###################
 #### FIGURE SX ####
@@ -154,12 +170,13 @@ critA.gl25 <- criterion_A(mean.pop.sizes,
                      assess.year = 2018,
                      project.years = NULL,
                      subcriteria = c("A1","A2"),
-                     generation.time = 25)
+                     generation.time = 25,
+                     exploitation = timber)
 
-critA.gl25[critA$A1 %in% "CR" & critA.gl25$A1 %in% "EN",] # 56 cases, 21 for 35 ys
+critA.gl25[critA$A1 %in% "CR" & critA.gl25$A1 %in% "EN",] # 66 cases, 21 for 35 ys
 critA.gl25[critA$A1 %in% "CR" & critA.gl25$A1 %in% "VU",] # No cases
 critA.gl25[critA$A1 %in% "CR" & critA.gl25$A1 %in% "LC or NT",] # No cases
-critA.gl25[critA$A1 %in% "EN" & critA.gl25$A1 %in% "VU",] #390 cases, 109 for 35 ys
+critA.gl25[critA$A1 %in% "EN" & critA.gl25$A1 %in% "VU",] #383 cases, 109 for 35 ys
 critA.gl25[critA$A1 %in% "EN" & critA.gl25$A1 %in% "LC or NT",] #1 cases, 0 for 35 ys
 critA.gl25[critA$A1 %in% "VU" & critA.gl25$A1 %in% "LC or NT",] #393 cases, 96 for 35 ys
 
@@ -305,7 +322,7 @@ for(si in get.all.sector.index()) {
   if(si == "VU_25") {
     circos.text(mean(xlim), mean(ylim), labels = "VU", 
                 sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
-                facing = "bending", niceFacing = FALSE, col = "black")
+                facing = "bending", niceFacing = TRUE, col = "black")
     
   } else {
     circos.text(mean(xlim), mean(ylim), labels = lab, 

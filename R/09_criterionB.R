@@ -74,11 +74,12 @@ system.time(
                             method = "convex.hull",
                             method.less.than3 = "not comp",
                             export_shp = TRUE,
+                            # exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
                             exclude.area = FALSE, country_map = NULL, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
                             parallel = TRUE, NbeCores = 6) # run on parallel? How many cores?
-) #Took 22 secs! 26 minutes if we exclude the sea areas
+) #Took 40 secs! 26 minutes if we exclude the sea areas
 
 #extracting the EOO from the object
 EOO <- do.call(rbind.data.frame, EOO.hull[grepl("EOO", names(EOO.hull))])
@@ -108,7 +109,8 @@ plot(neotrop.simp, add=TRUE, border = "grey")
 
 #saving species EOO (convex hulls)
 shps_df_sf <- sf::st_as_sf(shps_df)
-#saveRDS(shps_df, "data/spp.convex.hull.polys.rds")
+# saveRDS(shps_df, "data/spp.convex.hull.polys.rds")
+# saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_cropped.rds")
 saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_uncropped.rds")
 rm(EOO.hull, EOO, shps, shps_df, shps_df_sf); gc()
 
@@ -310,7 +312,7 @@ tmp3 <- tmp3[order(tmp3$tax),]
 tmp3 <- tmp3[!is.na(tmp3$radius.y),]
 PopData <- merge(tmp3, hab, by.x= "tax", by.y = "Name_submitted", all.x = TRUE)
 PopData <- merge(PopData, resultado[,c("tax", "total.occs", "non.dup.occs")], by= "tax", all.x = TRUE)
-PopData <- PopData[!is.na(PopData$taxon_id),]
+PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 PopData <- PopData[order(PopData$tax),]
 
 sumario  <- summary(as.double(PopData$radius.y))
@@ -333,12 +335,12 @@ axis(1, at=log10(c(5,15,30,50,100,1000)),
 axis(2, at=log10(c(1,5,50,200,500)), 
      labels = c(1,5,50,200,500))
 legend("bottomright", c("Trees", "Shrubs"), 
-       pch = c(19,15), col=c(2,4), cex=1.1, bty="n")
+       pch = c(19,15), col=c("red","blue"), cex=1.1, bty="n")
 
 
 par(mar=c(4,3,0.75,0.5), mgp=c(2,0.35,0),tcl=-0.2,las=1)
 hist(as.double(PopData$radius.y), nclass=40,
-     main = "", xlab = "Estimated radius (km)")
+     main = "", xlab = "Estimated radius (km)", col = "white")
 hist(as.double(PopData$radius.y)[PopData$non.dup.occs>30], nclass=40,
      add=TRUE, col="grey")
 legend("topright", c(paste0("All species: ",
@@ -744,7 +746,7 @@ library(dplyr)
 
 #Getting the estimates for criterion B
 critB_opt <- readRDS("data/criteriaB_metrics_optim_confidence.rds")
-critB_opt$tax <- as.character(critB_high$tax)
+critB_opt$tax <- as.character(critB_opt$tax)
 critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
 critB_low$tax <- as.character(critB_low$tax)
 critB_high <- readRDS("data/criteriaB_metrics_high_confidence.rds")
@@ -815,6 +817,7 @@ critB_high$declineB[critB_high$declineB %in% "Not Decreasing" & critB_high$decli
 #table(critB_high$declineB, critB_high$declineC, useNA = "always")
 
 #Combining the info on number of localities and % in PAs
+require(dplyr)
 critB_opt <- 
   critB_opt %>% 
   as_tibble() %>% 
@@ -846,7 +849,7 @@ results_Cb_opt <- cat_criterion_b(EOO = critB_opt$EOO,
                               decline = critB_opt$declineB,
                               protected.threshold = 100 
 )
-sum((100 * table(results_Cb_opt$ranks_B, useNA = "always")/dim(critB_opt)[1])[c(1,2,4)]) #17.25%
+sum((100 * table(results_Cb_opt$ranks_B, useNA = "always")/dim(critB_opt)[1])[c(1,2,4)]) #17.25%; now 15.65%
 
 results_Cb_low <- cat_criterion_b(EOO = critB_low$EOO,
                                    AOO = critB_low$AOO,
@@ -856,7 +859,7 @@ results_Cb_low <- cat_criterion_b(EOO = critB_low$EOO,
                                    decline = critB_low$declineB,
                                    protected.threshold = 100
 )
-sum((100 * table(results_Cb_low$ranks_B, useNA = "always")/dim(critB_low)[1])[c(1,2,4)]) #14.68%
+sum((100 * table(results_Cb_low$ranks_B, useNA = "always")/dim(critB_low)[1])[c(1,2,4)]) #14.68%; now 13.57%
 
 results_Cb_high <- cat_criterion_b(EOO = critB_high$EOO,
                                    AOO = critB_high$AOO,
@@ -866,7 +869,7 @@ results_Cb_high <- cat_criterion_b(EOO = critB_high$EOO,
                                    decline = critB_high$declineB,
                                    protected.threshold = 100 
 )
-sum((100 * table(results_Cb_high$ranks_B, useNA = "always")/dim(critB_high)[1])[c(1,2,4)]) #26.95%
+sum((100 * table(results_Cb_high$ranks_B, useNA = "always")/dim(critB_high)[1])[c(1,2,4)]) #26.95%; now 24.99%
 
 
 #Saving the results

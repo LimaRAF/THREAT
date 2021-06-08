@@ -6,10 +6,10 @@ rm(list=ls())
 #### LOADING PACKAGES ###
 #devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
 #devtools::install_github("gdauby/ConR@devel") # new version on GitHub
-detach("package:ConR", unload=TRUE)
-install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
- repos = NULL, 
- type = "source")
+# detach("package:ConR", unload=TRUE)
+# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
+#  repos = NULL, 
+#  type = "source")
 library("ConR")
 library("red")
 library("circlize")
@@ -37,7 +37,7 @@ for(x in 1:length(res.means)) {
 ## Includes species info on Generation Length and Proportion of matrue individuals
 hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
-PopData <- PopData[!is.na(PopData$taxon_id),]
+PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
 PopData <- PopData[order(PopData$species),]
 
@@ -48,6 +48,20 @@ low.pop.sizes <- low.pop.sizes[ids,]
 high.pop.sizes <- high.pop.sizes[ids,]
 table(mean.pop.sizes$species == PopData$species)
 rm(res.means)
+
+#### LOADING THREAT EXPLOITED SPECIES INFORMATION  ####
+explo <- read.csv("data/threat_exploited_timber_spp.csv", as.is = TRUE, encoding = "UTF-8")
+explo$commercial <- grepl("interesse comercial|construction", explo$obs) |
+  grepl("International Timber Trade", explo$sources) |
+  grepl("Especies nativas para fins produtivos", explo$sources)
+PopData <- merge(PopData, explo[,c("species.correct2", "times.cites","commercial")], 
+                 by.x= "species", by.y = "species.correct2", all.x = TRUE)
+PopData <- PopData[order(PopData$species),]
+table(mean.pop.sizes$species == PopData$species)
+PopData$timber <- !is.na(PopData$times.cites)
+PopData$timber <- ifelse(PopData$timber == FALSE, 0, 10)
+PopData$timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
+PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10
 
 
 #########################################################################################################################################################H
@@ -77,13 +91,16 @@ spp1$EOO.level.2[!is.na(spp1$EOO.level.2) & spp1$EOO.level.2 < spp1$AOO.level.2]
 spp1$EOO.level.3[!is.na(spp1$AOO.level.3) &!is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3] <-
   spp1$AOO.level.3[!is.na(spp1$AOO.level.3) & !is.na(spp1$EOO.level.3) & spp1$EOO.level.3 < spp1$AOO.level.3]
 
-
 #Creating and merging the df for analysis
 df <- data.frame(species = mean.pop.sizes$species,
                  pop.size = mean.pop.sizes$`2018`,
                  pop.size.low = low.pop.sizes$`2018`,
                  pop.size.high = high.pop.sizes$`2018`,
-                 p = PopData$p.est, stringsAsFactors = FALSE)
+                 p = PopData$p.est, 
+                 exploitation = PopData$timber,
+                 stringsAsFactors = FALSE)
+#Taking into account exploitation over adut population
+df$p1 <- df$p - (df$p * df$exploitation/100) 
 df1 <- merge(df, spp1, by.x = "species", by.y = "species.correct2",
              all.x = TRUE, sort = FALSE)
 
@@ -93,17 +110,17 @@ critD <- ConR::criterion_D(pop.size = df1$pop.size,
                      Name_Sp = df1$species, 
                      AOO = df1$AOO.level.2,
                      n.Locs = df1$Loc.level2,
-                     prop.mature = df1$p,
+                     prop.mature = df1$p1, # p1 accounts for exploitation of commercial species
                      subcriteria = c("D", "D2"),
                      D.threshold = c(1000, 250, 50), 
                      AOO.threshold = 16, Loc.threshold = 2)
 critD$D.low <- ConR::criterion_D(pop.size = df1$pop.size.low,
                            Name_Sp = df1$species,
-                           prop.mature = df1$p, subcriteria = c("D"),
+                           prop.mature = df1$p1, subcriteria = c("D"),
                            D.threshold = c(1000, 250, 50))$D
 critD$D.high <- ConR::criterion_D(pop.size = df1$pop.size.high,
                             Name_Sp = df1$species,
-                            prop.mature = df1$p, subcriteria = c("D"),
+                            prop.mature = df1$p1, subcriteria = c("D"),
                             D.threshold = c(1000, 250, 50))$D
 
 table(critD$D)
@@ -140,7 +157,7 @@ all.GL2[] <- lapply(all.GL2, gsub, pattern = "^LC$", replacement = "LC or NT")
 
 ## Adding the low population estimates
 table(all.GL2$species == df1$species)
-all.GL2$pop.size.low <- df1$pop.size.low * df1$p
+all.GL2$pop.size.low <- df1$pop.size.low * df1$p1
 
 #### Saving ####
 saveRDS(all.GL2, "data/criterionD_all_prop_mature.rds")
@@ -184,11 +201,13 @@ dev.off()
 #####################################################
 
 df1$mature.pop.size <- df1$pop.size * df1$p
+df1$mature.pop.size.exploited <- df1$pop.size * df1$p1
 #Species information
 df1 <- merge(df1, PopData[,c("species","life.form","dispersal.syndrome","SeedMass_g","habito")],
              by = "species", all.x = TRUE, sort= FALSE)
 #Taxonomic information
-taxonomy <- read.csv("data/threat_taxonomy.csv", as.is = TRUE)
+taxonomy <- read.csv("data/sis_connect/taxonomy_threat.csv", as.is = TRUE)
+taxonomy$species <- paste(taxonomy$genus, taxonomy$species)
 df1 <- merge(df1, taxonomy[,c("species","classname","ordername")],
              by = "species", all.x = TRUE, sort= FALSE)
 df1$taxonomy <- df1$classname
@@ -197,9 +216,10 @@ df1$taxonomy[df1$taxonomy %in% "Magnoliopsida"] <-
 df1$taxonomy[grepl("palm",df1$life.form)] <- "Palms"
 df1$taxonomy[grepl("ucculent",df1$life.form)] <- "Cactus"
 #Species endemism
-end <- readRDS("data/threat_endeism_levels.rds")
+end <- readRDS("data/sis_connect/endemism_threat.rds")
 end$endemic[end$endemic %in% "not in the AF"] <- "occasional"
 end$endemic[end$endemic %in% "not_endemic"] <- "widespread_sparse"
+end <- end[!duplicated(end$species),]
 df1 <- merge(df1, end[,c("species","endemism.level.1","endemism.level.2","endemic")],
              by = "species", all.x = TRUE, sort= FALSE)
 
@@ -210,13 +230,13 @@ plot(log(mature.pop.size) ~ log(treeco.occs), data = df1, col = (df1$endemic %in
 abline(lm(log(mature.pop.size) ~ log(treeco.occs), data = df1), lwd=2,col=2)
 plot(log(mature.pop.size) ~ log(non.dup.occs), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1), lwd=2,col=2)
-plot(log(mature.pop.size) ~ EOO, data = df1, col = (df1$endemic %in% "endemic")+1)
-abline(lm(log(mature.pop.size) ~ EOO, data = df1), lwd=2,col=2)
+plot(log(mature.pop.size) ~ EOO.level.1, data = df1, col = (df1$endemic %in% "endemic")+1)
+abline(lm(log(mature.pop.size) ~ EOO.level.1, data = df1), lwd=2,col=2)
 plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1), lwd=2,col=2)
 
 #Number of occurences, non-duplicated occurrences, n.localities, EOO or AOO? AOO!
-pairs(log(mature.pop.size) ~ EOO + log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
+pairs(log(mature.pop.size) ~ EOO.level.1 + log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 bbmle::AICtab(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1),
               lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1),
               lm(log(mature.pop.size) ~ log(total.occs), data = df1),
@@ -366,7 +386,7 @@ lme4::ranef(mod.mix7.end)
 # ## EVEN AT THE MINIMUM AOO (i.e log(4)) THE MODELS PREDICT MORE THEN 1000 INDIVIDUALS... 
 
 
-## Inspecting the predicted values of each model
+# ## Inspecting the predicted values of each model
 # par(mfrow=c(2,3))
 # plot(exp(predict(mod.mix4)) ~ df2$mature.pop.size,
 #      log = "xy", xlab = "Obs", ylab = "Pred", ylim = c(1000,1e+08)); abline(0,1,lwd=2,lty=2); abline(h=1000,lwd=2,lty=3,col=2); abline(v=1000,lwd=2,lty=3,col=2)
@@ -411,6 +431,7 @@ summary(exp(predict(mod.mix8, new.dat[ids,], re.form=NULL))) # best model (media
 ## mod.mix8 ganhou, mas como END tem poucos niveis para ser randomica, usaremos o mod.mix7, que tb teve os mesnores VIFs
 
 best.model <- mod.mix7
+foreach::registerDoSEQ()
 preds <- exp(merTools::predictInterval(best.model, new.dat, include.resid.var = TRUE,
                                        fix.intercept.variance = TRUE,
                                        which = "full", level = 0.9, n.sims = 5000))
@@ -473,7 +494,7 @@ lines(pg[[1]][[3]][,c(1,4)], col=1, lwd = 1, lty = 3)
 #abline(v=log(4), lty=3) 
 abline(h=log(1000), lty=3) 
 legend("topleft", c("Trees", "Shrubs"), 
-       pch = c(19,15), col=c(2,4), cex=1.1, bty="n")
+       pch = c(19,15), col=c("red", "blue"), cex=1.1, bty="n")
 
 ## Partial-regression plots: EOO
 p <- jtools::effect_plot(best.model, pred = EOO, 
@@ -494,7 +515,7 @@ lines(pg[[1]][[3]][,c(1,4)], col=1, lwd = 1, lty = 3)
 abline(h=log(1000), lty=3) 
 #abline(v=log(4), lty=3)
 legend("bottomleft", c("Trees", "Shrubs"), 
-       pch = c(19,15), col=c(2,4), cex=1.1, bty="n")
+       pch = c(19,15), col=c("red", "blue"), cex=1.1, bty="n")
 
 ##Predicted vs. observed
 plot(df2$PopSize[df2$habito %in% "tree"],
@@ -512,10 +533,10 @@ legend("topleft",legend=do.call(expression, list(
   bquote(italic(chi)^2~"="~.(round(anova.best$Chisq[2],1)))
   #bquote(italic(F)~"- test="~.(round(summary(toto)$fstatistic[1],2)))
 )),
-bty="n",horiz=F,cex=1.1,adj=c(0.1,0)
+bty="n",horiz=F,cex=1.1,adj=c(0.1,0.1)
 )
 legend("bottomright", c("Trees", "Shrubs"), 
-       pch = c(19,15), col=c(2,4), cex=1.1, bty="n")
+       pch = c(19,15), col=c("red", "blue"), cex=1.1, bty="n")
 
 ##Mean and low Predictions
 hist(df2$PopSize, nclass=40, probability = FALSE, ylim=c(0,310), 

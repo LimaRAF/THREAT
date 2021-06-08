@@ -37,7 +37,7 @@ for(x in 1:length(res.means)) {
 ## Includes species info on Generation Length and Proportion of matrue individuals
 hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
-PopData <- PopData[!is.na(PopData$taxon_id),]
+PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
 PopData <- PopData[order(PopData$species),]
 
@@ -48,6 +48,23 @@ low.pop.sizes <- low.pop.sizes[ids,]
 high.pop.sizes <- high.pop.sizes[ids,]
 table(mean.pop.sizes$species == PopData$species)
 rm(res.means)
+
+#### LOADING THREAT EXPLOITED SPECIES INFORMATION  ####
+explo <- read.csv("data/threat_exploited_timber_spp.csv", as.is = TRUE, encoding = "UTF-8")
+explo$commercial <- grepl("interesse comercial|construction", explo$obs) |
+  grepl("International Timber Trade", explo$sources) |
+  grepl("Especies nativas para fins produtivos", explo$sources)
+PopData <- merge(PopData, explo[,c("species.correct2", "times.cites","commercial")], 
+                 by.x= "species", by.y = "species.correct2", all.x = TRUE)
+PopData <- PopData[order(PopData$species),]
+table(mean.pop.sizes$species == PopData$species)
+PopData$timber <- !is.na(PopData$times.cites)
+PopData$timber <- ifelse(PopData$timber == FALSE, 0, 10)
+PopData$timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
+PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10
+
+## Taking into account exploitation over adut population
+PopData$p.est1 <- PopData$p.est - (PopData$p.est * PopData$timber/100) 
 
 
 #########################################################################################################################################################
@@ -71,7 +88,9 @@ for(i in 1:length(subpop.sizes)) {
                            subpops$Number.subpops.level.2[i])
 }
 #Testing
-table(round(mean.pop.sizes[, which(names(mean.pop.sizes) == 2018)],0) == round(sapply(subpop.sizes, sum),0))
+teste <- round(mean.pop.sizes[, which(names(mean.pop.sizes) == 2018)],0) == round(sapply(subpop.sizes, sum),0)
+table(teste)
+mean.pop.sizes[!teste, "2018"] <- sapply(subpop.sizes[!teste], sum)
 
 ##Running the criterion C for the optimal parameters (GL and p)
 system.time(
@@ -83,11 +102,11 @@ critC <- criterion_C(x = mean.pop.sizes,
                      recent.year = 2000,
                      subcriteria = c("C1", "C2"),
                      generation.time = PopData$GenerationLength.range,
-                     prop.mature = PopData$p.est,
+                     prop.mature = PopData$p.est1, # p.est1 accounts for exploitation of commercial species 
                      subpop.size = subpop.sizes,
                      parallel = TRUE,
                      NbeCores = 7)
-) ## took 24.3 min with all statistical models, 5130 spp and 7 cores 
+) ## took 4.6 min with all statistical models, 3132 spp and 7 cores 
 saveRDS(critC, "data/criterionC_optmim_params.rds")
 critC <- readRDS("data/criterionC_optmim_params.rds")
 
@@ -100,7 +119,7 @@ critC.gl25 <- criterion_C(mean.pop.sizes,
                        recent.year = 2000,
                        subcriteria = c("C1","C2"),
                        generation.time = 25,
-                       prop.mature = PopData$p.est,
+                       prop.mature = PopData$p.est1, # p.est1 accounts for exploitation of commercial species
                        subpop.size = subpop.sizes,
                        parallel = TRUE,
                        NbeCores = 7)
@@ -109,6 +128,7 @@ critC.gl25 <- readRDS("data/criterionC_GL_25ys.rds")
 
 ### RUNNING ASSESSMENTS FOR DIFFERENT VALUES OF p ###
 ps <- sort(c(1,.85,.72,.60,.49,.51,.58,.31,.25,.33,.64,.45,.35,.28,0.18,0.4), decreasing = TRUE)
+# ps <- seq(1,0.15,by = -0.05)
 
 # Optimal params
 df <- cbind.data.frame(critC[,c("assess.pop.size", "cont.decline")],

@@ -29,6 +29,8 @@ fbo <- finch::dwca_read(path.dwc, read=TRUE, encoding="UTF-8")$data
 taxon <- fbo$taxon.txt
 taxon$species.correct2 <- 
   stringr::str_squish(paste(taxon$genus, taxon$specificEpithet))
+# taxon1 <- taxon[taxon$kingdom %in% "Plantae" &
+#                   taxon$taxonRank %in% c("ESPECIE","VARIEDADE","SUB_ESPECIE","FORMA"),]
 taxon1 <- taxon[taxon$species.correct2 %in% tax$species.correct2 &
                   taxon$taxonRank %in% "ESPECIE",]
 # Getting the best names for homonyms
@@ -192,7 +194,8 @@ rplc <- c("NOME_CORRETO_VIA_CONSERVACAO" = "correct via conservation",
           "NOME_NAO_VALIDAMENTE_PUBLICADO" = "not validly published", 
           "VARIANTE_ORTOGRAFICA" = "orthographic variant",
           "NOME_NAO_EFETIVAMENTE_PUBLICADO" = "not effectively published", 
-          "NOME_MAL_APLICADO" = "misapplied")
+          "NOME_MAL_APLICADO" = "misapplied",
+          "NOME_REJEITADO" = "rejected")
 taxon1$name.status <- stringr::str_replace_all(taxon1$nomenclaturalStatus, rplc)
 
 rplc <- c("NATIVA" = "native", 

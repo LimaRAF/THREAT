@@ -66,7 +66,7 @@ source("C://Users//renato//Documents//raflima//R_packages//Backups//ConR//R1//ov
 # MyData$dist.eoo <- sens[[2]]$prop.dist.eoo
 # saveRDS(MyData, "data/threat_occ_data_new.rds")
 # saveRDS(sens$EOO.change, "data/eoo.change_preliminar_uncropped.rds")
-# rm(sens, MyData, neotrop.simp)
+rm(sens, MyData, neotrop.simp)
 
 ## Reading previously saved files
 resultado <- readRDS("data/eoo.change_preliminar_uncropped.rds")

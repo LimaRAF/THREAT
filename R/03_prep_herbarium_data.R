@@ -32,7 +32,7 @@ for (i in 1:length(lista)) {
     lista[[i]] <- lista.i
   } else { next }
 }
-oc.data <- rbindlist(lista) #merging the unicate and duplicated tables
+oc.data <- rbindlist(lista) #merging data from all csvs
 rm(lista, lista.i, tmp, paths, path.csv, i, classes)
 gc()
 
@@ -45,15 +45,7 @@ gc()
 oc.data[,species.correct2 := sapply(strsplit(species.correct1," "), function(x) paste(x[1], x[2],sep=" ")),]
 setkeyv(oc.data, "species.correct2") ## setting 'species.correct2' as key to the data.table (makes computations faster)
 
-## Filtering for the AF preliminary list of species names
-spp.af <- readRDS("data/threat_af_spp_list_preliminary.rds")
-# spp.af$species.correct2[!spp.af$species.correct2 %in% unique(oc.data$species.correct2)]
-# oc.data[, uniqueN(species.correct2)] # 21794 species
-oc.data <- oc.data[species.correct2 %in% spp.af$species.correct2,] # occurrences for species inside the AF
-# oc.data[, uniqueN(species.correct2)] # 5107 species
-# table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
-
-#### SOME LAST MINUTE, NAMES TO BE REPLACED ###
+#### SOME LAST MINUTE, NAMES TO BE REPLACED BEFORE FILTERING ###
 oc.data[loc.correct %like% "brazil" & species.correct2 %in% "Ixora grandifolia", 
         species.correct2 := "Ixora muelleri"]
 oc.data[species.correct2 %like% "Zanthoxylum" & numTombo %in% c("jpb_54464","ase_6935","ase_29975","ase_30740","ase_35130"), 
@@ -63,8 +55,24 @@ oc.data[species.correct2 %in% "Ocotea lucida" & coletor.last.name %in% "gardner"
 locais <- c("brazil_espirito santo|brazil_parana|brazil_rio janeiro|brazil_santa catarina|brazil_sao paulo")
 oc.data[species.correct2 %in% "Parinari excelsa" &  loc.correct %like% locais, 
         species.correct2 := "Parinari brasiliensis"]
+oc.data[species.correct2 %in% "Solanum pseudocapsicum" & 
+          species.correct %in% "Solanum pseudoquina", species.correct2 := "Solanum pseudoquina"]
 
-##List of synonyms 
+#### CHECAR AQUI QUANDO FOR RODAR PELA ULTIMA VEZ ####
+#complete det. and col. year, and det Name for the dup.ID: f_72195f|g_439562|us_702351
+# add year col.year (1877) e det.year (2010) for ny_375712 
+oc.data[species.correct2 %in% "Pouteria stenophylla"]
+
+
+## Filtering for the AF preliminary list of species names
+spp.af <- readRDS("data/threat_af_spp_list_preliminary.rds")
+# spp.af$species.correct2[!spp.af$species.correct2 %in% unique(oc.data$species.correct2)]
+#oc.data[, uniqueN(species.correct2)] # 21643 species
+oc.data <- oc.data[species.correct2 %in% spp.af$species.correct2,] # occurrences for species inside the AF
+oc.data[, uniqueN(species.correct2)] # before 5107 species; now 5081
+# table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
+
+##List of new synonyms 
 syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)
 syn.br <- syn.br[syn.br$ï..status %in% c("replace", "invert"), ]
 for (i in 1:dim(syn.br)[1]) {
@@ -84,7 +92,7 @@ for (i in 1:dim(syn.br)[1]) {
   #             (scientificName %in% rpl.i | species.correct %in% rpl.i), species.correct2 := rpl.i]
   # }
 }
-# oc.data[,uniqueN(species.correct2)] # 5068 species
+# oc.data[,uniqueN(species.correct2)] # Before 5068 species; now 4953
 
 
 #### REMOVING DUPLICATES ###
@@ -102,17 +110,28 @@ oc.data[is.na(dup.ID1), dup.ID1 := numTombo, by = numTombo]
 oc.data <- unique(oc.data, by = "dup.ID1")
 #removing the extra column created for ranking
 #oc.data[,dup.ID1:=NULL] 
-toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 730,297 (23.68%) removed
-# oc.data[,uniqueN(species.correct2)] # 5095 species
+toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 728,409 (23.65%) removed
+# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING DATA NOT GEOGRAPHICALLY VALIDATED ###
 ## But keeping records for species without coordinates but know to be in the Atlantic Forest
 gc()
+paises.adm0 <- paste(c("anguilla", "aruba", "curacao", "falkland islands",
+                 "saint-martin", "sint maarten", "st\\. barthelemy"), collapse = "|")
+paises.adm1 <- paste(c("antigua & barbuda", "bahamas","barbados","belize",
+                 "bermuda", "caribbean netherlands", "british virgin islands", 
+                 "cayman islands", "dominica", "grenada","jamaica", "martinique",
+                 "montserrat", "puerto rico","st\\. kitts & nevis",
+                 "st\\. lucia","st\\. vincent & grenadines",
+                 "trinidad & tobago","turks & caicos islands",
+                 "u\\.s\\. virgin islands"), collapse = "|")
 toto2 = dim(oc.data)[1]
 oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" | 
-                     (geo.check1 %like% "ok_state" & af.check2 == TRUE)]
-#oc.data[,uniqueN(species.correct2)] # 5095 species
+                     (geo.check1 %like% "ok_state" & af.check2 == TRUE) |
+                     (geo.check1 %like% "ok_state" & loc.correct %like% paises.adm1) |
+                     (geo.check1 %like% "ok_country" & loc.correct %like% paises.adm0)]
+# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING MISSING COORDINATES ###
@@ -126,9 +145,9 @@ oc.data$latitude.work1[oc.data$longitude.work1 %in% "no_coord" | oc.data$latitud
 # oc.data <- oc.data[!is.na(latitude.work1) | !is.na(longitude.work1),]
 # range(as.double(oc.data$latitude.work1), na.rm = TRUE)
 # range(as.double(oc.data$longitude.work1), na.rm = TRUE)
-toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 961,869 (40.87% of the non-duplicated) removed
-100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.19% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5095 species
+toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 955,428 (40.64% of the non-duplicated) removed
+100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.02% in respect to all records
+#oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL DUPLICATES ###
@@ -140,9 +159,9 @@ oc.data[ , spat.dups := duplicated(coord.string, incomparables = "NA_NA"), by = 
 oc.data <- oc.data[spat.dups == FALSE,,]
 oc.data[,coord.string:=NULL] 
 oc.data[,spat.dups:=NULL] 
-toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 572,540 (24.33% of remaining records) removed
-100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.57% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5095 species
+toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 575,655 (24.48% of remaining records) removed
+100*(toto3 - dim(oc.data)[1])/toto1 ## extra 18.69% in respect to all records
+# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING SPATIAL OUTLIERS  ###
@@ -169,7 +188,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 #table(oc.data$true.out, useNA = "always")
 gc()
 toto4 = dim(oc.data)[1]
-oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3117 true outliers
+oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3142 true outliers
 # oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
@@ -180,7 +199,7 @@ tmp <- data.table(oc.data[species.correct2 %in% cult])
 #table(tmp$probable.out, useNA = "always")
 tmp1 <- data.table(tmp[probable.out %in% TRUE])
 oc.data <- oc.data[!numTombo %in% tmp1$numTombo]
-toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3170 (0.23% of remaining records) removed
+toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3181 (0.23% of remaining records) removed
 100*(toto4 - dim(oc.data)[1])/toto1 ## extra 0.1% in respect to all records
 # oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
@@ -225,8 +244,8 @@ extra.neotrop.spp = table(oc.data[neotrop.check == FALSE & af.check2 %in% c("can
 oc.data <- oc.data[neotrop.check == TRUE | is.na(neotrop.check) |(neotrop.check == FALSE & af.check2 %in% c("TRUE","FALSE"))]
 toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 485 (0.11% of remaining records) removed
 100*(toto5 - dim(oc.data)[1])/toto1 ## extra 0.02% in respect to all records
-#oc.data[,uniqueN(species.correct2)] # 5095 species
-#table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
+# oc.data[,uniqueN(species.correct2)] # 5095 species
+# table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation ### 
 # Getting species information and generating the vectors for the groups of species
@@ -266,14 +285,17 @@ oc.data[determinador.name %in% taxonomists & tax.check2 %in% "FALSE", tax.check2
 
 #Validating all occurrences of TBC
 oc.data[species.correct1 %in% tbc & tax.check2 %in% c("FALSE","cannot_check"), tax.check2 := "TRUE_TBC",]
-#oc.data[,uniqueN(species.correct2)] # 5095 species
-#table(is.na(oc.data$latitude.work1))
+# oc.data[,uniqueN(species.correct2)] # 5095 species
+# table(is.na(oc.data$latitude.work1))
 
 #some last minute validation to avoid the removal of species from the checklist
 oc.data[species.correct2 %in% "Agonandra brasiliensis" & determinador.name1 %like% c("Hiepko|Heipko|Marquete|Groppo"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("Baitello|Lorea"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Quillaja lancifolia" & determinador.name1 %in% c("Luebert, F."), tax.check2 := "TRUE" ]
 oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.|Espirito Santo, F.S.|Santo, F.E.|Silva-Castro|ilva, M.M."), tax.check2 := "TRUE" ]
+oc.data[species.correct2 %in% "Pouteria stenophylla" & determinador.name1 %like% "Palazzo", tax.check2 := "TRUE"]
+oc.data[species.correct2 %in% "Pradosia glaziovii" & determinador.name1 %like% "Terra-Araujo", tax.check2 := "TRUE"]
+
 
 ## VALIDATING VOUCHER INFO FROM REFLORA
 vouchers <- readRDS("data/vouchers_reflora.rds")

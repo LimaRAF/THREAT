@@ -693,13 +693,13 @@ combo$DBH <- c(5, 5, 5, 5, 5, # for shrubs
 #Prop. mature
 combo$p.est <- c(1, 1, 1, 1, 1, # for shrubs
                  #0.7213, 0.5998, 0.4927, 0.2868, 0.5122, # for small trees (old dbh.crit: 6, 7, 8, 9, 7.5cm)
-                 0.6228, 0.4728, 0.4133, 0.2446, 0.4669, # for small trees (new dbh.crit: 7, 8, 9, 10, 8cm)
-                 0.5931, 0.4480, 0.3030, 0.2603, 0.4165, # for large trees
-                 0.6463, 0.5096, 0.3340, 0.2495, 0.4538) # for trees unknown
+                 0.6125, 0.4661, 0.4143, 0.2385, 0.4669, # for small trees (new dbh.crit: 7, 8, 9, 10, 8cm)
+                 0.5931, 0.4485, 0.3028, 0.2588, 0.4160, # for large trees
+                 0.6414, 0.5089, 0.3346, 0.2470, 0.4540) # for trees unknown
 combo$p.ci <- c("0.99-1.1", "0.975-1.075", "0.95-1.05", "0.90-1.025", "0.95-1.05", # for shrubs
-                "0.4796-0.7660", "0.3892-0.5563", "0.3477-0.4789", "0.1392-0.3501", "0.4285-0.5054", # for small trees
-                "0.5224-0.6637", "0.4145-0.4814", "0.2737-0.3322", "0.1874-0.3332", "0.3971-0.4359", # for large trees
-                "0.5810-0.7116", "0.4784-0.5408", "0.3067-0.3612", "0.1911-0.3080", "0.4360-0.4716") # for trees unknown
+                "0.4731-0.7518", "0.3827-0.5495", "0.3494-0.4792", "0.1356-0.3415", "0.4285-0.5054", # for small trees
+                "0.5224-0.6637", "0.4152-0.4817", "0.2736-0.3321", "0.1874-0.3332", "0.3966-0.4353", # for large trees
+                "0.5761-0.7066", "0.4778-0.5399", "0.3075-0.3617", "0.1875-0.3301", "0.4362-0.4718") # for trees unknown
 #Merging the info
 combo$str.match <- paste(combo$EG, combo$GF, sep = "_") 
 hab$str.match <- paste(hab$ecol.group, hab$GF, sep = "_")
@@ -859,7 +859,7 @@ hab1$GenerationLength.justification <- paste0("standard_text_GL1", hab1$PlantGro
 hab1$GenerationLength.range[is.na(hab1$GenerationLength.range)] <- 50
 #Any missing p?
 hab1$p.ci[is.na(hab1$p.est)] <- "0.44-0.47"
-hab1$p.est[is.na(hab1$p.est)] <- 0.45
+hab1$p.est[is.na(hab1$p.est)] <- 0.454
 
 
 ## Sample of the SIS CONNECT taxonomy v6.1
@@ -1057,6 +1057,7 @@ saveRDS(prev.assess, "data/sis_connect/prev_assessments_threat.rds")
 
 ## Species endemism levels from Lima et al. 2020
 end <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixF_endemism_levels.csv", as.is=TRUE)
+end <- end[,c(1,2,7,9,11)]
 
 ## Replacing the synonym 
 syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)
@@ -1071,6 +1072,29 @@ for (i in 1:dim(syn.br)[1]) {
   }
 }
 
+##Getting mean endemism for new synonyms
+tmp <- aggregate(cbind(endemism.level..validated.taxonomy.only., endemism.level..validated.and.probably.validated.taxonomy.) ~ 
+                   family + species, FUN = mean, data=end)
+tmp1 <- aggregate(endemism.accepted.by.the.BF.2020 ~ family + species, 
+                  FUN = function(x) paste(unique(x), collapse = "|"), data=end)
+end <- dplyr::left_join(tmp, tmp1)
+fbo <- readRDS("data/threat_fbo_tax_info.rds")[,c("species.correct2","phytogeographicDomain","endemism")]
+names(fbo)[1] <- "species"
+fbo$endemism <- stringr::str_to_title(fbo$endemism)
+fbo <- fbo[!is.na(duplicated(fbo$species)),]
+end <- dplyr::left_join(end, fbo)
+end$endemism.accepted.by.the.BF.2020[!is.na(end$phytogeographicDomain) & 
+                                       !grepl("Mata Atlântica", end$phytogeographicDomain)] <- "Not in the AF"
+end$endemism.accepted.by.the.BF.2020[!is.na(end$phytogeographicDomain) & 
+                                       end$phytogeographicDomain %in% "Mata Atlântica" &
+                                       end$endemism %in% "Endemic"] <- "Endemic"
+end$endemism.accepted.by.the.BF.2020[!is.na(end$phytogeographicDomain) & 
+                                       grepl("Mata Atlântica", end$phytogeographicDomain) &
+                                       !end$phytogeographicDomain %in% "Mata Atlântica"] <- "Not endemic"
+end$endemism.accepted.by.the.BF.2020[end$species %in% "Myrcia glomerata"] <- "Not endemic"
+
+
+##Classification
 end$endemic <- NA
 end$endemic[end$endemism.level..validated.taxonomy.only. >= 85 & end$endemism.level..validated.and.probably.validated.taxonomy. >= 85 & 
               !end$endemism.accepted.by.the.BF.2020 %in% "Not in the AF"] <- "endemic"
@@ -1092,6 +1116,8 @@ end.prob <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Arti
 #end.prob$species  <- sapply(end.prob$scientific.name, flora::remove.authors)
 end.prob$species  <- sapply(end.prob$scientific.name, function(x) paste(strsplit(x, " ")[[1]][1:2], collapse = " "))
 end.prob <- end.prob[end.prob$status %in% "no records found but cited in BF.2020",]
+end.prob <- end.prob[!end.prob$species %in% end$species,]
+
 tmp <- flora::get.taxa(end.prob$species)
 tmp1 <- flora::get_domains(tmp)
 tmp2 <- flora::get_endemism(tmp)
@@ -1596,7 +1622,7 @@ wood.uses$internal_taxon_id <- c(wood.spp.actual$internal_taxon_id,
 #https://pt.wikipedia.org/wiki/Madeira_de_lei
 #https://snif.florestal.gov.br/pt-br/especies-florestais: IN 06/2008, Decreto 5.975/2006, 6.472/2008 
 #http://www.esalq.usp.br/trilhas/lei/maplei.php
-madeiras.proibidas <- c(
+madeiras.proibidas <- unique(c(
   #Wikipedia
   "Cedrela fissilis", "Carapa guianensis", "Dinizia excelsa",
   "Anadenanthera sp.", "Parapiptadenia sp.", "Piptadenia sp.",
@@ -1607,7 +1633,7 @@ madeiras.proibidas <- c(
   "Caesalpinia ferrea","Libidibia ferrea", 
   "Platycyamus regnellii", "Aspidosperma polyneuron", 
   #SNIF
-  "Bertholletia excelsa",
+  "Bertholletia excelsa", "Swietenia macrophylla",
   "Araucaria angustifolia", "Paratecoma peroba", "Amburana acreana", 
   "Apuleia leiocarpa", "Hymenaea parvifolia",  "Hymenolobium excelsum", 
   "Melanoxylon brauna", "Peltogyne maranhensis",  "Ocotea catharinensis", 
@@ -1620,11 +1646,11 @@ madeiras.proibidas <- c(
   "Copaifera langsdorffii", "Colubrina glandulosa", 
   "Tabebuia aurea", "Myracrodruon urundeuva", "Astronium urundeuva",
   "Aspidosperma pyrifolium", "Calycophyllum spruceanum",
-  "Patagonula americana", "Cordia americana","Aspidosperma ramiflorum",
+  "Patagonula americana", "Cordia americana", "Aspidosperma ramiflorum",
   "Tabebuia heptaphylla", "Handroanthus heptaphyllus",
   "Securinega guaraiuva", "Savia dictyocarpa",
   "Myroxylon peruiferum", "Holocalyx balansae", "Machaerium scleroxylon",
-  "Lafoensia glyptocarpa", "Esenbeckia leiocarpa")
+  "Lafoensia glyptocarpa", "Esenbeckia leiocarpa"))
 
 proibidas.id <- wood.spp$internal_taxon_id[wood.spp$Name_submitted %in% madeiras.proibidas]
 wood.uses$timing[wood.uses$internal_taxon_id %in% proibidas.id] <- 
@@ -1655,6 +1681,8 @@ table(names(threats) == names(sample))
 write.csv(threats, "data/sis_connect/threats_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
+
+#### CONTINUAR DAQUI OS CSVs ####
 
 #####################################################################################################################################################################H
 #####################################################################################################################################################################H
@@ -1792,9 +1820,9 @@ head(sample, 3)
 apply(sample, 2, unique)
 
 
-## CREATING THE TYPES OF RSEARCH NEEDS FOR THE ATLANTIC FOREST ##
+## CREATING THE TYPES OF RESEARCH NEEDS FOR THE ATLANTIC FOREST ##
 # 1	Research					
-#1.1	Taxonomy	depend (if most records are old)				
+#1.1	Taxonomy depend (if most records are old)				
 res1.1 <- c(ResearchLookup = "1.1", ResearchName = NA, 
             note = "Espécie conhecida apenas para a localidade onde o espécimen tipo foi coletado e que não tenha sido re-coletado nos últimos 50 anos. Pode se tratar de uma sinônimo de outra espécie que não tenha recebido o tratamento taxonômico necessário")
 #1.2 Population size, distribution & trends	depend (if no plot data is available)
@@ -1839,6 +1867,19 @@ res3.4 <- c(ResearchLookup = "3.4", ResearchName = NA, note = NA)
 
 #This species has no records in forest plot data for the Atlantic Forest, being probably rare in the region.
 #Research is recommended to estimate the population size and declines within its are of distribution.
+
+
+##Specific comments for EX and EW species
+#Campomanesia lundiana: only one recent record (2018) is available for Monte Cabrão, Santos, São Paulo, Brasil. 
+#This record was collected and identified by I. Villaça and Mara Magenta, which are not Myrtaceae specialists.
+#Thus, this new record may be a misidentification of Campomaneisa phaea, since the species listed in the associated study
+#only list this species as those used by the tradional local communities for fruit consumption.
+
+# Pouteria stenophylla: Species mainly known from its type locality (probably Serra dos Orgãos, Rio de Janeiro). Only one recent (2010) and taxonomically validated record was found for this species (Palazzo, F.M.A. 40) 
+#for the restingas of Rio das Ostras county, Rio de Janeiro. Another recent record for Prado, Bahia (Rezende, S.G. 1833) was also found but its identification was not yet validated by an specialist.
+#Recent records from rocky outcrops in Minas Gerais state (Ouro Preto and MAriana) are also available but again identification by family specialists are still pending.
+#ver tb: PALAZZO, F.M.A.; DIAS-NETO, A.O.; MONTEIRO, M.H.D.A.; ANDREATA, R.H.P. 2010. Sinopse comentada de Sapotaceae no município de Rio das Ostras (RJ, BRASIL). Pesquisas (Botânica) 61: 293-306.
+
 
 ## Saving the SIS Connet file
 write.csv(research, "data/sis_connect/researchneeded_threat.csv", 
