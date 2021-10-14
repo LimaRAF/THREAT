@@ -236,9 +236,14 @@ dev.off()
 
 
 #### FIGURE 3 ####
+#Spatial distribution of threatened species
+## see code 15_maps.R
+
+
+#### FIGURE 4 ####
 #Proportion of protected areas
 
-jpeg(filename = "figures/Figure3.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure4.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
 cexs <- pchs <- cores1 <- as.factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"])
@@ -254,7 +259,7 @@ layout(mat = layout.matrix,
 par(mar=c(3,3,0.5,0.5), mgp=c(1.5,0.25,0),tcl=-0.2,las=1)
 plot(log(all.crit$protected[all.crit$endemic %in% "endemic"] + 1) ~ 
        log(all.crit$prop.EOO.in.StrictUCs[all.crit$endemic %in% "endemic"] + 1),
-     xlab = "Proportion of the EOO", ylab = "Proportion of the occurrences",
+     xlab = "EOO in protected areas (%)", ylab = "Occurrences in protected areas (%)",
      cex.lab  =1.2,
      xaxt = "n", yaxt= "n",
      cex = as.double(as.character(cexs)),
@@ -286,7 +291,10 @@ a <- boxplot(log(prop.EOO.in.StrictUCs+1) ~ cats.f,
              notch = TRUE, varwidth = TRUE, frame = FALSE, horizontal = TRUE,
              at = pos, xaxt = "n", yaxt = "n", 
              ylim = log(c(0,100)+1), xlim=c(0,2.5),
-             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4))
+             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outpch = 19,
+             ylab = "", xlab = "")
 axis(2, pos, col = NA, col.ticks = NA, 
      labels = c("LC+NT","VU","EN","CR"), cex.axis = 0.7)
 
@@ -303,9 +311,11 @@ generate_label_df <- function(TUKEY, variable){
 }
 model <- lm(log(prop.EOO.in.StrictUCs+1) ~ cats.f,
             data = all.crit[all.crit$endemic %in% "endemic",])
+car::Anova(model)
 ANOVA <- aov(model)
 TUKEY <- TukeyHSD(x=ANOVA, 'cats.f', conf.level=0.95)
 LABELS <- generate_label_df(TUKEY , "cats.f")
+LABELS <- LABELS[c("CR", "EN", "VU", "LC+NT"),]
 
 #Add the legend
 par(xpd=T)
@@ -319,12 +329,16 @@ a <- boxplot(log(protected+1) ~ cats.f,
              notch = TRUE, varwidth = TRUE, frame = FALSE, horizontal = FALSE,
              at = c(0.2,0.75,1.5,2.2), yaxt = "n", xaxt = "n", 
              ylim = log(c(0,100)+1), xlim=c(0,2.5),
-             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4))
+             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outpch = 19,
+             ylab = "", xlab = "")
 axis(1, pos, col = NA, col.ticks = NA, 
      labels = c("LC+NT","VU","EN","CR"),  cex.axis = 0.7)
 
 model <- lm(log(protected+1) ~ cats.f,
             data = all.crit[all.crit$endemic %in% "endemic",])
+car::Anova(model)
 ANOVA <- aov(model)
 TUKEY <- TukeyHSD(x=ANOVA, 'cats.f', conf.level=0.95)
 LABELS <- generate_label_df(TUKEY , "cats.f")
@@ -336,9 +350,65 @@ par(xpd=F)
 
 dev.off()
 
+
+#### Figure WW ####
+jpeg(filename = "figures/FigureXX.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
+     res = 300, family = "sans", type="cairo", bg="white")
+
+cats.f <- factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"],
+                 levels = c("LC","NT","VU","EN","CR"))
+levels(cats.f) <- c("LC+NT","LC+NT","VU","EN","CR")
+par(mar = c(3, 3, 0.5, 0.5), mgp=c(1.8,0.5,0), las = 1, tcl = -0.25)
+pos <- c(0.2,0.75,1.5,2.2)
+a <- boxplot(log(prop.EOO.forest+1) ~ cats.f,
+             data = all.crit[all.crit$endemic %in% "endemic",], 
+             notch = TRUE, varwidth = TRUE, frame = TRUE, horizontal = FALSE,
+             at = pos, #xaxt = "n", 
+             yaxt = "n", 
+             ylim = log(c(1,110)), xlim=c(0,2.5),
+             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             outpch = 19, cex.lab = 1.2,
+             ylab = "Area of Habitat (%)", xlab = "")
+# axis(1, pos, col = NA, col.ticks = NA, 
+#      labels = c("LC+NT","VU","EN","CR"), cex.axis = 0.7)
+sequencia <- seq(0,100,20)+1
+axis(2, log(sequencia), tick = TRUE,
+     labels = seq(0,100,20), cex.axis = 1)
+
+generate_label_df <- function(TUKEY, variable){
+  
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- TUKEY[[variable]][,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+  
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+tmp <- all.crit[all.crit$endemic %in% "endemic",]
+model <- lm(log(prop.EOO.forest+1) ~ cats.f, 
+            data = tmp)
+ANOVA <- aov(model)
+TUKEY <- TukeyHSD(x=ANOVA, 'cats.f', conf.level=0.95)
+LABELS <- generate_label_df(TUKEY , "cats.f")
+LABELS[c("CR", "EN", "VU", "LC+NT"),]
+summary(model)
+car::Anova(model)
+
+#Add the legend
+par(xpd=T)
+text( pos, log(120),  rev(LABELS[,1])  , col=1 )
+par(xpd=F)
+dev.off()
+
+
+
+
 #### FIGURE X ####
 
-par(mar = c(3, 3, 0.5, 0.5))
+par(mar = c(3, 4, 0.5, 0.5))
 a <- boxplot(log10(pop.size) ~ cats.f,
              data = all.crit[all.crit$endemic %in% "endemic",], 
              notch = TRUE, varwidth = TRUE, # frame = FALSE, horizontal = FALSE,
@@ -353,6 +423,7 @@ model <- lm(log(pop.size) ~ cats.f,
 ANOVA <- aov(model)
 TUKEY <- TukeyHSD(x=ANOVA, 'cats.f', conf.level=0.95)
 LABELS <- generate_label_df(TUKEY , "cats.f")
+LABELS <- LABELS[c("CR", "EN", "VU", "LC+NT"),]
 
 #Add the legend
 par(xpd=T)
