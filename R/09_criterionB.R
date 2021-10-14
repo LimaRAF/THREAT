@@ -899,12 +899,17 @@ saveRDS(as.data.frame(critB_opt.all), "data/criterionB_all_optim_tax_confidence.
 saveRDS(as.data.frame(critB_low.all), "data/criterionB_all_low_tax_confidence.rds")
 saveRDS(as.data.frame(critB_high.all), "data/criterionB_all_high_tax_confidence.rds")
 
+
+
 #### FIGURE: OPTIMUM VS. HIGH CONFIDENCE LEVEL ####
+critB_opt.all <- readRDS("data/criterionB_all_optim_tax_confidence.rds")
+critB_high.all <- readRDS("data/criterionB_all_high_tax_confidence.rds")
+res <- readRDS("data/tax_conf_effect_on_RLI.rds")
 require(circlize)
 
-jpeg(filename = "figures/Figure_SU.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_SU.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
-par(mfrow=c(1,1))
+par(mfrow=c(1,2))
 par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
 
 ## OPTIMUM VS. HIGH
@@ -961,7 +966,8 @@ for(si in get.all.sector.index()) {
 }
 legend("topleft","High confidence", bty="n", cex=1.2)
 legend("topright","Optim. confidence", bty="n", cex=1.2)
-
+legend("topleft",legend=expression(bold("A")),
+       bty="n",horiz=F,cex=1.5,x.intersp=-1,y.intersp=-0.3)
 
 ## ANY VS. HIGH (very similar to opt vs. high: not plotting)
 # mat <- as.matrix(table(paste0(critB_low.all$category_B,"_lo"), paste0(critB_high.all$category_B,"_hi")))
@@ -1017,6 +1023,26 @@ legend("topright","Optim. confidence", bty="n", cex=1.2)
 # }
 # legend("topleft","High confidence", bty="n", cex=1.2)
 # legend("topright","Any confidence", bty="n", cex=1.2)
+
+## Assessing the confidence level cutoff 
+par(mar=c(3,3.5,1.5,0.5))
+ids <- cut < 0.8
+par(mar=c(3,3.5,0.75,0.5), mgp=c(2,0.25,0),tcl=-0.2,las=1)
+plot(res[,2][ids] ~ cut[ids], ylim = c(0.85, .92),
+     xlab = "Tax. confidence level", ylab = "Red List Index", 
+     xaxt = "n",# yaxt = "n", 
+     cex.lab = 1.2, pch=19)
+axis(1, at=cut, cex.axis = 1, labels = cut * 100)
+lines(res[,1][ids] ~ cut[ids] , lty = 2)
+lines(res[,3][ids] ~ cut[ids] , lty = 2)
+# abline(h = opt.rli[2])
+# abline(h = high.rli[2], col = 2)
+points(res[,5][ids] ~ cut[ids], col=2, pch=19)
+lines(res[,4][ids] ~ cut[ids], col=2, lty = 2)
+lines(res[,6][ids] ~ cut[ids], col=2, lty = 2)
+# abline(v=c(0.6,0.75))
+legend("topleft", expression(bold(B)), bty="n", cex=1.3,
+       x.intersp=-0.7, y.intersp=0.1)
 dev.off()
 
 
