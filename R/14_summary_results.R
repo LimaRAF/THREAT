@@ -607,19 +607,29 @@ diff(quantile(tmp1$coly, probs = seq(0,1,by=0.05), na.rm = TRUE))
 
 
 ## How many species not recorded in the last 50 years
-dim(all.crit[!is.na(all.crit$last.record) & all.crit$last.record < (2018-50) &
-               all.crit$endemic %in% "endemic", ])[1] #41 endemics without records in the past 50 years
-all.crit[!is.na(all.crit$last.record) & 
-           all.crit$last.record < (2018-50) &
-           all.crit$endemic %in% "endemic", cols]
-dim(all.crit[!is.na(all.crit$last.record) & 
-               all.crit$last.record < (2018-50) &
-               !is.na(all.crit$endemic) &
-               all.crit$endemic %in% "endemic" &
-               all.crit$only.type %in% TRUE, cols])[1] # 14 of the only know from the type specimen
-all.crit[all.crit$endemic %in% "endemic" &
-           all.crit$category %in% "CR_PE", cols]
+old.records <- all.crit[!is.na(all.crit$last.record) & 
+                          all.crit$last.record < (2018-50) & 
+                          all.crit$endemic %in% "endemic", ]
+dim(old.records)[1] #41 endemics without records in the past 50 years
+old.records[, cols]
+dim(old.records[old.records$only.type %in% TRUE, cols])[1] # 14 of the only know from the type specimen
+# all.crit[all.crit$endemic %in% "endemic" &
+#            all.crit$category %in% "CR_PE", cols]
 
+#Saving the records of the species for plotting
+old.records.xy <- oc.data[oc.data$tax %in% old.records$species,]
+old.cols <- c("tax", "ddlat", "ddlon", "coly", "typeStatus", 
+              "tax.check2", "tax.check.final")
+old.records.xy <- old.records.xy[, .SD, .SDcols = c(old.cols)]
+old.cols <- c("species","Nbe_occs", 
+              # "EOO", "AOO", "Nbe_subPop", "nbe_loc_total", "protected", "declineB", "sever.frag",
+              # "pop.size", "pop.size.low",
+              "category", "main.criteria", "last.record", "only.type")
+old.records <- old.records[ , old.cols] 
+saveRDS(old.records, "data/old_records_spp.rds")
+old.records.xy <- merge(old.records.xy, old.records, 
+                        by.x = "tax", by.y = "species", all.x = TRUE)
+saveRDS(old.records.xy, "data/old_records_xy.rds")
 
 ## Spatial distribution across the AF: see codes 'data/14.5_grid_summaries' and 'data/15_maps.R'
 

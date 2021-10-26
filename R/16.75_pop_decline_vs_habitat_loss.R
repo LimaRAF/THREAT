@@ -505,6 +505,13 @@ threat.per.loss.random <- as.data.frame.list(
 tmp <- all.data.af.end[all.data.af.end$combo %in% "clumped", ]
 threat.per.loss.clumped <- as.data.frame.list(
         aggregate(as.double(tmp$threat), list(tmp$loss1), summary))
+threat.per.loss.clumped.VU <- as.data.frame.list(
+        aggregate(as.double(tmp$VU), list(tmp$loss1), summary))
+threat.per.loss.clumped.EN <- as.data.frame.list(
+        aggregate(as.double(tmp$EN), list(tmp$loss1), summary))
+threat.per.loss.clumped.CR <- as.data.frame.list(
+        aggregate(as.double(tmp$CR), list(tmp$loss1), summary))
+
 
 ## Atlantic Forest remnants and threat level
 info <- read.csv("data/hotspots_info.csv")
@@ -519,6 +526,16 @@ info <- dplyr::left_join(info, lu_hotspots[,c("hotspot.region","area_km2",
 selected <- info$hotspot.region == "Atlantic Forest"
 threat.end <- I(info$observed_percentage_threat_endemic_all_criteria[selected]/100)
 loss <- I((100 - info$ForestCover[selected])/100)
+losses <- I(100 - info$ForestCover)/100
+trop.hotspots <- c("Atlantic Forest", "Caribbean Islands", 
+                   "Coastal Forests of Eastern Africa", #"East Melanesian Islands",
+                   "Eastern Afromontane", "Guinean Forests of West Africa",
+                   "Indo-Burma", "Madagascar and the Indian Ocean Islands",
+                   "Mesoamerica", "New Caledonia", "Philippines", 
+                   "Sundaland", "Tropical Andes", "Tumbes-Choco-Magdalena", 
+                   "Wallacea", "Western Ghats and Sri Lanka",
+                   "Amazon", "Central Africa", "New Guinea")
+trop_hotspots <- info$hotspot.region %in% trop.hotspots
 
 ## Atlantic Forest threat level only for endemics and criteria A
 all.crit <- readRDS("data/all.criteria.rds")
@@ -526,15 +543,15 @@ all.crit.end <- all.crit[all.crit$endemic %in% "endemic", ]
 all.crit.end.A <- all.crit.end[!is.na(all.crit.end$reduction_A12), ]
 100*table(all.crit.end.A$category_A, useNA = "always")/
         dim(all.crit.end.A)[1]
-threat.end.A <- sum((table(all.crit.end.A$category_A, useNA = "always")/
-        dim(all.crit.end.A)[1])[c(1,2,4)])
+threat.end.A.cats <- (table(all.crit.end.A$category_A, useNA = "always")/
+                dim(all.crit.end.A)[1])[c(1,2,4)]
+threat.end.A <- sum(threat.end.A.cats)
 
-
-# 2018 Forest Cover used for analyses
-esa.grid <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//ESA_LandUse_1992_2018_50km.csv", as.is=TRUE)
-esa.grid <- esa.grid[, grepl("ForestCover", names(esa.grid))]
-esa.grid <- esa.grid[, grepl("2018", names(esa.grid))]
-summary(100 - esa.grid)
+# # 2018 Forest Cover used for analyses
+# esa.grid <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//ESA_LandUse_1992_2018_50km.csv", as.is=TRUE)
+# esa.grid <- esa.grid[, grepl("ForestCover", names(esa.grid))]
+# esa.grid <- esa.grid[, grepl("2018", names(esa.grid))]
+# summary(100 - esa.grid)
 
 # Getting the spline fit and predictions
 spl.low <- smooth.spline(x= I(c(0, threat.per.loss.clumped$Group.1, 1)), 
@@ -547,77 +564,227 @@ splines <- list(spl.low, spl.med, spl.high)
 names(splines) <- c("spline_threat.per.loss.clumped_1stQt",
                     "spline_threat.per.loss.clumped_Median",
                     "spline_threat.per.loss.clumped_3rdQt")
-
 saveRDS(splines, "data/spline_threat.per.loss.clumped.rds")
-# losses <- I(100 - info$ForestCover)/100
 # spl.pr.low <- predict(spl.low, x=losses[!is.na(losses)], na.action=na.exclude)
 # spl.pr.med <- predict(spl.med, x=losses[!is.na(losses)], na.action=na.exclude)
 # spl.pr.high <- predict(spl.high, x=losses[!is.na(losses)], na.action=na.exclude)
 
+# x <- I(c(0, threat.per.loss.clumped$Group.1, 1))
+# y <- I(c(0, threat.per.loss.clumped$x.Median, 1))
+# plot(y ~ x)
+# mod <- nls(y ~ SSlogis(x, Asym, xmid, scal))
+# lines(predict(mod) ~ x, lwd = 2, col=2)
+# f <- y ~ exp(a + b*x)/(1 + exp(a + b*x))
+# mod1 <- try(stats::nls(f, 
+#                         start = list(a=1,b=-0.1)), TRUE)
+# lines(predict(mod1) ~ x, lwd = 2, col=2)
+# lines(predict(spl.med, x = x)$y ~ x, lwd = 2, col=8)
+
+
+#VU
+spl.low.VU <- smooth.spline(x= I(c(0, threat.per.loss.clumped.VU$Group.1, 1)), 
+                         y = I(c(0, threat.per.loss.clumped.VU$x.1st.Qu., 1)), spar = 0.001)
+spl.med.VU <- smooth.spline(x= I(c(0, threat.per.loss.clumped.VU$Group.1, 1)), 
+                         y = I(c(0, threat.per.loss.clumped.VU$x.Median, 1)), spar = 0.001)
+spl.high.VU <- smooth.spline(x= I(c(0, threat.per.loss.clumped.VU$Group.1, 1)), 
+                          y = I(c(0, threat.per.loss.clumped.VU$x.3rd.Qu., 1)), spar = 0.001)
+splines.VU <- list(spl.low.VU, spl.med.VU, spl.high.VU)
+names(splines.VU) <- c("spline_threat.per.loss.clumped_1stQt_VU",
+                    "spline_threat.per.loss.clumped_Median_VU",
+                    "spline_threat.per.loss.clumped_3rdQt_VU")
+saveRDS(splines.VU, "data/spline_threat.per.loss.clumped_VU.rds")
+
+#EN
+spl.low.EN <- smooth.spline(x= I(c(0, threat.per.loss.clumped.EN$Group.1, 1)), 
+                            y = I(c(0, threat.per.loss.clumped.EN$x.1st.Qu., 1)), spar = 0.001)
+spl.med.EN <- smooth.spline(x= I(c(0, threat.per.loss.clumped.EN$Group.1, 1)), 
+                            y = I(c(0, threat.per.loss.clumped.EN$x.Median, 1)), spar = 0.001)
+spl.high.EN <- smooth.spline(x= I(c(0, threat.per.loss.clumped.EN$Group.1, 1)), 
+                             y = I(c(0, threat.per.loss.clumped.EN$x.3rd.Qu., 1)), spar = 0.001)
+splines.EN <- list(spl.low.EN, spl.med.EN, spl.high.EN)
+names(splines.EN) <- c("spline_threat.per.loss.clumped_1stQt_EN",
+                       "spline_threat.per.loss.clumped_Median_EN",
+                       "spline_threat.per.loss.clumped_3rdQt_EN")
+saveRDS(splines.EN, "data/spline_threat.per.loss.clumped_EN.rds")
+
+#CR
+spl.low.CR <- smooth.spline(x= I(c(0, threat.per.loss.clumped.CR$Group.1, 1)), 
+                            y = I(c(0, threat.per.loss.clumped.CR$x.1st.Qu., 1)), spar = 0.001)
+spl.med.CR <- smooth.spline(x= I(c(0, threat.per.loss.clumped.CR$Group.1, 1)), 
+                            y = I(c(0, threat.per.loss.clumped.CR$x.Median, 1)), spar = 0.001)
+spl.high.CR <- smooth.spline(x= I(c(0, threat.per.loss.clumped.CR$Group.1, 1)), 
+                             y = I(c(0, threat.per.loss.clumped.CR$x.3rd.Qu., 1)), spar = 0.001)
+splines.CR <- list(spl.low.CR, spl.med.CR, spl.high.CR)
+names(splines.CR) <- c("spline_threat.per.loss.clumped_1stQt_CR",
+                       "spline_threat.per.loss.clumped_Median_CR",
+                       "spline_threat.per.loss.clumped_3rdQt_CR")
+saveRDS(splines.CR, "data/spline_threat.per.loss.clumped_CR.rds")
+
+
 #### FIGURE ST ####
-jpeg(filename = "figures/Figure_ST.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_ST.jpg", width = 4000, height = 4000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 par(mar=c(3,3,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
 
 # PANEL A - AF - endemics
-plot(c(0,1) ~ c(1,0), col = "white", cex.lab = 1.2,
-     xlab = "Habitat loss", ylab = "Threatened species")
+plot(c(0,1) ~ c(1,0), col = "white", cex.lab = 1.4,
+     xlab = "", ylab = "Threatened species")
 tmp1 <- threat.per.loss.random
 lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
       col = "red", lwd = 2, lty = 1)
-segments(x0 = c(0,as.double(tmp1$Group.1),1)-0.001, x1 = c(0,as.double(tmp1$Group.1),1)-0.001,
-         y0 = c(0,as.double(tmp1$x.1st.Qu.),1), y1 = c(0,as.double(tmp1$x.3rd.Qu.),1), 
-         col = "red", lty = 1)
+# segments(x0 = c(0,as.double(tmp1$Group.1),1)-0.001, x1 = c(0,as.double(tmp1$Group.1),1)-0.001,
+#          y0 = c(0,as.double(tmp1$x.1st.Qu.),1), y1 = c(0,as.double(tmp1$x.3rd.Qu.),1), 
+#          col = "red", lty = 1)
+arrows(x0 = c(0,as.double(tmp1$Group.1),1)-0.001, 
+       y0 = c(0,as.double(tmp1$x.1st.Qu.),1),
+       y1 = c(0,as.double(tmp1$x.3rd.Qu.),1),
+       col = "red", code = 3, angle = 90, length = 0.025)
+
 tmp1 <- threat.per.loss.clumped
 lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
       col = "black", lwd = 2, lty = 1)
-segments(x0 = as.double(tmp1$Group.1)+0.001, x1 = as.double(tmp1$Group.1)+0.001,
-         y0 = as.double(tmp1$x.1st.Qu.), y1 = as.double(tmp1$x.3rd.Qu.), 
-         col = "black", lty = 1)
+# segments(x0 = as.double(tmp1$Group.1)+0.001, x1 = as.double(tmp1$Group.1)+0.001,
+#          y0 = as.double(tmp1$x.1st.Qu.), y1 = as.double(tmp1$x.3rd.Qu.), 
+#          col = "black", lty = 1)
+arrows(x0 = c(0,as.double(tmp1$Group.1),1)+0.001, 
+       y0 = c(0,as.double(tmp1$x.1st.Qu.),1),
+       y1 = c(0,as.double(tmp1$x.3rd.Qu.),1),
+       col = "black", code = 3, angle = 90, length = 0.025)
 # abline(0,1, lty = 3, col = "grey")
 # points(threat.end ~ loss, pch = 19)
-points(threat.end.A ~ loss, pch = 19)
-points(0.114, 0.09, pch = 17) # Hans criterion A
-legend("bottomright", c("Random loss", "Aggregate loss"),
+points(threat.end.A ~ loss, pch = 19, cex = 1.1)
+points(0.114, 0.09, pch = 17, cex = 1.2) # Hans criterion A
+legend("bottomright", c("Random", "Aggregate"),
        # col = seq_along(combos) + 1,
        lty = 1,
        lwd = 2, bty = "n",
        cex = 1.2, col = c("red", "black"))
-legend(0.68, 0.145, "Obs. Atlantic Forest",
-       pch = 19,
-       bty = "n",
+legend(0.7, 0.125, expression(bold("Type of loss:")),
+       #pch = c(19,17),
+       bty = "n", #x.intersp= 1.85,
+       cex = 1.2, col = "black")
+legend(0.3, 0.125, expression(bold("Observed threat:")),
+       #pch = c(19,17),
+       bty = "n", #x.intersp= 1.85,
+       cex = 1.2, col = "black")
+legend("bottom", c("Atlantic Forest","Amazon"),
+       pch = c(19,17),
+       bty = "n", x.intersp= 1.5,
        cex = 1.2, col = "black")
 legend("topleft",legend=expression(bold("A")),
        bty="n",horiz=F,cex=1.5,x.intersp=-0.7,y.intersp=-0.1)
 
-## Comparing other simulated scenarios with one derived form the real AF data
+# PANEL B - Clumped loss + VU/EN/CR curves
+plot(c(0,1) ~ c(1,0), col = "white", cex.lab = 1.4,
+     xlab = "", ylab = "")
+tmp1 <- threat.per.loss.clumped.VU
+lines(c(0,tmp1$x.Median) ~  c(0,tmp1$Group.1), 
+      col = "gold", lwd = 2, lty = 1)
+tmp1 <- threat.per.loss.clumped.EN
+lines(c(0,tmp1$x.Median) ~  c(0,tmp1$Group.1), 
+      col = "darkorange", lwd = 2, lty = 1)
+tmp1 <- threat.per.loss.clumped.CR
+lines(c(0,tmp1$x.Median) ~  c(0,tmp1$Group.1), 
+      col = "red2", lwd = 2, lty = 1)
+tmp1 <- threat.per.loss.clumped
+lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
+      col = "black", lwd = 2, lty = 1)
+points(c(threat.end.A, threat.end.A.cats) ~ 
+               rep(loss, 4), pch = 21,
+       bg = c("black", "gold", "red", "darkorange"), cex = 1.1)
+legend("right", c("Threatened", "VU", "EN", "CR"),
+       # col = seq_along(combos) + 1,
+       lty = 1,
+       lwd = 2, bty = "n",
+       cex = 1.2, col = c("black", "gold", "darkorange", "red"))
+legend(0.8, 0.41, c("Obs. threat."),
+       pch = c(21),
+       bty = "n", x.intersp= 1.5,
+       cex = 1.2, col = "black")
+legend("topleft",legend=expression(bold("B")),
+       bty="n",horiz=F,cex=1.5,x.intersp=-0.7,y.intersp=-0.1)
+
+## PANEL C - Comparing other simulated scenarios with one derived form the real AF data
 # using only the clumped removal of grid cells
 combos <- unique(all.data$combo)
 combos <- combos[grepl("clumped_", combos)]
-plot(c(0,1) ~ c(1,0), col = "white", las = 1, cex.lab = 1.2,
-     xlab = "Habitat loss", ylab = "")
+plot(c(0,1) ~ c(1,0), col = "white", las = 1, cex.lab = 1.4,
+     xlab = "Habitat loss", ylab = "Threatened species")
+legend(0.6, 0.175, expression(bold("Type of community:")),
+       #pch = c(19,17),
+       bty = "n", #x.intersp= 1.85,
+       cex = 1.2, col = "black")
+cores.tmp <- c("magenta", "darkgreen", "blue", "black")
 legend("bottomright", 
-       c("Random spp.", "Aggregate spp.", "Aggregate in blocks", "Atlantic Forest"), 
-       col = c(seq_along(combos) + 1, 1), 
+       c("Random", "Aggregate", "Aggregate in blocks", "Atlantic Forest"), 
+       col = cores.tmp, 
        lwd = c(2,2,2,1), lty = c(1,1,1,1),
        bty = "n", cex = 1.1)
-for(i in seq_along(combos)) {
-        tmp <- all.data[all.data$combo %in% combos[i], ]
-        tmp1 <- aggregate(as.double(tmp$threat), list(tmp$loss1), summary)
-        lines(c(0,tmp1$x[,3],1) ~ c(0,tmp1$Group.1,1), col = i + 1, lwd = 2)
-        # segments(x0 = as.double(tmp1$Group.1), x1 = as.double(tmp1$Group.1),
-        #          y0 = as.double(tmp1$x[,2]), y1 = as.double(tmp1$x[,5]))
-}
 tmp1 <- threat.per.loss.clumped
 lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
       col = "black", lwd = 1, lty = 1)
-lines(c(0,tmp1$x.1st.Qu.,1) ~  c(0,tmp1$Group.1,1), 
-      col = "black", lwd = 1, lty = 2)
-lines(c(0,tmp1$x.3rd.Qu.,1) ~  c(0,tmp1$Group.1,1), 
-      col = "black", lwd = 1, lty = 2)
-legend("topleft", expression(bold(B)), bty="n", cex=1.3,
+arrows(x0 = c(0,as.double(tmp1$Group.1),1)+0.001, 
+       y0 = c(0,as.double(tmp1$x.1st.Qu.),1),
+       y1 = c(0,as.double(tmp1$x.3rd.Qu.),1),
+       col = "black", code = 3, angle = 90, length = 0.025)
+# lines(c(0,tmp1$x.1st.Qu.,1) ~  c(0,tmp1$Group.1,1), 
+#       col = "black", lwd = 1, lty = 2)
+# lines(c(0,tmp1$x.3rd.Qu.,1) ~  c(0,tmp1$Group.1,1), 
+#       col = "black", lwd = 1, lty = 2)
+
+for(i in seq_along(combos)) {
+        tmp <- all.data[all.data$combo %in% combos[i], ]
+        tmp1 <- aggregate(as.double(tmp$threat), list(tmp$loss1), summary)
+        lines(c(0,tmp1$x[,3],1) ~ c(0,tmp1$Group.1,1), col = cores.tmp[i], lwd = 2)
+        # segments(x0 = as.double(tmp1$Group.1), x1 = as.double(tmp1$Group.1),
+        #          y0 = as.double(tmp1$x[,2]), y1 = as.double(tmp1$x[,5]))
+}
+legend("topleft", expression(bold(C)), bty="n", cex=1.3,
        x.intersp=-0.7, y.intersp=0.1)
+
+# PANEL D - Projections for other regions
+hots <- info$hotspot.region[trop_hotspots]
+hots <- gsub("West |Western ", "W. ", hots)
+hots <- gsub("Eastern ", "E. ", hots)
+hots[7] <- "Madagascar, Indian Oc. Isl."
+
+continents <- info$continent[trop_hotspots]
+continents <- gsub("North |South ", "", continents)
+cores.cont <- factor(continents)
+levels(cores.cont) <- c("darkgoldenrod", "forestgreen", "brown", "cadetblue1")
+cores.cont <- as.character(cores.cont)
+# plot(1:4, 1:4, bg = unique(cores.cont), pch = 21)
+pch.hot <- rep(21, length(hots))
+pch.hot[continents == "America"] <- c(21, 22, 23, 24, 25, 4)
+pch.hot[continents == "Africa"] <- c(21, 22, 23, 24, 25)
+pch.hot[continents == "Asia"] <- c(21, 22)
+pch.hot[continents == "Oceania"] <- c(21, 22, 23, 24, 25)
+
+spl.pr.low <- predict(spl.low, x=losses[trop_hotspots], na.action=na.exclude)
+spl.pr.med <- predict(spl.med, x=losses[trop_hotspots], na.action=na.exclude)
+spl.pr.high <- predict(spl.high, x=losses[trop_hotspots], na.action=na.exclude)
+
+plot(c(0,1) ~ c(1,0), col = "white", las = 1, cex.lab = 1.4,
+     xlab = "Habitat loss", ylab = "")
+tmp1 <- threat.per.loss.clumped
+lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
+      col = "black", lwd = 1, lty = 1)
+segments(x0 = losses[trop_hotspots], x1 = losses[trop_hotspots],
+         y0 = spl.pr.low$y, y1 = spl.pr.high$y, 
+         lty = 1, col = cores.cont)
+points(spl.pr.med, bg = cores.cont, pch = pch.hot, cex = 1.3)
+legend("topleft", expression(bold(D)), bty="n", cex=1.3,
+       x.intersp=-0.7, y.intersp=0.1)
+legend(0.55, 0.63, expression(bold("Region:")),
+       #pch = c(19,17),
+       bty = "n", #x.intersp= 1.85,
+       cex = 1.2, col = "black")
+legend("bottomright", 
+       hots, 
+       pt.bg = cores.cont, 
+       pch = pch.hot,
+       bty = "n", cex = 1.1)
 dev.off()
 
 

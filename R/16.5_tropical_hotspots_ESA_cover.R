@@ -15,22 +15,115 @@ hotspots <- readOGR(dsn=paste(path,"//WO_Global_Biodiversity_Hotspots//hotspots_
                     layer="hotspots_2016_1")
 
 trop.hotspots <- c("Atlantic Forest", "Caribbean Islands", 
-                   "Coastal Forests of Eastern Africa", "East Melanesian Islands",
+                   "Coastal Forests of Eastern Africa", #"East Melanesian Islands",
                    "Eastern Afromontane", "Guinean Forests of West Africa",
                    "Indo-Burma", "Madagascar and the Indian Ocean Islands",
                    "Mesoamerica", "New Caledonia", "Philippines", 
                    "Sundaland", "Tropical Andes",
                    "Tumbes-Choco-Magdalena", "Wallacea", "Western Ghats and Sri Lanka")
 hotspots <- hotspots[hotspots@data$NAME %in% trop.hotspots,]
-plot(hotspots)
-  
+hotspots.no.lim <- hotspots[!hotspots@data$Type %in% "outer limit",]
+
 ## Tnc regions
-# tnc <- readOGR(dsn=paste(path,"//Am_Lat_Biorregions_TNC",sep=""),layer="tnc_terr_ecoregions")
-# tnc <- tnc[tnc@data$WWF_REALM2 %in% c("Afrotropic", "Neotropic"),]
+# tnc <- readOGR(dsn=paste(path,"//WO_ecoregions_TNC//2017",sep=""), layer="Ecoregions2017")
+# tnc <- rgeos::gBuffer(tnc, byid=TRUE, width=0) #correcting possible overlapping polygons
+# tnc <- cleangeo::clgeo_Clean(tnc) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
+# saveRDS(tnc, paste(path,"//WO_ecoregions_TNC//2017//Ecoregions2017.rds",sep="")) 
+tnc <- readRDS(paste(path,"//WO_ecoregions_TNC//2017//Ecoregions2017.rds",sep=""))
+tnc <- tnc[tnc@data$REALM %in% c("Afrotropic", "Neotropic", "Australasia"),]
 # tnc <- tnc[tnc@data$ECO_NAME %in% 
 #              c("Amazon-Orinoco-Southern Caribbean Mangroves",
 #                "Central Congolian Lowland Forests",
 #                "ChocÃ³-DariÃ©n Moist Forests"),]
+
+## New guinea
+ext.ng <- extent(tnc)
+ext.ng[1] <- 128; ext.ng[2] <- 153
+ext.ng[3] <- -14; ext.ng[4] <- 1
+ng <- crop(tnc, ext.ng)
+exclude.ng <- "Cape York|Arnhem|Kimberly|Victoria|Carpentaria|Banda Sea|Seram Rain Forests|Halmahera Rain Forests|Solomon Islands Rain Forests"
+ng <- ng[ !grepl(exclude.ng, ng@data$ECO_NAME, ignore.case = TRUE),]
+# plot(ng, col = 1:6)
+# plot(ext.ng, add = TRUE)
+ng.lim <- aggregate(ng)
+ng.lim1 <- rgeos::gBuffer(ng.lim, byid=TRUE, width=0) #correcting possible overlapping polygons
+ng.lim1 <- cleangeo::clgeo_Clean(ng.lim1) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
+ng.lim1 <- SpatialPolygonsDataFrame(ng.lim1, data.frame(NAME = "New Guinea", 
+                                                        Type = "hotspot area"))
+#inspecting: ok!
+# plot(ng.lim1, col = 1:6)
+# plot(hotspots, add = TRUE, 
+#      border = "blue", lwd = 2)
+
+## Amazon
+am.wwf <- readOGR(dsn=paste(path,"//Amazon_WWF_limits//data//shape",sep=""),layer="amazonia")
+ext.am <- extent(am.wwf)
+ext.am[1] <- -80; ext.am[2] <- -44
+ext.am[3] <- -19; ext.am[4] <- 11
+am <- crop(tnc, ext.am)
+exclude.am <- "Cerrado|MaranhÃ£o BabaÃ§u|Sechura|Atacama|Andean|Chaco|Yungas|Puna|ChocÃ³|Llanos|Isthmian|Pantanal|Cordillera|Montane|Xeric|Magdalena-Urab|Catatumbo|Ecuadorian Dry Forests|Alto ParanÃ¡ Atlantic Forests|Bahia Interior Forests|Lake|Chiquitano|MaraÃ±Ã³n"
+am <- am[ !grepl(exclude.am, am@data$ECO_NAME, ignore.case = TRUE),]
+
+get_these <- !is.na(over(am, am.wwf)$ID)
+am <- am[get_these, ]
+am.all <- disaggregate(am)
+get_these <- !is.na(over(am.all, am.wwf)$ID)
+am.all <- am.all[get_these, ]
+am.lim <- aggregate(am.all)
+am.lim1 <- rgeos::gBuffer(am.lim, byid=TRUE, width=0) #correcting possible overlapping polygons
+am.lim1 <- cleangeo::clgeo_Clean(am.lim1) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
+am.lim1 <- SpatialPolygonsDataFrame(am.lim1, data.frame(NAME = "Amazon", 
+                                                        Type = "hotspot area"))
+#inspecting: ok!
+# par(mar=c(1,1,1,1))
+# plot(am.lim, col = 1:6)
+# plot(hotspots[hotspots@data$NAME %in% "Tropical Andes",], add = TRUE,
+#      border = "blue", lwd = 2)
+# plot(am.wwf, add = TRUE, border = "red", lwd = 2)
+
+## Central Africa
+ext.ca <- extent(tnc)
+ext.ca[1] <- 4; ext.ca[2] <- 40
+ext.ca[3] <- -20; ext.ca[4] <- 13
+ca <- crop(tnc, ext.ca)
+# ca <- ca[grepl("Forests|Mangroves", ca@data$WWF_MHTNAM),]
+include.ca <- c("Central African mangroves",
+                "Central Congolian lowland forests",
+                "Congolian coastal forests",
+                "Eastern Congolian swamp forests",
+                "Northeast Congolian lowland forests",
+                "Northern Congolian Forest-Savanna",
+                "Northwest Congolian lowland forests",
+                "Southern Congolian forest-savanna",
+                "Atlantic Equatorial Coastal Forests",
+                "Western Congolian forest-savanna",
+                "Western Congolian swamp forests")
+ca1 <- ca[ca@data$ECO_NAME %in% include.ca,]
+ca.lim <- gDifference(ca1, hotspots.no.lim[hotspots.no.lim@data$NAME %in%
+                                  c("Eastern Afromontane",
+                                    "Guinean Forests of West Africa"),],
+            byid = FALSE)
+ca.lim1 <- rgeos::gBuffer(ca.lim, byid=TRUE, width=0) #correcting possible overlapping polygons
+ca.lim1 <- cleangeo::clgeo_Clean(ca.lim1) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
+ca.all <- disaggregate(ca.lim1)
+get_these <- gArea(ca.all, byid = TRUE) > 200
+ca.all <- ca.all[get_these, ]
+ca.lim <- aggregate(ca.all)
+ca.lim <- SpatialPolygonsDataFrame(ca.lim, data.frame(NAME = "Central Africa", 
+                                                        Type = "hotspot area"))
+#Comparing with the shp send by gilles from the Sosef et al. 2019 paper
+ca.sosef <- readOGR(dsn="data/central_africa",
+                            layer="cental_african_forest_sosef2019")
+#Inspecting
+plot(ca.sosef, border = "white")
+plot(ca.lim, add = TRUE, border = "red", lwd = 2)
+plot(hotspots.no.lim, add = TRUE, border = "blue", lwd = 2)
+plot(ca.sosef, add = TRUE)
+
+## binding all maps
+trop.hotspots <- c(trop.hotspots, "New Guinea", "Central Africa", "Amazon")
+hotspots <- rbind(hotspots,
+                       ng.lim1, ca.lim, am.lim1)
 
 #### ESA 2018 Land use map ####
 require(ncdf4)
@@ -40,6 +133,7 @@ pj = crs(lu)
 
 # clipping global map to hotspot's extents
 for(i in 1:length(trop.hotspots)) {
+# for(i in 16:18) {
   hot.i <- hotspots[hotspots@data$NAME %in% trop.hotspots[i],]
   proj4string(hot.i) = pj 
   hot.i1 <- extent(hot.i) - c(1,-1,1,-1)
@@ -55,7 +149,8 @@ for(i in 1:length(trop.hotspots)) {
 list.rasters <- list.files(paste0(path,"//WO_ESA_Land_Cover_map//v.2.1.1//hotspots//"),
                            full.names = TRUE)
 for(i in 1:length(list.rasters)) {
-  raster.i <- raster(list.rasters[i])
+# for(i in c(1,10,35)) {
+    raster.i <- raster(list.rasters[i])
   pj.i <- crs(raster.i)
   
   hot.i <- gsub("ESA-LCCS-Map-300m-2018-v2.1.1_|\\.tif", "", 
@@ -77,7 +172,8 @@ list.rasters <- list.files(paste0(path,"//WO_ESA_Land_Cover_map//v.2.1.1//hotspo
                            full.names = TRUE)
 list.rasters1 <- list.rasters[grepl("clipped", list.rasters)] 
 for(i in 1:length(list.rasters1)) {
-  raster.i <- raster(list.rasters1[i])
+# for(i in c(1,4,13)) {
+    raster.i <- raster(list.rasters1[i])
   pj.i <- crs(raster.i)
   
   hot.i <- gsub("ESA-LCCS-Map-300m-2018-v2.1.1_|_clipped\\.tif", "", 
@@ -98,6 +194,9 @@ for(i in 1:length(list.rasters1)) {
   writeRaster(clip2, filename= nome.arquivo,
               format="GTiff",overwrite=TRUE)
 }
+
+## Saving the final shapefiles
+saveRDS(hotspots, "data/hotspots_limits.rds")
 
 #### GETTING THE VEGETATION COVER PER HOTSPOT ####
 list.rasters <- list.files(paste0(path,"//WO_ESA_Land_Cover_map//v.2.1.1//hotspots//"),

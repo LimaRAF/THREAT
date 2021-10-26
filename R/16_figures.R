@@ -240,10 +240,10 @@ dev.off()
 ## see code 15_maps.R
 
 
-#### FIGURE 4 ####
+#### OLD FIGURE 4, NOW FIGURE YY ####
 #Proportion of protected areas
 
-jpeg(filename = "figures/Figure4.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
+jpeg(filename = "figures/FigureYY.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
 cexs <- pchs <- cores1 <- as.factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"])
@@ -351,7 +351,13 @@ par(xpd=F)
 dev.off()
 
 
-#### Figure WW ####
+#### OLD FIGURE 5, NOW FIGURE 4 ####
+#The Red List Index for other tropical forests
+## see code 15_maps.R
+
+
+
+#### Figure XX ####
 jpeg(filename = "figures/FigureXX.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 

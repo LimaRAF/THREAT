@@ -137,9 +137,15 @@ for(i in 1:length(grid1)) { slot(slot(grid1, "polygons")[[i]],"ID") = as.charact
 ## Projecting the Grid
 grid1 <- spTransform(grid1, CRS("+init=epsg:5641"))
 
+#### EXPLORING THE OBSERVED RESULTS ####
+## Defining the color scales
 # cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen", "forestgreen")
 cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen")
 colfunc <- colorRampPalette(cores)
+brks1 <- seq(0.5, 1, 0.025)
+cores1 <- c("darkred", "red", "gold", "green")
+colfunc1 <- colorRampPalette(cores1)
+cres1 <- rev(colfunc1(length(brks1)-1))
 grid.result$RLI.col = as.character(cut(grid.result$RLI, 
                                        # breaks = quantile(grid.result$RLI, na.rm=TRUE, prob = seq(0,1,0.05)), 
                                        breaks = seq(0,1,0.05), 
@@ -148,27 +154,115 @@ grid.result$RLI.end.col = as.character(cut(grid.result$RLI.end,
                                            # breaks = quantile(grid.result$RLI.end, na.rm=TRUE, prob = seq(0,1,0.05)), 
                                            breaks = seq(0,1,0.05), 
                                            labels = colfunc(20), include.lowest = TRUE))
+grid.result$Threat.col = as.character(cut(grid.result$Threat.pa, 
+                                       breaks = brks1,  
+                                       labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
+grid.result$Threat.end.col = as.character(cut(grid.result$Threat.end.pa, 
+                                              breaks = brks1,  
+                                              labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
 
+# Grids with no data -> "White" ()
+grid.result$Threat.col[is.na(grid.result$select)] <- "#FFFFFF"
+grid.result$Threat.end.col[is.na(grid.result$select)] <- "#FFFFFF"
+grid.result$Threat.end.col[is.na(grid.result$Threat.end.col)] <- "#FFFFFF"
 
-#### EXPLORING THE OBSERVED RESULTS ####
-par(mfrow=c(1,2))
-plot(grid1, border=grey(0.9)) ## ENDEMIC SPECIES RICHNESS (SR)
-legend("bottomright", "All species", bty='n',cex=2)
-plot(grid1[!is.na(grid.result$RLI),],
-     col=grid.result$RLI.col[!is.na(grid.result$RLI)],
-     border=grid.result$RLI.col[!is.na(grid.result$RLI)],
-     #border=grey(0.9),
+# Grids with insuficient data -> "Light Grey" ("#D3D3D3") or "Grey" ("#808080") or "Dark Grey" ("#A9A9A9")
+grid.result$Threat.col[!is.na(grid.result$select) & 
+                         !grid.result$select] <- "#D3D3D3"
+grid.result$Threat.end.col[!is.na(grid.result$select) & 
+                             !grid.result$select] <- "#D3D3D3" 
+cor.af = "black" # "darkgreen" # 
+cor.br = "grey"
+cor.am = "black" 
+
+#Plot extent plus cropping
+bb = bbox(grid1)
+bb[1] = bb[1] - 20000
+bb[3] = bb[3] - 20000
+bb[4] = bb[4] + 20000
+am.lat.proj1 = raster::crop(am.lat.proj, bb)
+brasil.proj1 = raster::crop(brasil.proj, bb)
+
+###################
+#### FIGURE SR ####
+###################
+at.leg <- seq(0,100,20)
+at.leg1 <- seq(50,100,10)
+vals.leg <- paste0(at.leg,"%")
+
+#PANEL A
+jpeg(filename = "figures/Figure_SRA.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+rm.cells <- !grid.result$Threat.col %in% c("#FFFFFF", "#D3D3D3")
+plot(grid1[rm.cells, ],
+     col = adjustcolor(grid.result$Threat.col[rm.cells],
+                       alpha.f = 0.75,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+                       # transform = diag(c(1,1,1,0.5))),
+     border = "black",
      add=TRUE)
-plot(af.proj, add=TRUE)
-plot(grid1,border=grey(0.9)) ## OCASIONAL SPECIES RICHNESS (SR)
-legend("bottomright", "Endemics",bty='n',cex=2)
-plot(grid1[!is.na(grid.result$RLI.end),],
-     col=grid.result$RLI.end.col[!is.na(grid.result$RLI.end)],
-     border=grid.result$RLI.end.col[!is.na(grid.result$RLI.end)],
-     #border=grey(0.9),
-     add=TRUE)
-plot(af.proj, add=TRUE)
+# plot(af.proj, add=TRUE, border= cor.af)
+legend("topleft", "A - All populations", cex=1.5, bty="n",inset=c(0.02,0.03))
 
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(50,100),
+                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg1/100))
+legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+       cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()
+
+#PANEL B
+jpeg(filename = "figures/Figure_SRB.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+rm.cells1 <- !grid.result$Threat.end.col %in% c("#FFFFFF", "#D3D3D3")
+plot(grid1[rm.cells1, ],
+     col = adjustcolor(grid.result$Threat.end.col[rm.cells1],
+                       alpha.f = 0.75,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+     # transform = diag(c(1,1,1,0.5))),
+     border = "black",
+     add=TRUE)
+legend("topleft", "B - Endemics", cex=1.5, bty="n",inset=c(0.02,0.03))
+
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(50,100),
+                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg1/100))
+legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+       cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()
+
+
+# -------------------------------------------------------------------------
 #### CREATING THE GRID FOR PREDICTION ###
 # Define the grid extent
 bb = bbox(grid1)
@@ -250,16 +344,20 @@ vars = c("Threat.pa","Threat.end.pa")
 nomes = rep(c("A - All populations","B - Endemics"),4)
 figura <- "FigureSQ_"
 
+#Figure SS
+vars = c("Threat.pa_CR", "Threat.end.pa_CR")
+nomes = rep(c("C - Predicted, all populations", "D - Predicted, endemics"),4)
+figura <- "Figure_SS_"
+
+
 #Figure # abortando...
 # vars = c("Threat_catA.pa","Threat_catD.pa", "Threat_catC.pa","Threat_catD.pa")
 # nomes = rep(c("A - Criterion A","B - Criterion B", "C - Criterion C", "D - Criterion D"),2)
 # figura <- "FigureWW_"
 
-
-
 for(i in 1:length(vars)) {
   var = vars[i]
-  nome.fig = paste("figures/",figura, LETTERS[i],"_adpt_",var,".jpg",sep="")
+  nome.fig = paste("figures/",figura, LETTERS[i],"adpt_",var,".jpg",sep="")
   #nome.fig = paste("Figure2_",var,"_BW.jpg",sep="")
   nome.shp = gsub("\\.","_",paste("shp_centre_",var,sep=""))
   
@@ -366,6 +464,9 @@ for(i in 1:length(vars)) {
   
   # fixed breaks for scale
   brks1 <- seq(0.65, 1, 0.02)
+  if (grepl("Threat", var) & grepl("_CR", var))
+    brks1 <- seq(0, 0.45, 0.02)
+  
   cores1 <- c("darkred", "red", "gold", "green")
   colfunc1 <- colorRampPalette(cores1)
   cres1 <- colfunc(length(brks1)-1)
@@ -399,13 +500,16 @@ for(i in 1:length(vars)) {
   par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
   at.leg <- seq(0,100,20)
   at.leg1 <- seq(60,100,10)
+  at.leg1 <- seq(0,60,10)
+
   vals.leg <- paste0(at.leg,"%")
   fields::image.plot( legend.only=TRUE, add=TRUE,
                       col = cres1,
                       legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
                       legend.line = 1, legend.cex = 0.5,
                       # zlim=c(2.5,97.5),
-                      zlim=c(60,100),
+                      # zlim=c(60,100),
+                      zlim=c(0,55),
                       #breaks = seq(0,100,20),
                       axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
                                      # labels = round(qts[names(qts) %in% vals.leg],2)))
@@ -603,6 +707,8 @@ names(grid2)[1:2] = c("x","y")
 coordinates(grid2) = ~x+y
 proj4string(grid2) <- raster::crs(grid1)
 
+
+#### FIGURE 3 ####
 cor.af = "black" # "darkgreen" # 
 cor.br = "grey"
 cor.am = "black" 
@@ -800,6 +906,370 @@ for(i in 1:length(vars)) {
   dev.off()
 }
 
+# -------------------------------------------------------------------------
+##################################################
+#### SPECIES WITH RECORDS OLDER THAN 50 YEARS ####
+##################################################
+#### FIGURE SP  ####
+old <- readRDS("data/old_records_xy.rds")
+
+# creating the spatial object and projecting
+old.xy <- as.data.frame(old[, .SD, .SDcols = c("ddlon", "ddlat")])
+coordinates(old.xy) <- ~ddlon + ddlat
+proj4string(old.xy) <- raster::crs(af)
+old.xy <- spTransform(old.xy, raster::crs(af.proj))
+
+#Defining the panel extents
+all <- sul <- centro <- norte <- raster::extent(grid1)
+all[2] <- 6250000
+sul[1:2] <- c(3800000, 4450000)
+sul[3:4] <- c(6600000, 7100000)
+ 
+centro[1:2] <- c(4511378, 5570000)
+centro[3:4] <- c(7200000, 8600000)
+
+norte[1:2] <- c(5168602, 6250000)
+norte[3:4] <- c(8966880, 9750000)
+
+plots.ext <- list(all, norte, centro, sul)
+names(plots.ext) <- c("A- Atlantic Forest", "B - Northern", "C - Central",
+                      "D - Southern")
+
+# colors and symbols
+cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen")
+cores.old <- rep("darkorange", dim(old)[1])
+cores.old[old$category %in% "CR"] <- "red"
+cores.old[old$category %in% "CR_PE"] <- "purple"
+cores.old <- adjustcolor(cores.old, alpha.f = 0.7)
+
+# pchs.old <- rep(21, dim(old)[1])
+# pchs.old[old$only.type] <- 24
+
+# Cities (large ones and those close to the occurrences)
+cidades.all <- rnaturalearth::ne_download(scale = 10, 
+                                      type = 'populated_places_simple', category = 'cultural')
+cidades.all <- cidades.all[cidades.all@data$iso_a2 %in% c("BR","AR","PY"), ]
+cidades.extra <- c("Tauá", "Baturité", "João Pessoa", "Aracaju", 
+                   "Juazeiro do Norte", "Caaruaru", "Campina Grande",
+                   "Ilhéus", "Porto Seguro", "Ubaitaba", "Almenara",
+                   "São Mateus", "Linhares", "Governador Valadares", "Cachoeiro de Itapemirim",
+                   "Caratinga", "Ponte Nova", "Sete Lagoas", "Juiz de Fora", "Ipatinga",
+                   "Barbacena", "Petrópolis", "Cabo Frio", "Nova Friburgo", "Barra Mansa",
+                   "Santos", "Santo André", "Taubaté","Itanhaem",
+                   "Palmas", "Brusque", "Itajaí", "Caçador", "Lajes")
+cidades.all <- cidades.all[cidades.all@data$name %in% cidades.extra,]
+cidades <- rnaturalearth::ne_download(scale = 50, 
+                                          type = 'populated_places_simple', category = 'cultural')
+cidades <- cidades[cidades@data$iso_a2 %in% c("BR","AR","PY"), ]
+cidades <- rbind(cidades, cidades.all)
+cidades.rm <- c("Sorocaba", "Goiânia", "Alvorada", "Feira de Santana",
+                "Ciudad del Este")
+cidades <- cidades[!cidades@data$name %in% cidades.rm,]
+# cidades <- cidades[cidades@data$adm0name %in% "Brazil", ]
+cidades@data <- cidades@data[, c("featurecla","adm0name","adm1name","name",
+                                 "pop_max","latitude","longitude")]
+# Positioning the city names in the legend
+cidades@data$pos <- 4
+pos_1 <- c("Governador Valadares", "Belo Horizonte", "Vitória da Conquista",
+           "Rio de Janeiro", "Campina Grande")
+cidades@data$pos[cidades@data$name %in% pos_1] <- 1
+# pos_2 <- c("Campina Grande")
+# cidades@data$pos[cidades@data$name %in% pos_2] <- 2
+pos_3 <- c("Sete Lagoas", "Petrópolis", "São Paulo")
+cidades@data$pos[cidades@data$name %in% pos_3] <- 3
+# Projecting the cities data
+cidades.proj <- spTransform(cidades, raster::crs(af.proj))
+
+# Defining the image size
+imag.size <- list(c(1.5, 2), c(2, 1.5), c(1.5, 2), c(2, 1.5))
+
+for(i in 1:length(plots.ext)) {
+  
+  nome.fig <- paste0("figures/Figure_SP",
+                     substring(names(plots.ext)[i], 1,1),".jpg")
+  xlim.i <- plots.ext[[i]][1:2]
+  ylim.i <- plots.ext[[i]][3:4]
+  fatores <- imag.size[[i]]
+  
+  jpeg(filename = nome.fig, width = 3000*fatores[1], height = 3000*fatores[2], 
+       units = "px", pointsize = 12,
+       res = 600, family = "sans", type="cairo", bg="white")
+  
+  #Defining the breaks for colors 
+    if (i == 1) {
+      par(mfrow=c(1,1), las=1, mar=c(0,0,0,0), mgp=c(1.7,0.4,0), tcl=-.3)
+      plot(af.proj, border="white", xlim = xlim.i, ylim = ylim.i)
+      plot(brasil.proj1, add=TRUE, 
+           #lty="1414", 
+           border= cor.br)
+      plot(af.proj, add=TRUE, border= cor.af)
+      plot(am.lat.proj1, add=TRUE, border = cor.am, lwd = 2)
+      plot(old.xy, add = TRUE,
+           pch = 21, bg = cores.old, cex = 1)
+      
+      plot(plots.ext[[2]], add = TRUE)  
+      plot(plots.ext[[3]], add = TRUE)  
+      plot(plots.ext[[4]], add = TRUE)  
+      dif.x <- 50000
+      dif.y <- 50000
+      text(plots.ext[[2]][2] - dif.x, 
+           plots.ext[[2]][3] + dif.y, expression(bold(B)), cex = 1.2)
+      text(plots.ext[[3]][2] - dif.x, 
+           plots.ext[[3]][3] + dif.y, expression(bold(C)), cex = 1.2)
+      text(plots.ext[[4]][2] - dif.x, 
+           plots.ext[[4]][3] + dif.y, expression(bold(D)), cex = 1.2)
+      # text(6200000, 9030000, expression(bold(B)), cex = 1.2)
+      # text(5471266, 7222421, expression(bold(C)), cex = 1.2)
+      # text(3777789, 6806204, expression(bold(D)), cex = 1.2)
+      
+      legend("topleft", names(plots.ext)[i], cex=1.5, bty="n",inset=c(0.0,0.05))
+    }
+  
+    if (i != 1) {
+      par(mfrow=c(1,1), las=0, mar=c(3,3,1,2), mgp=c(1.7,0.4,0), tcl=-.3)
+      af.proj.crop <- raster::crop(af.proj, plots.ext[[i]])
+      plot(af.proj.crop, border="white", xlim = xlim.i, ylim = ylim.i,  
+           axes = TRUE)
+      # plot(af.proj, border="white", xlim = xlim.i, ylim = ylim.i, axes = TRUE)
+      plot(brasil.proj1, add=TRUE, 
+           #lty="1414", 
+           border= cor.br)
+      plot(af.proj, add=TRUE, border= cor.af, lwd = 2)
+      # plot(am.lat.proj1, add=TRUE, border = cor.am, lwd = 2)
+      plot(cidades.proj, add=TRUE, pch = 15, cex = 1.3, col = "black")
+      plot(old.xy, add = TRUE,
+           pch = 21, bg = cores.old, cex = 1.5)
+      text(sp::coordinates(cidades.proj),cidades.proj@data$name, 
+           pos = cidades.proj@data$pos)
+      legend("bottomright", c("CR_PE","CR","EN"),
+             pch=21, 
+             pt.bg = adjustcolor(c("purple", "red", "darkorange"), alpha.f = 0.8), 
+             bty= "n", cex=1.3)
+      legend("topleft", names(plots.ext)[i], cex=1.5, bty="n",inset=c(-0.02,0.0))
+    }
+  dev.off()
+}
 
 
 
+
+# -------------------------------------------------------------------------
+####################################
+#### OLD FIGURE 5, NOW FIGURE 4 ####
+####################################
+#The Red List Index for other tropical forests
+
+#Getting the world map
+# world0 <- rnaturalearth::ne_download(scale = 110, type = 'map_units', category = 'cultural')
+world0 <- rnaturalearth::ne_download(scale = 110, type = 'land', category = 'physical')
+world0 <- rgeos::gBuffer(world0, byid=TRUE, width=0) #correcting possible overlapping polygons
+world0 <- cleangeo::clgeo_Clean(world0) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
+ext.wo <- extent(world0)
+ext.wo[1] <- -130
+ext.wo[3] <- -57
+ext.wo[4] <- 33
+wo1 <- raster::crop(world0, ext.wo)
+plot(wo1)
+# Projecting the world map
+crs.robin <- sp::CRS("+proj=robin +datum=WGS84 +no_defs")
+world.proj <- sp::spTransform(wo1, crs.robin) #Robinson
+
+#Getting the hostposts and other tropical regions
+hot <- readRDS("data/hotspots_limits.rds")
+hot.proj <- sp::spTransform(hot, crs.robin) #Robinson
+hot.proj.outer <- hot.proj[hot.proj@data$Type %in% "outer limit",]
+hot.proj <- hot.proj[hot.proj@data$Type %in% "hotspot area",]
+
+#How much of the earth land surface the hostspots represent?
+100*rgeos::gArea(hot.proj)/rgeos::gArea(world.proj)
+
+
+#Defining the legend colors
+brks1 <- seq(0.3, 1, 0.025)
+# cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen")
+# cores1 <- c("darkred", "red", "gold", "green")
+cores1 <- c("darkred", "red", "darkorange", "gold", "yellow", "yellowgreen", "chartreuse3")
+colfunc1 <- colorRampPalette(cores1)
+cres1 <- colfunc1(length(brks1)-1)
+
+#Defining the region colors
+info <- readRDS("data/hotspots_results.rds")
+info <- info[match(hot.proj$NAME, info$hotspot.region), ]
+info$RLI.col = as.character(cut(info$median_rli, 
+                                       # breaks = quantile(grid.result$RLI, na.rm=TRUE, prob = seq(0,1,0.05)), 
+                                       breaks = brks1, 
+                                       labels = colfunc1(length(brks1)-1), include.lowest = TRUE))
+
+#Legend regions
+coords <- sp::coordinates(rgeos::gCentroid(hot.proj, byid = TRUE))
+coords <- cbind(coords, nome = hot.proj$NAME)
+table.order <- c("Atlantic Forest", "Caribbean Islands", 
+  "Coastal Forests of Eastern Africa", "Eastern Afromontane", 
+  "Guinean Forests of West Africa", "Indo-Burma", "Madagascar and the Indian Ocean Islands", 
+  "Mesoamerica",  "New Caledonia", "Philippines", "Sundaland", "Tropical Andes", 
+  "Tumbes-Choco-Magdalena", "Wallacea", "Western Ghats and Sri Lanka", "Amazon", 
+  "Central Africa", "New Guinea")
+coords <- coords[match(table.order, coords[,3]), ]
+coords <- cbind(coords, code = 1:dim(coords)[1])
+# Adapting the legend coordinates for better visualization
+x.coords <- y.coords <- rep(0, dim(coords)[1])
+names(x.coords) <- names(y.coords) <- coords[,3]
+x.coords[c(1, 2, 3, 4, 7, 8, 10, 11, 12, 13, 14, 15)] <- 
+  c(900000,1600000,400000,500000,500000,-200000,850000,-900000,-1000000,-500000,
+    -500000,-600000)
+coords[,1] <- as.double(coords[,1]) + x.coords
+y.coords[c(3, 4, 5, 8, 9, 11, 13, 14, 18)] <- 
+  c(700000,-100000,-500000,-500000,-500000,-800000,-200000,-1000000,600000)
+coords[,2] <- as.double(coords[,2]) + y.coords
+
+#Plotting the figure itself
+jpeg(filename = "figures/Figure4.jpg", width = 5400*2, height = 5400*1.1, units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+par(mfrow=c(1,1), las=1,mar=c(0.5,0,0.5,0.5),mgp=c(1.7,0.4,0),tcl=-.3)
+## Tropical forest area
+sp::plot(world.proj, border = "black", col = "lightgrey", # main = names(cores)[i],
+         xlim=c(-10000000,16000000), ylim = c(-5700000, 1300000))
+sp::plot(hot.proj, border = "black", col = info$RLI.col, add = TRUE)
+sp::plot(hot.proj.outer, border = "black", add = TRUE)
+
+# legend("topleft", expression(bold("A)")), cex=1.5, bty="n", x.intersp =  -1, y.intersp = 1.5)
+at.leg <- seq(0.3,0.975,0.1)
+fields::image.plot( legend.only=TRUE, col = cres1, add=TRUE,legend.shrink = 1, legend.width = 2, legend.mar = 1.2, 
+                    legend.line = 0, legend.cex = 0.5, 
+                    zlim= c(0.3,0.975),
+                    smallplot = c(0.1,0.875,0.235,0.25),horizontal = TRUE,	 
+                    axis.args=list(at = at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=0.9, 
+                                   labels = at.leg))
+legend(11000000,-5700000,expression(bold("Red List Index")),
+       cex=1.2, bty="n", y.intersp=-0.01)
+text(coords[,1:2], coords[,4], cex = 1.1, col=1, font = 2)
+dev.off()
+
+
+# -------------------------------------------------------------------------
+########################################################
+#### DISTRIBUTIONS AND INTERPOLATION FOR CR SPECIES ####
+########################################################
+#### FIGURE SS  ####
+## PANELS C AND D TOGETHER WITH THE KRIGING FIGURES ABOVE
+
+#### OBSERVED OCCURRENCESS ####
+## Defining the color scales
+brks1 <- seq(0, 0.55, 0.01)
+cores1 <- c("darkred","red", "gold", "green")
+colfunc1 <- colorRampPalette(cores1)
+cres1 <- rev(colfunc1(length(brks1)-1))
+grid.result$Threat.col_CR = as.character(cut(grid.result$Threat.pa_CR, 
+                                          breaks = brks1,  
+                                          labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
+grid.result$Threat.end.col_CR = as.character(cut(grid.result$Threat.end.pa_CR, 
+                                              breaks = brks1,  
+                                              labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
+
+# Grids with no data -> "White" ()
+grid.result$Threat.col_CR[is.na(grid.result$select)] <- "#FFFFFF"
+grid.result$Threat.end.col_CR[is.na(grid.result$select)] <- "#FFFFFF"
+grid.result$Threat.end.col_CR[is.na(grid.result$Threat.end.col_CR)] <- "#FFFFFF"
+
+# Grids with insuficient overall data -> "Light Grey" ("#D3D3D3") or "Grey" ("#808080") or "Dark Grey" ("#A9A9A9")
+grid.result$Threat.col_CR[!is.na(grid.result$select) & 
+                         !grid.result$select] <- "#D3D3D3"
+grid.result$Threat.end.col_CR[!is.na(grid.result$select) & 
+                             !grid.result$select] <- "#D3D3D3" 
+
+# Grids with suficient data but insuficient CR daya -> "Light Grey" ("#D3D3D3")
+grid.result$Threat.col_CR[!is.na(grid.result$select) & 
+                            grid.result$select & 
+                              grid.result$SampCover_CR < 0.25] <- "#D3D3D3"
+grid.result$Threat.end.col_CR[!is.na(grid.result$select) & 
+                                !grid.result$select& 
+                                  grid.result$SampCover.end_CR < 0.15] <- "#D3D3D3" 
+
+# Setting the colors of the limits
+cor.af = "black" # "darkgreen" # 
+cor.br = grey(0.25)
+cor.am = "black" 
+
+#Plot extent plus cropping
+bb = bbox(grid1)
+bb[1] = bb[1] - 20000
+bb[3] = bb[3] - 20000
+bb[4] = bb[4] + 20000
+am.lat.proj1 = raster::crop(am.lat.proj, bb)
+brasil.proj1 = raster::crop(brasil.proj, bb)
+
+## First panels ##
+at.leg <- seq(0,100,20)
+at.leg1 <- seq(0,60,10)
+vals.leg <- paste0(at.leg,"%")
+
+#PANEL A
+jpeg(filename = "figures/Figure_SSA.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+rm.cells <- !grid.result$Threat.col_CR %in% c("#FFFFFF", "#D3D3D3")
+plot(grid1[rm.cells, ],
+     col = adjustcolor(grid.result$Threat.col_CR[rm.cells],
+                       alpha.f = 0.6,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+     # transform = diag(c(1,1,1,0.5))),
+     border = "black",
+     add=TRUE)
+# plot(af.proj, add=TRUE, border= cor.af)
+legend("topleft", "A - Observed, all populations", cex=1.5, bty="n",inset=c(0.02,0.03))
+
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(0,55),
+                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg1/100))
+legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+       cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()
+
+#PANEL B
+jpeg(filename = "figures/Figure_SSB.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+rm.cells1 <- !grid.result$Threat.end.col_CR %in% c("#FFFFFF", "#D3D3D3")
+plot(grid1[rm.cells1, ],
+     col = adjustcolor(grid.result$Threat.end.col_CR[rm.cells1],
+                       alpha.f = 0.6,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+     # transform = diag(c(1,1,1,0.5))),
+     border = "black",
+     add=TRUE)
+legend("topleft", "B - Observed, endemics", cex=1.5, bty="n",inset=c(0.02,0.03))
+
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(0,55),
+                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg1/100))
+legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+       cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()

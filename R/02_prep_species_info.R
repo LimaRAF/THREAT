@@ -951,6 +951,29 @@ write.csv(hab4, "data/sis_connect/plantspecific_threat.csv",
 ## Sample from SIS CONNECT v6.1
 head(read.csv("SIS_sample_6_1/countries.csv"))
 
+## Getting info from reflora and formatting
+taxon2 <- readRDS("data/threat_fbo_tax_info.rds")
+taxon2 <- taxon2[,c("occurrence", "species.correct2")]
+taxon2 <- taxon2[!is.na(taxon2$occurrence),]
+br.states <- strsplit(gsub("BR-", "", taxon2$occurrence), "\\|")
+br.states.trans <- data.table::transpose(br.states, fill = NA)
+br.states.table <- br.states.trans
+for(i in 1:length(br.states.trans)) {
+  df <- cbind(species.correct2 = taxon2$species.correct2,
+              country = "brazil",
+              stateProvince = br.states.trans[[i]])
+  br.states.table[[i]] <- df
+}
+taxon2.loc <- do.call(rbind, br.states.table) 
+taxon2.loc <- as.data.frame(taxon2.loc[!is.na(taxon2.loc[,3]), ])
+taxon2.loc <- plantR::fixLoc(taxon2.loc, loc.levels = c("country", "stateProvince"))
+taxon2.loc$municipality.new <- taxon2.loc$locality.new <- NA_character_
+taxon2.loc$loc.correct <- plantR::strLoc(taxon2.loc)$loc.string
+states.fbo <- data.table::data.table(
+  taxon2.loc[,c("loc.correct", "species.correct2")])
+states.fbo[ , N := 1L]
+data.table::setkeyv(states.fbo, "species.correct2")
+
 ## Loading species herbarium data
 occs <- readRDS("data/threat_species_by_country.rds")
 
@@ -965,6 +988,14 @@ countries$loc.correct <- gsub("cocos", "cocos islands",
                               countries$loc.correct, perl = TRUE)
 countries$loc.correct <- plantR::prepCountry(countries$loc.correct)
 countries$loc.correct[is.na(countries$loc.correct)] <- "no_loc"
+
+#merging occurrence and FBO information on species states of occurrence in BR
+countries <- rbind(countries, states.fbo)
+tmp <- paste(countries$loc.correct, countries$species.correct2, sep = "_")
+countries <- countries[!duplicated(tmp),]
+data.table::setkeyv(countries, "species.correct2")
+
+#getting ADM names for the localities
 tmp <- plantR::getAdmin(as.data.frame(countries))[,1:3]
 paises.ADM1 <- c("Argentina", "Brazil", "Chile", "Mexico")
 tmp$NAME_1[!tmp$NAME_0 %in% paises.ADM1] <- NA

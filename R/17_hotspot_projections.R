@@ -9,6 +9,97 @@ rm(list = ls())
 # 20-30% das plantas são árvores: florestas  neotropicais  (Gentry  &  Dodson
 # 1987b,  Hammel  1990,  Foster  1990,  Foster  &  Hubbell  1990)
 
+## function to obtain threat from habitat loss from empirical spline fits to AF derived relationships
+get_threat <- function(habitat_loss = NULL, spp_richness = NULL,
+                       endemism_ratio = NULL, all = NULL, 
+                       VU = NULL, EN = NULL, CR = NULL) {
+  # getting the proportion of loss
+  if (any(habitat_loss[!is.na(habitat_loss)] > 1))
+    habitat_loss <- habitat_loss/100
+
+  perdas <- habitat_loss[!is.na(habitat_loss)]
+  
+  # getting the overall threat proportion
+  low <- predict(all[[1]], x=perdas)$y
+  med <- predict(all[[2]], x=perdas)$y
+  high <- predict(all[[3]], x=perdas)$y
+  threat <- cbind(low, med, high)
+  
+  low <- predict(VU[[1]], x=perdas)$y
+  med <- predict(VU[[2]], x=perdas)$y
+  high <- predict(VU[[3]], x=perdas)$y
+  threat.VU <- cbind(low, med, high)
+  
+  low <- predict(EN[[1]], x=perdas)$y
+  med <- predict(EN[[2]], x=perdas)$y
+  high <- predict(EN[[3]], x=perdas)$y
+  threat.EN <- cbind(low, med, high)
+  
+  low <- predict(CR[[1]], x=perdas)$y
+  med <- predict(CR[[2]], x=perdas)$y
+  high <- predict(CR[[3]], x=perdas)$y
+  threat.CR <- cbind(low, med, high)
+  
+  #Calculating the RLI
+  dados <- cbind(VU = threat.VU[,1], EN = threat.EN[,1], CR = threat.CR[,1])
+  dados <- round(100 * cbind(dados, LC = (1 - apply(dados, 1, sum))), 0)
+  dados[apply(dados,1,sum) != 100, 4] <- 
+    dados[apply(dados,1,sum) != 100, 4] + 
+      (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  high.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  dados <- cbind(VU = threat.VU[,2], EN = threat.EN[,2], CR = threat.CR[,2])
+  dados <- round(100 * cbind(dados, LC = 1 - apply(dados, 1, sum)), 0)
+  dados[apply(dados,1,sum) != 100, 4] <- 
+    dados[apply(dados,1,sum) != 100, 4] + 
+    (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  med.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  dados <- cbind(VU = threat.VU[,3], EN = threat.EN[,3], CR = threat.CR[,3])
+  dados <- round(100 * cbind(dados, LC = 1 - apply(dados, 1, sum)), 0)
+  dados[apply(dados,1,sum) != 100, 4] <- 
+    dados[apply(dados,1,sum) != 100, 4] + 
+    (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  low.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  
+  # combining the results
+  threat <- cbind(threat, threat.VU, threat.EN, threat.CR)
+  colnames(threat) <- paste0(colnames(threat), 
+                             rep(c("_all","_VU","_EN","_CR"), each = 3))
+  RLI <- cbind(low_rli = low.RLI, median_rli = med.RLI, high_rli = high.RLI)
+  
+  # getting the number of threatened species
+  if (!is.null(spp_richness)) {
+    threat_spp <- round(spp_richness * threat, 1)
+    colnames(threat_spp) <- paste0(colnames(threat_spp),"_spp")
+
+      # getting the number of threatened endemic species
+      if (!is.null(endemism_ratio)) {
+        if (any(endemism_ratio[!is.na(endemism_ratio)] > 1))
+          endemism_ratio <- endemism_ratio/100
+
+        threat_end_spp <- threat_spp * endemism_ratio
+        colnames(threat_end_spp) <- gsub("_spp", "end_spp", colnames(threat_end_spp))
+        threat <- cbind(round(100*threat, 1), threat_spp, threat_end_spp)
+
+      } else {
+        threat <- cbind(round(100*threat, 1), threat_spp)
+      }
+  } else {
+    threat <- round(100*threat, 1)
+  }
+  
+  threat <- cbind(threat, RLI)
+  return(threat)
+}
+
 ### Reading the hotspot information ###
 info <- read.csv("data/hotspots_info.csv")
 lu_hotspots <- read.csv("data/esa_2018_lc_per_hotspot.csv")
@@ -20,93 +111,30 @@ info <- dplyr::left_join(info, lu_hotspots[,c("hotspot.region","area_km2",
                                               "ShrubLand","ShrubLand_Caatinga.",
                                               "ShrubLand_Cerrado","Shrubland_Restinga")])
 
-## Theorectical curves 
-y <- c(0,0.001, 0.999, 1)
-x <- c(0,0.001, 0.999, 1)
-lm(y ~ x)
-logis <- try(stats::nls(y ~ exp(a + b*x)/(1 + exp(a + b*x)),
-                        start = list(a=1,b=0.1)), TRUE)
-# mm <- try(stats::nls(y ~ x/(b + x), 
-#                      start = list(b=0.08)), TRUE)
-# pow <- try(stats::nls(y[-1] ~ a*x[-1]^b, 
-#                      start = list(b=0.01)), TRUE)
-
-par(mfrow = c(1,1))
-plot(c(0,1) ~  I(c(0,1)), xlim=c(0,1), ylim = c(0,1), col = "white",
-     xlab = "Habitat loss", ylab = "Threatened species")
-abline(v = 0.3, lty = 3)
-curve(0 + 1*x, from = 0, to = 1, add = TRUE, lwd = 2)
-# curve(exp(coef(logis)[1] + coef(logis)[2]*x)/
-#         (1 + exp(coef(logis)[1] + coef(logis)[2]*x)), from = 0, to = 1,
-#       lwd=2, col = 2, add= TRUE, lty = 2)
-curve(exp(-5.5 + 11*x)/ (1 + exp(-5.5 + 11*x)), from = 0, to = 1,
-      lwd=2, col = 2, add= TRUE)
-# a = -1
-# curve(a*x^2 +(1 − a/2)*x, from = 0, to = 1,
-#       lwd=2, col = 6, add= TRUE)
-curve(exp(-(log(1/x))^0.6), from = 0, to = 1,
-      lwd=2, col = 6, add= TRUE)
-curve(x^0.25, add= TRUE, lwd = 1, col=4)
-curve(x^0.5, add= TRUE, lwd = 2, col=4)
-# curve(x/(coef(mm)[1] + x), from = 0, to = 1,
-#       lwd=2, col = 3, add= TRUE)
-curve(x^2, add= TRUE, lwd = 2, col=4, lty = 2)
-selected <- info$hotspot.region == "Atlantic Forest"
-threat.all <- I(info$observed_percentage_threat_all_criteria[selected]/100)
-threat.end <- I(info$observed_percentage_threat_endemic_all_criteria[selected]/100)
-loss <- I((100 - info$ForestCover[selected])/100)
-points(threat.all ~ loss, pch = 21)
-points(threat.end ~ loss, pch = 19)
-points(0.114, 0.25, pch = 17) # Amazon from ter Steege et al. 2015
-points(0.114, 0.09, pch = 17) # Amazon from ter Steege et al. 2015, criteria A
-
-## function to obtain threat from habitat loss
-get_threat <- function(habitat_loss = NULL, spp_richness = NULL, 
-                       endemism_ratio = NULL, pow1 = 0.5, pow2 = 2, 
-                       logis.a = -5.5, logis.b = 11) {
-  # getting the proportion of loss
-  if (any(habitat_loss[!is.na(habitat_loss)] > 1))
-    habitat_loss <- habitat_loss/100
-    
-  # getting the threat proportion
-  lin_threat <- 0 + habitat_loss*1
-  pow1_threat <- habitat_loss^pow1
-  pow2_threat <- habitat_loss^pow2
-  logis_threat <- exp(logis.a + logis.b*habitat_loss)/
-                    (1 + exp(logis.a + logis.b*habitat_loss))
-  
-  threat <- cbind(lin_threat, pow1_threat, pow2_threat, logis_threat)
-  
-  # getting the number of threatened species
-  if (!is.null(spp_richness)) {
-    threat_spp <- round(spp_richness * threat, 1)
-    colnames(threat_spp) <- paste0(colnames(threat_spp),"_spp") 
-      
-      # getting the number of threatened endemic species
-      if (!is.null(endemism_ratio)) {
-        if (any(endemism_ratio[!is.na(endemism_ratio)] > 1))
-          endemism_ratio <- endemism_ratio/100
-        
-        threat_end_spp <- threat_spp * endemism_ratio
-        colnames(threat_end_spp) <- gsub("_spp", "end_spp", colnames(threat_end_spp)) 
-        threat <- cbind(round(100*threat, 1), threat_spp, threat_end_spp)
-        
-      } else {
-        threat <- cbind(round(100*threat, 1), threat_spp)    
-      }
-  } else {
-    threat <- round(100*threat, 1)
-  }
-  return(threat)
-}
-
-
 ## getting the necessary vector to extrapolate threat
+#habitat loss
 info$habitat_loss <- I(100 - info$ForestCover)
-
+add_open_forest <- info$hotspot.region %in% c("Coastal Forests of Eastern Africa", 
+                                               "Eastern Afromontane",
+                                               "Guinean Forests of West Africa", 
+                                               "Madagascar and the Indian Ocean Islands", 
+                                               "Central Africa")
+info$habitat_loss[add_open_forest] <- I(100 - (info$ForestCover[add_open_forest] + 
+                                          info$OpenForestCover[add_open_forest]/2))
+add_mosaic <- info$hotspot.region %in% c("Western Ghats and Sri Lanka")
+info$habitat_loss[add_mosaic] <- I(100 - (info$ForestCover[add_mosaic] + 
+                                          info$Mosaic_ForestCover_GrassLand[add_mosaic]/2))
+# correcting areas which estimates were much lower than previous ones (Schmitt et al. 2009 apud Sloan et al. 2014)
+add_correction <- info$hotspot.region %in% c("Caribbean Islands", "New Caledonia")
+info$habitat_loss[add_correction] <- I(100 - (info$ForestCover[add_correction] -  
+                                            0.25*info$ForestCover[add_correction]))
+#endemism
 end_ratio <- info$number_of_endemic_plants_perc_Habel_etal_2019
+info$number_of_endemic_plants_Habel_etal_2019[grepl("Central Africa", info$hotspot.region)] <- 2600
 end_richness <- info$number_of_endemic_plants_Habel_etal_2019
+info$plant_species_Myers_etal_2000[grepl("Central Africa", info$hotspot.region)] <- 9500
 info$tree_richness <- as.double(sapply(strsplit(info$tree_species," "), function(x) x[1]))
+info$tree_richness[grepl("Central Africa", info$hotspot.region)] <- 2000
 
 trop.hotspots <- c("Atlantic Forest", "Caribbean Islands", 
                    "Coastal Forests of Eastern Africa", #"East Melanesian Islands",
@@ -114,58 +142,131 @@ trop.hotspots <- c("Atlantic Forest", "Caribbean Islands",
                    "Indo-Burma", "Madagascar and the Indian Ocean Islands",
                    "Mesoamerica", "New Caledonia", "Philippines", 
                    "Sundaland", "Tropical Andes",
-                   "Tumbes-Choco-Magdalena", "Wallacea", "Western Ghats and Sri Lanka")
+                   "Tumbes-Choco-Magdalena", "Wallacea", 
+                   "Western Ghats and Sri Lanka",
+                   "Amazon", "Central Africa", "New Guinea")
 tropical_hotspots <- info$hotspot.region %in% trop.hotspots
-summary(info$tree_richness[tropical_hotspots]/
+info$obs_prop_trees <- info$tree_richness/
                       as.double(sapply(strsplit(info$plant_species_Myers_etal_2000," "), 
-                                       function(x) x[1]))[tropical_hotspots],
-                  na.rm = TRUE) # median 0.290, mean 0.313 [0.25-0.43]
-info$tree_end_richness <- end_richness*0.3
+                                       function(x) x[1]))
+summary(info$obs_prop_trees[tropical_hotspots], 
+        na.rm = TRUE) # median 0.290, mean 0.313 [0.25-0.43] for tropical forests
+info$tree_end_richness <- end_richness * 0.3
 richness <- as.double(sapply(strsplit(info$plant_species_Myers_etal_2000," "), function(x) x[1]))
-info$tree_richness <- richness*0.3
+info$tree_richness <- richness * 0.3
 
+#Generating other important columns 
+info$obs_threat_or_ext_endemics_trees <-
+  as.double(info$observed_threatened_or_extinct_endemics_Brooks_etal_2002) * 0.3
+info$est_threat_or_ext_endemics_trees <-
+  info$estimated_threatened_or_extinct_endemic_plants_Brooks_etal_2002 * 0.3
+
+## Filtering to the target regions and info
+cols <- c("hotspot.region", "continent", "area_km2", #"domain",
+          "plant_species_Myers_etal_2000", "Endemic_plants_perc_Myers_etal_2000",
+          "number_of_endemic_plants_Habel_etal_2019",
+          "number_of_endemic_plants_perc_Habel_etal_2019",
+          "ForestCover", "OpenForestCover",
+          "habitat_loss", "obs_prop_trees", "tree_richness", "tree_end_richness",
+          "obs_threat_or_ext_endemics_trees", "est_threat_or_ext_endemics_trees") 
+info_TF <- info[tropical_hotspots, cols]
 
 ## extrapolating threat
-head(get_threat(info$habitat_loss, info$tree_richness, end_ratio), 3)
-head(get_threat(info$habitat_loss, info$tree_end_richness), 3)
-info$obs_threat_or_ext_endemics_trees <-
-  as.double(info$observed_threatened_or_extinct_endemics_Brooks_etal_2002)*0.3
-info$est_threat_or_ext_endemics_trees <-
-  info$estimated_threatened_or_extinct_endemic_plants_Brooks_etal_2002*0.3
-threatened_per_hotspot <- cbind.data.frame(info, get_threat(info$habitat_loss, info$tree_end_richness))
-cols <- c("hotspot.region", "continent", "area_km2", #"domain",
-          "plant_species_Myers_etal_2000", #"Endemic_plants_perc_Myers_etal_2000",
-          "number_of_endemic_plants_Habel_etal_2019",
-          "habitat_loss","tree_end_richness",
-          "obs_threat_or_ext_endemics_trees", "est_threat_or_ext_endemics_trees", 
-          "lin_threat_spp", "pow1_threat_spp", "pow2_threat_spp", "logis_threat_spp" )
-threatened_per_hotspot_tropic <- threatened_per_hotspot[tropical_hotspots, cols]
-head(threatened_per_hotspot_tropic, 3)
+#reading the spline fits to the empirical AF threat-habitat loss relationship
+splines <- readRDS("data/spline_threat.per.loss.clumped.rds")
+splines.VU <- readRDS("data/spline_threat.per.loss.clumped_VU.rds")
+splines.EN <- readRDS("data/spline_threat.per.loss.clumped_EN.rds")
+splines.CR <- readRDS("data/spline_threat.per.loss.clumped_CR.rds")
+threatened_per_hotspot <- 
+  cbind.data.frame(info_TF, 
+                   get_threat(info_TF$habitat_loss, info_TF$tree_end_richness,
+                              all = splines, VU = splines.VU, 
+                              EN = splines.EN, CR = splines.CR))
+head(threatened_per_hotspot, 3)
 
-apply(threatened_per_hotspot_tropic[,c("lin_threat_spp", "pow1_threat_spp", 
-                                       "pow2_threat_spp", "logis_threat_spp")], 2, sum, na.rm = TRUE)
+#### Sumary stats ####
+sum(threatened_per_hotspot$area_km2) / 1000000 # area cover in million km2
+round(apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
+                                       "high_all_spp")], 2, sum, na.rm = TRUE), 0)
 
-cols1 <- c("hotspot.region","area_km2","ForestCover",
+apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
+                                "high_all_spp")], 2, sum, na.rm = TRUE)/581.73 # 34.9-42.3% total number of trees in the world
+apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
+                                "high_all_spp")], 2, sum, na.rm = TRUE)/
+      sum(threatened_per_hotspot$tree_end_richness) # 56.5-68.5% of the total number of trees in these forests
+sum(threatened_per_hotspot$tree_end_richness)/581.73 #61.7% of total number of trees in the world
+
+sum(threatened_per_hotspot$med_all_spp)/581.73 #38.9% of endemic trheat in respet to the total number of trees in the world
+
+
+rem_habitat_area <- ((100 - threatened_per_hotspot$habitat_loss)/100) * threatened_per_hotspot$area_km2
+sum(rem_habitat_area)/sum(threatened_per_hotspot$area_km2) # overall 57.9% of lost in these regions  
+
+100*round(sum(threatened_per_hotspot$med_all_spp), 0)/
+  sum(threatened_per_hotspot$tree_end_richness) # 62.9% of the endemic tree species are 
+
+# Simples regra de três: quantas árvores no total devem estar ameaçadas no mundo)
+other.spp <- 58173 - sum(threatened_per_hotspot$tree_end_richness)
+sum(threatened_per_hotspot$med_all_spp)/581.73 + 
+  (0.25*other.spp)/581.73 # considering a 25% theat level for non-endemic tropical trees
+
+
+saveRDS(threatened_per_hotspot, "data/hotspots_results.rds")
+
+#### MAKING THE TABLES FOR THE TEXT ####
+# Table 2
+cols1 <- c("hotspot.region","habitat_loss",
            "number_of_endemic_plants_Habel_etal_2019","tree_end_richness",
            "est_threat_or_ext_endemics_trees", 
-           "lin_threat_spp","pow1_threat_spp","pow2_threat_spp","logis_threat_spp")
-result3 <- threatened_per_hotspot[tropical_hotspots, cols1]
-result3$est_range <- apply(apply(threatened_per_hotspot_tropic[,c("lin_threat_spp", "pow1_threat_spp", 
-                                       "pow2_threat_spp", "logis_threat_spp")], 1, range, na.rm = TRUE),
-      2, function(x) paste(ceiling(x), collapse =  "-"))
-result4 <- result3[,!names(result3) %in% c("lin_threat_spp", "pow1_threat_spp", 
-                       "pow2_threat_spp", "logis_threat_spp")]
-result4$area_km2 <- ceiling(result4$area_km2)
-result4$ForestCover <- round(result4$ForestCover, 1)
+           "low_all_spp", "med_all_spp", "high_all_spp")
+result3 <- threatened_per_hotspot[, cols1]
+result3$est_range <- apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", "high_all_spp")], 
+                           1, function(x) paste(ceiling(x), collapse =  "-"))
+result4 <- result3[,!names(result3) %in% c("low_all_spp", "med_all_spp", "high_all_spp")]
+# result4$area_km2 <- ceiling(result4$area_km2)
+# result4$ForestCover <- round(result4$ForestCover, 1)
 result4$tree_end_richness <- ceiling(result4$tree_end_richness)
 result4$est_threat_or_ext_endemics_trees <- 
   round(result4$est_threat_or_ext_endemics_trees, 0)
-result4$HabitatLoss <- 100 - result4$ForestCover
+# result4$HabitatLoss <- 100 - result4$ForestCover
 
-names(result4) <- c("Biodiversity Hotspot", "Total extent (km2)", 
-                    "Forest Cover (%)a", "Endemic plantsb",
+names(result4) <- c("Biodiversity Hotspot", #"Total extent (km2)", 
+                    "Habitat Loss (%)a", "Endemic plantsb",
                     "Endemic treesc", "Estimated threate", "Estimated threatd")
-result4 <- result4[, c("Biodiversity Hotspot", "Total extent (km2)", 
-                       "Forest Cover (%)a", "Endemic plantsb",
+result4 <- result4[, c("Biodiversity Hotspot", #"Total extent (km2)", 
+                       "Habitat Loss (%)a", "Endemic plantsb",
                        "Endemic treesc", "Estimated threatd", "Estimated threate")] 
 write.csv(result4, "data//Table2.csv")
+
+## Table SW
+cols1 <- c("hotspot.region","continent","area_km2",
+           # "ForestCover", "OpenForestCover",
+           # "plant_species_Myers_etal_2000",
+           # "number_of_endemic_plants_perc_Habel_etal_2019",
+           "tree_end_richness",
+           "low_all", "med_all", "high_all", 
+           "low_VU", "med_VU", "high_VU", 
+           "low_EN", "med_EN", "high_EN", 
+           "low_CR", "med_CR", "high_CR",
+           "low_rli", "median_rli", "high_rli")
+result3.1 <- threatened_per_hotspot[, cols1]
+result3.1$all <- apply(threatened_per_hotspot[,c("low_all", "med_all", "high_all")], 
+                           1, function(x) paste0(x[2]," [",paste(x[c(1,3)], collapse =  "-"),"]"))
+result3.1$VU <- apply(threatened_per_hotspot[,c("low_VU", "med_VU", "high_VU")], 
+                       1, function(x) paste0(x[2]," [",paste(x[c(1,3)], collapse =  "-"),"]"))
+result3.1$EN <- apply(threatened_per_hotspot[,c("low_EN", "med_EN", "high_EN")], 
+                       1, function(x) paste0(x[2]," [",paste(x[c(1,3)], collapse =  "-"),"]"))
+result3.1$CR <- apply(threatened_per_hotspot[,c("low_CR", "med_CR", "high_CR")], 
+                       1, function(x) paste0(x[2]," [",paste(x[c(1,3)], collapse =  "-"),"]"))
+result3.1$rli <- apply(threatened_per_hotspot[,c("low_rli", "median_rli", "high_rli")], 
+                       1, function(x) paste0(x[2]," [",paste(round(x[c(1,3)],3), collapse =  "-"),"]"))
+result4.1 <- result3.1[,!names(result3.1) %in% c("low_all", "med_all", "high_all", 
+                                           "low_VU", "med_VU", "high_VU", 
+                                           "low_EN", "med_EN", "high_EN", 
+                                           "low_CR", "med_CR", "high_CR",
+                                           "low_rli", "median_rli", "high_rli")]
+result4.1$area_km2 <- ceiling(result4.1$area_km2)
+# result4.1$ForestCover <- round(result4.1$ForestCover, 1)
+# result4.1$OpenForestCover <- round(result4.1$OpenForestCover, 1)
+head(result4.1)
+write.csv(result4.1, "data//TableSW.csv")

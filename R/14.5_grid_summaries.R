@@ -520,6 +520,144 @@ grid.result <- grid.result[order(grid.result$order),]
 # grid.result$Median.RLI.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI")
 # grid.result$Median.RLI.end.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI.end")
 
+
+#### SAME CALCULATION BUT ONLY FOR THE SPECIES CATEGORIZED AS CR ####
+cr_spp <- occs1$Category %in% "CR"
+### Number of occurrences, number of species and sampling coverage per site ###
+tmp = iNEXT::DataInfo(as.data.frame.matrix(table(occs1$Name[cr_spp], 
+                                                 occs1$ID[cr_spp]))) # getting metrics
+tmp$SC[tmp$n==1] = 0.0001 # correcting values of SampCover for sites with N<10 and S ~~ N
+tmp$SC[tmp$n==2&tmp$S.obs==2] = 0.0005; tmp$SC[tmp$n==2&tmp$S.obs==1] = 0.001
+tmp$SC[tmp$n==3&tmp$S.obs==3] = 0.001; tmp$SC[tmp$n==3&tmp$S.obs==2] = 0.005; tmp$SC[tmp$n==3&tmp$S.obs==1] = 0.01
+tmp$SC[tmp$n==4&tmp$S.obs==4] = 0.01; tmp$SC[tmp$n==4&tmp$S.obs==3] = 0.025; tmp$SC[tmp$n==4&tmp$S.obs==2] = 0.05; tmp$SC[tmp$n==4&tmp$S.obs==1] = 0.1
+tmp$SC[tmp$n==5&tmp$S.obs==5] = 0.1; tmp$SC[tmp$n==5&tmp$S.obs==4] = 0.125; tmp$SC[tmp$n==5&tmp$S.obs==3] = 0.15; tmp$SC[tmp$n==5&tmp$S.obs==2] = 0.175; tmp$SC[tmp$n==5&tmp$S.obs==1] = 0.2
+plot(tmp$SC ~ log(tmp$n))
+cols.cr <- c("ID","N.total_CR","S.total_CR","SampCover_CR")
+names(tmp)[1:4] <- cols.cr
+grid.result <- merge(grid.result, tmp[,cols.cr], 
+                     by.x= "ID", by.y= "ID", all.x=TRUE, sort = FALSE)
+grid.result <- grid.result[order(grid.result$order),]
+
+### Number of occurrences, number of species and sampling coverage per site ###
+endemics <- occs1$Endemism %in% "endemic" & occs1$Category %in% "CR"
+tmp = iNEXT::DataInfo(as.data.frame.matrix(table(occs1$Name[endemics], occs1$ID[endemics]))) # getting metrics
+tmp$SC[tmp$n==1] = 0.0001 # correcting values of SampCover for sites with N<10 and S ~~ N
+tmp$SC[tmp$n==2&tmp$S.obs==2] = 0.0005; tmp$SC[tmp$n==2&tmp$S.obs==1] = 0.001
+tmp$SC[tmp$n==3&tmp$S.obs==3] = 0.001; tmp$SC[tmp$n==3&tmp$S.obs==2] = 0.005; tmp$SC[tmp$n==3&tmp$S.obs==1] = 0.01
+tmp$SC[tmp$n==4&tmp$S.obs==4] = 0.01; tmp$SC[tmp$n==4&tmp$S.obs==3] = 0.025; tmp$SC[tmp$n==4&tmp$S.obs==2] = 0.05; tmp$SC[tmp$n==4&tmp$S.obs==1] = 0.1
+tmp$SC[tmp$n==5&tmp$S.obs==5] = 0.1; tmp$SC[tmp$n==5&tmp$S.obs==4] = 0.125; tmp$SC[tmp$n==5&tmp$S.obs==3] = 0.15; tmp$SC[tmp$n==5&tmp$S.obs==2] = 0.175; tmp$SC[tmp$n==5&tmp$S.obs==1] = 0.2
+tmp$SC[tmp$n==6&tmp$S.obs==6] = 0.125; tmp$SC[tmp$n==6&tmp$S.obs==5] = 0.15; tmp$SC[tmp$n==6&tmp$S.obs==4] = 0.175; tmp$SC[tmp$n==6&tmp$S.obs==3] = 0.2; tmp$SC[tmp$n==6&tmp$S.obs==2] = 0.225; tmp$SC[tmp$n==6&tmp$S.obs==1] = 0.25
+tmp$SC[tmp$n==7&tmp$S.obs==7] = 0.15; tmp$SC[tmp$n==7&tmp$S.obs==6] = 0.175; tmp$SC[tmp$n==7&tmp$S.obs==5] = 0.2; tmp$SC[tmp$n==7&tmp$S.obs==4] = 0.225; tmp$SC[tmp$n==7&tmp$S.obs==3] = 0.25; tmp$SC[tmp$n==7&tmp$S.obs==2] = 0.275; tmp$SC[tmp$n==7&tmp$S.obs==1] = 0.3
+tmp$SC[tmp$n==8&tmp$S.obs==8] = 0.175; tmp$SC[tmp$n==8&tmp$S.obs==7] = 0.2; tmp$SC[tmp$n==8&tmp$S.obs==6] = 0.225; tmp$SC[tmp$n==8&tmp$S.obs==5] = 0.25; tmp$SC[tmp$n==8&tmp$S.obs==4] = 0.275; tmp$SC[tmp$n==8&tmp$S.obs==3] = 0.3; tmp$SC[tmp$n==8&tmp$S.obs==2] = 0.325; tmp$SC[tmp$n==8&tmp$S.obs==1] = 0.35
+tmp$SC[tmp$n==9&tmp$S.obs==9] = 0.2; tmp$SC[tmp$n==9&tmp$S.obs==8] = 0.225; tmp$SC[tmp$n==9&tmp$S.obs==7] = 0.25; tmp$SC[tmp$n==9&tmp$S.obs==6] = 0.275; tmp$SC[tmp$n==9&tmp$S.obs==5] = 0.3; tmp$SC[tmp$n==9&tmp$S.obs==4] = 0.325; tmp$SC[tmp$n==9&tmp$S.obs==3] = 0.35; tmp$SC[tmp$n==9&tmp$S.obs==2] = 0.375; tmp$SC[tmp$n==9&tmp$S.obs==1] = 0.4
+tmp$SC[tmp$n==10&tmp$S.obs==3] = 0.225
+tmp$SC[tmp$n==12&tmp$S.obs==6] = 0.325; tmp$SC[tmp$n==12&tmp$S.obs==5] = 0.35; tmp$SC[tmp$n==12&tmp$S.obs==4] = 0.375
+tmp$SC[tmp$n==15&tmp$S.obs==4] = 0.425
+tmp$SC[tmp$n==20&tmp$S.obs==6] = 0.475
+tmp$SC[tmp$n==24&tmp$S.obs==8] = 0.500
+tmp$SC[tmp$n==25&tmp$S.obs==8] = 0.515
+# tmp$SC[tmp$n==33&tmp$S.obs==7] = 0.715
+plot(tmp$SC ~ log(tmp$n))
+cols.cr <- c("ID","N.total.end_CR","S.total.end_CR","SampCover.end_CR")
+names(tmp)[1:4] = cols.cr
+grid.result <- merge(grid.result, tmp[,cols.cr], 
+                     by.x= "ID", by.y= "ID", all.x=TRUE, sort = FALSE)
+grid.result <- grid.result[order(grid.result$order),]
+
+
+### Calculating the % of Threat per grid cell
+grid.data <- occs1
+grid.data$Category.new <- grid.data$Category
+grid.data$Category.new[grid.data$Category %in% "NA"] <- "LC"
+resultado <- vector("list", dim(grid.result)[1])
+names(resultado) <- grid.result$ID
+resultado1 <- resultado
+# boot = 4999
+# boot.log = FALSE
+for (i in 1: length(resultado)) {
+  nome.i <- names(resultado)[i]
+  
+  ## ALL POPULATIONS
+  grid.data.i <- grid.data[grid.data$ID %in% nome.i,]  
+  if (dim(grid.data.i)[1] > 0) { # All records
+
+    #Proportion of threatened
+    threat.cats <- c("CR")
+    rm_these <- !grid.data.i$Category %in% "NA"
+    prop.i <- dim(grid.data.i[grid.data.i$Category %in% threat.cats & rm_these,])[1]/
+      dim(grid.data.i[rm_these,])[1]
+    prop.i.new <- dim(grid.data.i[grid.data.i$Category %in% threat.cats,])[1]/
+      dim(grid.data.i)[1]
+    prop.i <- c(prop.i, prop.i.new)
+  } else {
+    prop.i <- c("Threat_CR" = NA, "Threat_new_CR" = NA)
+  }
+  
+  grid.data.i <- grid.data.i[!duplicated(grid.data.i$Name),]  
+  if (dim(grid.data.i)[1] > 0) { # One record per species
+
+    #Proportion of threatened
+    threat.cats <- c("CR")
+    rm_these <- !grid.data.i$Category %in% "NA"
+    prop.i.pa <- dim(grid.data.i[grid.data.i$Category %in% threat.cats & rm_these,])[1]/
+      dim(grid.data.i[rm_these,])[1]
+    prop.i.new <- dim(grid.data.i[grid.data.i$Category %in% threat.cats,])[1]/
+      dim(grid.data.i)[1]
+    prop.i.pa <- c(prop.i.pa, prop.i.new)
+    
+  } else {
+    prop.i.pa <- c("Threat_CR" = NA, "Threat_new_CR" = NA)
+  }
+  
+  ## ONLY ENDEMICS
+  grid.data.ii <- grid.data.i[grid.data.i$Endemism %in% "endemic",]
+  if (dim(grid.data.ii)[1] > 0) { # All records
+
+    #Proportion of threatened
+    threat.cats <- c("CR")
+    rm_these <- !grid.data.ii$Category %in% "NA"
+    prop.i.end <- dim(grid.data.ii[grid.data.ii$Category %in% threat.cats & rm_these,])[1]/
+      dim(grid.data.ii[rm_these,])[1]
+    prop.i.end.new <- dim(grid.data.ii[grid.data.ii$Category %in% threat.cats,])[1]/
+      dim(grid.data.ii)[1]
+    prop.i.end <- c(prop.i.end, prop.i.end.new)
+  } else {
+    prop.i.end <- c("Threat_CR" = NA, "Threat_new_CR" = NA)
+  }
+  
+  grid.data.ii <- grid.data.ii[!duplicated(grid.data.ii$Name),]  
+  if (dim(grid.data.i)[1] > 0) { # One record per species
+
+    #Proportion of threatened
+    threat.cats <- c("CR")
+    prop.i.end.pa <- dim(grid.data.ii[grid.data.ii$Category %in% threat.cats & rm_these,])[1]/
+      dim(grid.data.ii[rm_these,])[1]
+    prop.i.end.new <- dim(grid.data.ii[grid.data.ii$Category %in% threat.cats,])[1]/
+      dim(grid.data.ii)[1]
+    prop.i.end.pa <- c(prop.i.end.pa, prop.i.end.new)
+    
+  } else {
+    prop.i.end.pa <- c("Threat_CR" = NA, "Threat_new_CR" = NA)
+  }
+  
+  res1 <- c(prop.i, prop.i.end, prop.i.pa, prop.i.end.pa)
+  names(res1) <- c("Threat_CR", "Threat_new_CR",
+                   "Threat.end_CR", "Threat_new.end_CR",
+                   "Threat.pa_CR", "Threat_new.pa_CR",
+                   "Threat.end.pa_CR", "Threat_new.end.pa_CR")
+  resultado1[[i]] <- res1
+}
+#Proportion of threatened
+all1 <- do.call(rbind.data.frame, resultado1)
+names(all1) <- names(resultado1[[1]])
+all1$ID <- names(resultado1)
+head(all1)
+apply(all1[,-c(9)], 2, summary)
+#merging
+grid.result <- merge(grid.result, all1, 
+                     by= "ID", all.x = TRUE, sort = FALSE)
+grid.result <- grid.result[order(grid.result$order),]
+
 ## Saving the grid results
 saveRDS(grid.result, "data/grid.results_adaptive_resol.rds")
 

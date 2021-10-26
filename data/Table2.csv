@@ -1,15 +1,19 @@
-"","Biodiversity Hotspot","Total extent (km2)","Forest Cover (%)a","Endemic plantsb","Endemic treesc","Estimated threatd","Estimated threate"
-"1","Atlantic Forest",1228965,25.2,8000,2400,"1344-2254",1144
-"4","Caribbean Islands",228620,39.4,6550,1965,"722-1530",882
-"8","Coastal Forests of Eastern Africa",290004,22.5,1750,525,"316-501",221
-"10","Eastern Afromontane",1005651,20,2356,707,"452-682",NA
-"12","Guinean Forests of West Africa",617578,24.4,1800,540,"309-510",295
-"15","Indo-Burma",2363249,31.4,7000,2100,"990-1861",1112
-"18","Madagascar and the Indian Ocean Islands",598023,22,11600,3480,"2118-3328",1278
-"22","Mesoamerica",1125308,59.1,2941,883,"148-565",497
-"25","New Caledonia",18898,64.2,2432,730,"94-437",209
-"27","Philippines",295885,34.8,6091,1828,"778-1540",1021
-"31","Sundaland",1494382,52.4,15000,4500,"1019-3104",2122
-"32","Tropical Andes",1536118,38.9,15000,4500,"1681-3518",1757
-"34","Wallacea",336993,58,1500,450,"80-292",170
-"35","Western Ghats and Sri Lanka",188791,26.1,3049,915,"499-853",320
+"","Biodiversity Hotspot","Habitat Loss (%)a","Endemic plantsb","Endemic treesc","Estimated threatd","Estimated threate"
+"1","Atlantic Forest",74.830117,8000,2400,"2018-2164-2273",1144
+"4","Caribbean Islands",70.46228875,6550,1965,"1587-1717-1821",882
+"8","Coastal Forests of Eastern Africa",65.718828,1750,525,"404-441-473",221
+"10","Eastern Afromontane",73.144516,2356,707,"585-628-665",NA
+"12","Guinean Forests of West Africa",70.3120755,1800,540,"436-472-500",295
+"15","Indo-Burma",68.648677,7000,2100,"1658-1806-1926",1112
+"18","Madagascar and the Indian Ocean Islands",76.2286385,11600,3480,"2956-3165-3313",1278
+"22","Mesoamerica",40.920345,2941,883,"440-525-592",497
+"25","New Caledonia",51.825541,2432,730,"460-526-581",209
+"27","Philippines",65.242801,6091,1828,"1399-1529-1638",1021
+"31","Sundaland",47.577179,15000,4500,"2643-3068-3374",2122
+"32","Tropical Andes",61.110126,15000,4500,"3253-3615-3905",1757
+"33","Tumbes-Choco-Magdalena",52.899047,2750,825,"530-604-665",202
+"34","Wallacea",42.037604,1500,450,"231-274-308",170
+"35","Western Ghats and Sri Lanka",65.0639605,3049,915,"699-765-819",320
+"36","Amazon",15.990595,20000,6000,"563-762-1034",NA
+"37","Central Africa",29.667008,2600,780,"247-308-379",NA
+"38","New Guinea",13.659225,9301,2791,"176-243-340",NA

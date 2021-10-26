@@ -649,13 +649,13 @@ dist0 <- merge(AOO[,c("tax", "AOO.level.2")], subpops[,c("tax", "Number.subpops.
                by = "tax", all = TRUE, sort = FALSE) 
 dist0$frag.level.2 <- 100 * dist0$Number.subpops.level.2/ (dist0$AOO.level.2 / 4)
   
-jpeg(filename = "figures/Figure_XX.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_TT.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
 par(mar=c(3,3,1,1), mgp=c(1.5,0.25,0),tcl=-0.2,las=1)
 plot(0:6, c(0.8,16,33, 50, 66, 83,100), 
      col= "white", xaxt = "n", cex.lab = 1.2,
-     xlab = "Large distance", ylab="Fragmentation level (%)")#, log = "y")
+     xlab = "Large dispersal distance", ylab="Fragmentation level (%)")#, log = "y")
 axis(1, at=c(0.5,1.5,2.5,3.5,4.5,5.5), labels = c("0 km", "25 km","50 km", "75 km", "100 km", "radius"))
 boxplot(as.double(dist0$frag.level.2), add=TRUE, notch = TRUE, at=0.5, yaxt = "n")
 boxplot(as.double(dist25$frag.level.2), add=TRUE, notch = TRUE, at=1.5, yaxt = "n")
@@ -670,8 +670,8 @@ legenda <- as.character(c(round((100*table(as.double(dist0$frag.level.2)>50)/dim
              round((100*table(as.double(dist75$frag.level.2)>50)/dim(dist75)[1])[2],1),
              round((100*table(as.double(dist100$frag.level.2)>50)/dim(dist100)[1])[2],1),
              round((100*table(as.double(dist_rad$frag.level.2)>50)/dim(dist_rad)[1])[2],1)))
-xpos <- c(0.5,1.5,2.5,3.5,4.5,5.5) + 0.25
-for(i in 1:length(xpos)) text(xpos[i], 53.5, legenda[i])
+xpos <- c(0.5,1.5,2.5,3.5,4.5,5.5) + 0.35
+for(i in 1:length(xpos)) text(xpos[i], 53.5, paste0(legenda[i], "%"))
 dev.off()
 
 #################################################################################################################################################################################################H    
@@ -907,13 +907,14 @@ critB_high.all <- readRDS("data/criterionB_all_high_tax_confidence.rds")
 res <- readRDS("data/tax_conf_effect_on_RLI.rds")
 require(circlize)
 
-jpeg(filename = "figures/Figure_SU.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_SU_new.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 par(mfrow=c(1,2))
 par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
 
 ## OPTIMUM VS. HIGH
-mat <- as.matrix(table(paste0(critB_opt.all$category_B,"_opt"), paste0(critB_high.all$category_B,"_hi")))
+mat <- as.matrix(table(paste0(critB_opt.all$category_B,"_opt"), 
+                       paste0(critB_high.all$category_B,"_hi")))
 mat <- mat[c(1,2,5,3), c(3,5,2,1)]
 colnames(mat) <- gsub(" ", "", colnames(mat))
 rownames(mat) <- gsub(" ", "", rownames(mat))
@@ -1026,8 +1027,9 @@ legend("topleft",legend=expression(bold("A")),
 
 ## Assessing the confidence level cutoff 
 par(mar=c(3,3.5,1.5,0.5))
-ids <- cut < 0.8
-par(mar=c(3,3.5,0.75,0.5), mgp=c(2,0.25,0),tcl=-0.2,las=1)
+cut <- seq(0.05,0.95, by=0.05)
+ids <- cut < 0.85
+par(mar=c(3,3.5,0.75,0.5), mgp=c(2,0.25,0), tcl=-0.2, las=1)
 plot(res[,2][ids] ~ cut[ids], ylim = c(0.85, .92),
      xlab = "Tax. confidence level", ylab = "Red List Index", 
      xaxt = "n",# yaxt = "n", 
@@ -1037,9 +1039,9 @@ lines(res[,1][ids] ~ cut[ids] , lty = 2)
 lines(res[,3][ids] ~ cut[ids] , lty = 2)
 # abline(h = opt.rli[2])
 # abline(h = high.rli[2], col = 2)
-points(res[,5][ids] ~ cut[ids], col=2, pch=19)
-lines(res[,4][ids] ~ cut[ids], col=2, lty = 2)
-lines(res[,6][ids] ~ cut[ids], col=2, lty = 2)
+points(res[,5][ids] ~ cut[ids], col = "red", pch=19)
+lines(res[,4][ids] ~ cut[ids], col = "red", lty = 2)
+lines(res[,6][ids] ~ cut[ids], col = "red", lty = 2)
 # abline(v=c(0.6,0.75))
 legend("topleft", expression(bold(B)), bty="n", cex=1.3,
        x.intersp=-0.7, y.intersp=0.1)
