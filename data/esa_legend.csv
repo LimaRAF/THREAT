@@ -1,0 +1,39 @@
+NB_LAB,Class,LCCOwnLabel,R,G,B,LegendTreeCo,LegendTreeCoSimp
+0,Nodata,No data,0,0,0,NoData,NoData
+10,Agriculture,"Cropland, rainfed",255,255,100,Cropland,Cropland
+11,Agriculture,Herbaceous cover,255,255,100,Pastagem,Cropland
+12,Agriculture,Tree or shrub cover,255,255,0,Plantation,Cropland
+20,Agriculture,"Cropland, irrigated or post-flooding",170,240,240,Cropland,Cropland
+30,Agriculture,"Mosaic cropland (>50%) / natural vegetation (tree, shrub, herbaceous cover) (<50%)",220,240,100,Mosaic_Cropland_NaturalVeg,Mosaic_Cropland_NaturalVeg
+40,Agriculture,"Mosaic natural vegetation (tree, shrub, herbaceous cover) (>50%) / cropland (<50%) ",200,200,100,Mosaic_NaturalVeg_Cropland,Mosaic_Cropland_NaturalVeg
+50,Forest,"Tree cover, broadleaved, evergreen, closed to open (>15%)",0,100,0,ForestCover,ForestCover
+60,Forest,"Tree cover, broadleaved, deciduous, closed to open (>15%)",0,160,0,ForestCover,ForestCover
+61,Forest,"Tree cover, broadleaved, deciduous, closed (>40%)",0,160,0,ForestCover,ForestCover
+62,Forest,"Tree cover, broadleaved, deciduous, open (15-40%)",170,200,0,OpenForestCover,ForestCover
+70,Forest,"Tree cover, needleleaved, evergreen, closed to open (>15%)",0,60,0,ForestCover,ForestCover
+71,Forest,"Tree cover, needleleaved, evergreen, closed (>40%)",0,60,0,ForestCover,ForestCover
+72,Forest,"Tree cover, needleleaved, evergreen, open (15-40%)",0,80,0,OpenForestCover,ForestCover
+80,Forest,"Tree cover, needleleaved, deciduous, closed to open (>15%)",40,80,0,ForestCover,ForestCover
+81,Forest,"Tree cover, needleleaved, deciduous, closed (>40%)",40,80,0,ForestCover,ForestCover
+82,Forest,"Tree cover, needleleaved, deciduous, open (15-40%)",40,100,0,OpenForestCover,ForestCover
+90,Forest,"Tree cover, mixed leaf type (broadleaved and needleleaved)",120,130,0,ForestCover,ForestCover
+100,Forest,Mosaic tree and shrub (>50%) / herbaceous cover (<50%),140,160,0,Mosaic_ForestCover_GrassLand,ForestMosaic
+160,Forest,"Tree cover, flooded, fresh or brakish water",0,120,90,ForestCover,Varzea
+170,Forest,"Tree cover, flooded, saline water",0,150,120,ForestCover,Mangrove
+110,Grassland,Mosaic herbaceous cover (>50%) / tree and shrub (<50%),190,150,0,Mosaic_GrassLand_ForestCover,GrasslandMosaic
+130,Grassland,Grassland,255,180,50,Grassland_CampoLimpo,Grassland
+180,Wetland,"Shrub or herbaceous cover, flooded, fresh/saline/brakish water",0,220,130,Shrubland_Restinga,ShrubLand
+190,Settlement,Urban areas,195,20,0,Urban,Urban
+120,Shrubland,Shrubland,150,100,0,ShrubLand_Cerrado,ShrubLand
+121,Shrubland,Shrubland evergreen,120,75,0,ShrubLand,ShrubLand
+122,Shrubland,Shrubland deciduous,150,100,0,ShrubLand_Caatinga?,ShrubLand
+140,SparseVegetation,Lichens and mosses,255,220,210,LichensMosses,LichensMosses
+150,SparseVegetation,"Sparse vegetation (tree, shrub, herbaceous cover) (<15%)",255,235,175,Grassland,Grassland
+151,SparseVegetation,Sparse tree (<15%),255,200,100,Grassland,Grassland
+152,SparseVegetation,Sparse shrub (<15%),255,210,120,Grassland,Grassland
+153,SparseVegetation,Sparse herbaceous cover (<15%),255,235,175,Grassland,Grassland
+200,BareArea,Bare areas,255,245,215,BareAreas,BareAreas
+201,BareArea,Consolidated bare areas,220,220,220,BareAreas,BareAreas
+202,BareArea,Unconsolidated bare areas,255,245,215,BareAreas,BareAreas
+210,Water,Water bodies,0,70,200,Water,Water
+220,SnowIce,Permanent snow and ice,255,255,255,SnowIce,SnowIce

@@ -333,3 +333,71 @@ for(si in get.all.sector.index()) {
 legend("topleft","Optimal gen. lenght", bty="n", cex=1.2)
 legend("topright","Gen. lenght = 25 years", bty="n", cex=1.2)
 dev.off()
+
+
+###################
+#### AOO decline and criterion A2 for occurrence based dataset ####
+###################
+
+devtools::install_github("gdauby/ConR@devel")
+
+library(ConR)
+library(tidyverse)
+library(raster)
+
+hab.map <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_1992_2015_AF_1km.tif")
+hab.map2 <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_1995_2015_AF_1km.tif")
+hab.map3 <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_2000_2015_AF_1km.tif")
+
+esa_legend <- read_csv("./data/esa_legend.csv")
+hab.class <- esa_legend %>% 
+  filter(LegendTreeCoSimp == "ForestCover") %>% 
+  pull(NB_LAB) %>% 
+  as.character()
+
+#### LOADING THREAT OCCURRENCE DATA (HERBARIUM + TREECO) ###
+oc.data <- readRDS("data/threat_occ_data_final.rds")
+
+#Putting data in the ConR format
+MyData <- oc.data[, c("ddlat","ddlon",
+                      "tax","higher.tax.rank",
+                      "coly","vouchers",
+                      "detBy","dety",
+                      "tax.check2","tax.check.final","UC",
+                      "dist.eoo","tax.conf","source")]
+MyData$tax.check2 <- MyData$tax.check2 %in% "TRUE" # the super,hyper high confidence level
+rm(oc.data)
+
+MyData <- as_tibble(MyData)
+MyData <- 
+  MyData %>% 
+  filter(source == "herbaria",
+         !is.na(ddlat),
+         !is.na(ddlon))
+
+res <- AOO.decline(
+  XY = as.data.frame(MyData),
+  hab.map = stack(list(hab.map[[1]], hab.map2[[1]], hab.map3[[1]], hab.map[[2]])),
+  hab.class = hab.class,
+  all_individual_layers = TRUE, 
+)
+
+## provide full AOO, AOO considering each hab.map individuals and AOO for all hab.map taken together (AOO_treath)
+head(res$AOOs)
+
+
+
+### Number of species with null AOO already in 1992
+res$AOOs %>% 
+  as_tibble() %>% 
+  filter(hab.map.1 == 0)
+
+
+
+
+
+
+
+
+
+
