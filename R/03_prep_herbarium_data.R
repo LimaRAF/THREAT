@@ -118,14 +118,14 @@ toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 728,409 (23.65%)
 ## But keeping records for species without coordinates but know to be in the Atlantic Forest
 gc()
 paises.adm0 <- paste(c("anguilla", "aruba", "curacao", "falkland islands",
-                 "saint-martin", "sint maarten", "st\\. barthelemy"), collapse = "|")
+                       "saint-martin", "sint maarten", "st\\. barthelemy"), collapse = "|")
 paises.adm1 <- paste(c("antigua & barbuda", "bahamas","barbados","belize",
-                 "bermuda", "caribbean netherlands", "british virgin islands", 
-                 "cayman islands", "dominica", "grenada","jamaica", "martinique",
-                 "montserrat", "puerto rico","st\\. kitts & nevis",
-                 "st\\. lucia","st\\. vincent & grenadines",
-                 "trinidad & tobago","turks & caicos islands",
-                 "u\\.s\\. virgin islands"), collapse = "|")
+                       "bermuda", "caribbean netherlands", "british virgin islands", 
+                       "cayman islands", "dominica", "grenada","jamaica", "martinique",
+                       "montserrat", "puerto rico","st\\. kitts & nevis",
+                       "st\\. lucia","st\\. vincent & grenadines",
+                       "trinidad & tobago","turks & caicos islands",
+                       "u\\.s\\. virgin islands"), collapse = "|")
 toto2 = dim(oc.data)[1]
 oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" | 
                      (geo.check1 %like% "ok_state" & af.check2 == TRUE) |
@@ -188,7 +188,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 #table(oc.data$true.out, useNA = "always")
 gc()
 toto4 = dim(oc.data)[1]
-oc.data <- oc.data[is.na(true.out) |true.out %in% FALSE] # removing 3142 true outliers
+oc.data <- oc.data[is.na(true.out) | true.out %in% FALSE] # removing 3142 true outliers
 # oc.data[,uniqueN(species.correct2)] # 5095 species
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 

@@ -840,7 +840,7 @@ critB_low$sever.frag <- 100 * critB_low$Nbe_subPop/ (critB_low$AOO / 4) > 50
 critB_high$sever.frag <- 100 * critB_high$Nbe_subPop/ (critB_high$AOO / 4) > 50
 
 
-#### PERFOMING THE ASSESSMENTES OF CRITERION B ####
+#### PERFORMING THE ASSESSMENTES OF CRITERION B ####
 results_Cb_opt <- cat_criterion_b(EOO = critB_opt$EOO,
                               AOO = critB_opt$AOO,
                               locations = critB_opt$nbe_loc_total,
