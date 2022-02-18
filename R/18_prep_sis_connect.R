@@ -38,11 +38,11 @@ occs <- readRDS("data/threat_species_by_country.rds")
 iucn <- read.csv("IUCN_2021_v1_assessments.csv", 
                  as.is = TRUE, na.string = c(NA,""," "))
 
-## Reading species endemism levels in respect to the AF (from Lima et al. 2020)
-end <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixF_endemism_levels.csv", as.is=TRUE)
+## Reading species endemism levels in respect to the AF (from a)
+end <- read.csv("C:/Users/renat/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixF_endemism_levels.csv", as.is=TRUE)
 
-## Reading probable occurrences of tree species in the AF (from Lima et al. 2020)
-end.prob <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
+## Reading probable occurrences of tree species in the AF (from a)
+end.prob <- read.csv("C:/Users/renat/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
 
 ## Reading the CITES/EU listings
 #LOADING BELOW, DIRECTLY WITH THE CODES
@@ -50,9 +50,9 @@ end.prob <- read.csv("C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Arti
 # EU1 <- readRDS("data/EU_listings_data.rds")
 
 ## Reading TreeCo species use database and associated functions
-path = "C:/Users/renato/Documents/raflima/Pos Doc/Databases/TreeCo Database Management"
+path = "C:/Users/renat/Documents/raflima/Pos Doc/Databases/TreeCo Database Management"
 source(paste(path,"uses_data_prep.R",sep="/"))
-usos <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.csv", 
+usos <- read.csv("C://Users//renat//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.csv", 
                  na.strings = c(""," ",NA), encoding = "UTF-8")
 
 ## Reading THREAT assessments
@@ -517,8 +517,8 @@ cols <- c("internal_taxon_id","Name_submitted",
 hab2 <- hab2[, cols]
 
 ## Saving the supporting files
-write.csv(standard.texts, "data/threat_standard_texts.csv", 
-          row.names = FALSE, fileEncoding = "UTF-8")
+# write.csv(standard.texts, "data/threat_standard_texts.csv", 
+#           row.names = FALSE, fileEncoding = "UTF-8")
 write.csv(hab2, "data/threat_habitats.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
@@ -714,7 +714,7 @@ saveRDS(prev.assess, "data/sis_connect/prev_assessments_threat.rds")
 ###############################################################################H
 # ENDEMISM LEVELS --------------------------------------------------------------
 
-## Species endemism levels in respect to the AF from Lima et al. 2020
+## Species endemism levels in respect to the AF from 
 end <- end[,c(1,2,7,9,11)]
 
 ## Replacing the synonym 
@@ -1503,7 +1503,7 @@ proibidas.sp <- used.spp1[used.spp1$Name_submitted %in% madeiras.proibidas,
                           c("Name_submitted", "lifeform", "origin",
                             "uses", "UTEndUseLookup", "subsistence","internal_taxon_id", "source")]
 
-all.explo.sp <- rbind.data.frame(timber.sp, exploited.sp, proibidas.sp)
+all.explo.sp <- rbind.data.frame(wood.use.sp, exploited.sp, proibidas.sp)
 all.explo.sp <- all.explo.sp[!duplicated(all.explo.sp$internal_taxon_id), ]
   
 #Filtering over-exploited species
@@ -2122,41 +2122,41 @@ assess$RangeDocumentation.narrative[describe] <-
 # Endemicas do BR
 br <- all.spp$endemic.BR %in% "endemic"
 # Endemicas puras do BR e da MA
-texto <- "endêmica do Brasil (Flora do Brasil, 2020) e da Mata Atlântica (Lima et al., 2020)"
+texto <- "endêmica do Brasil (Flora do Brasil 2020) e da Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "endemic" & br
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
   
 # Endemicas do BR e sub-endemicas da MA
-texto <- "endêmica do Brasil (Flora do Brasil, 2020) e sub-endêmica da Mata Atlântica (Lima et al., 2020)"
+texto <- "endêmica do Brasil (Flora do Brasil 2020) e sub-endêmica da Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "near_endemic" & br 
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
 
 # Endemicas do BR e com maiorias das ocorrências na MA
-texto <- "endêmica do Brasil (Flora do Brasil, 2020) e com a maioria de seus registros concentrados na Mata Atlântica (Lima et al., 2020)"
+texto <- "endêmica do Brasil (Flora do Brasil 2020) e com a maioria de seus registros concentrados na Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "widespread_common" & br 
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
 
 # Demais endêmicas da MA
-texto <- "endêmica da Mata Atlântica (Lima et al., 2020)"
+texto <- "endêmica da Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "endemic" & !br 
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
 
 # Demais endêmicas da MA
-texto <- "sub-endêmica da Mata Atlântica (Lima et al., 2020)"
+texto <- "sub-endêmica da Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "near_endemic" & !br 
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
 
 # Demais espécies
-texto <- "com a maioria de seus registros concentrados na Mata Atlântica (Lima et al., 2020)"
+texto <- "com a maioria de seus registros concentrados na Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% "widespread_common" & !br 
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
-texto <- "com uma minoria de seus registros concentrados na Mata Atlântica (Lima et al., 2020)"
+texto <- "com uma minoria de seus registros concentrados na Mata Atlântica (Lima et al. 2020a)"
 replace_these <- endemismo %in% c("widespread_sparse", "occasional")
 assess$RangeDocumentation.narrative[replace_these] <- 
   gsub("_ENDEMISMO_", texto, assess$RangeDocumentation.narrative[replace_these])
@@ -2316,7 +2316,7 @@ table(hab2.1$species.correct2 == all.spp$species)
 
 assess$HabitatDocumentation.narrative <- ""
 assess$HabitatDocumentation.narrative[describe] <-
-  c("_HABITO_ atingindo até _ALTURA_. No Brasil, ocorre na _DOMINIO_, em particular na _VEGET_ (Flora do Brasil, 2020).") 
+  c("_HABITO_ atingindo até _ALTURA_. No Brasil, ocorre na _DOMINIO_, em particular na _VEGET_ (Flora do Brasil 2020).") 
 
 ## Substituindo os valores
 for (i in 1:dim(assess)[1]) {
@@ -2443,10 +2443,10 @@ Apenas as áreas mais montanhosas próximas ao litoral brasileiro e a região de
 Mais localmente, a Mata Atlântica também foi convertida para áreas urbanas, estradas e mineração. 
 Esse processo foi mais intenso até os anos 2000, resultando na redução de mais de 80% da área original da Mata Atlântica. 
 Mas ele continua em andamento, com taxas de desmatamento acima dos 20 mil hectares ao ano, e com taxas mais elevadas no Paraguay e 
-em alguns estados brasileiros (Argentina & WWF 2017; SOS Mata Atlântica e INPE, 2018; Rosa et al. 2021). 
+em alguns estados brasileiros (Argentina & WWF 2017; SOS Mata Atlântica e INPE 2018; Rosa et al. 2021). 
 Além do desmatamento (i.e. perda de habitat), a degradação florestal (e.g. corte seletivo, fogo, espécies invasoras) 
 é um componente importante na Mata Atlântica, havendo indicações de que 80% ou mais dos remanescentes florestais 
-da Mata Atlântica apresentam perdas variando entre 20 e 40% na sua biodiversidade (Lima et al. 2020). 
+da Mata Atlântica apresentam perdas variando entre 20 e 40% na sua biodiversidade (Lima et al. 2020b). 
 Por fim, apenas 1% da área original da Mata Atlântica corresponde a Unidades de Conservação (Ribeiro et al. 2009). 
 Como não existem informações sistematizadas e espacializadas sobre ameaças ao longo de toda a Mata Atlântica, 
 não foi possível extrair informações sobre o tipo e magnitude das ameaças para as espécies individualmente.")
@@ -2467,7 +2467,7 @@ all.spp$threats <- gsub("<strong><\\/strong>", "", all.spp$threats, perl = TRUE)
 all.spp$threats <- stringr::str_squish(all.spp$threats)
 
 add_these <- (!(grepl("^Dados publicados recentemente", all.spp$threats, perl = TRUE) & 
-                       grepl("Atlântica e INPE, 2018\\)\\.$", all.spp$threats, perl = TRUE))) |
+                       grepl("Atlântica e INPE 2018\\)\\.$", all.spp$threats, perl = TRUE))) |
               !grepl("taxon is not considered to be ", all.spp$threats) |
               !grepl("species is not known to be threatened", all.spp$threats) |
               !grepl("species is not threatened", all.spp$threats) |
@@ -2476,10 +2476,10 @@ assess$ThreatsDocumentation.value.PrevAssessment <- ""
 assess$ThreatsDocumentation.value.PrevAssessment[describe & add_these] <- 
   all.spp$threats[describe & add_these]
 
-patt <- c("Dados publicados recentemente (Fundação SOS Mata Atlântica e INPE, 2018) apontam para uma redução maior que 85% da área originalmente 
+patt <- c("Dados publicados recentemente (Fundação SOS Mata Atlântica e INPE 2018) apontam para uma redução maior que 85% da área originalmente 
 coberta com Mata Atlântica e ecossistemas associados no Brasil. De acordo com o relatório, cerca de 12,4% de vegetação original ainda resistem. 
 Embora a taxa de desmatamento tenha diminuído nos últimos anos, ainda está em andamento, e a qualidade e extensão de áreas florestais encontram-se 
-em declínio contínuo há pelo menos 30 anos (Fundação SOS Mata Atlântica e INPE, 2018).")
+em declínio contínuo há pelo menos 30 anos (Fundação SOS Mata Atlântica e INPE 2018).")
 assess$ThreatsDocumentation.value.PrevAssessment <- stringr::str_squish(
   gsub(patt, "", assess$ThreatsDocumentation.value.PrevAssessment, fixed = TRUE))
 
@@ -2574,7 +2574,7 @@ for (i in 1:dim(assess)[1]) {
   texto <- ""
   
   if (info$cat.reg.clean %in% "NA") {
-    texto <- "Esta espécie foi classificada como 'ocasional' para Mata Atlântica (Lima et al. 2020), 
+    texto <- "Esta espécie foi classificada como 'ocasional' para Mata Atlântica (Lima et al. 2020a), 
 baseado na distribuição de seus registros de herbário. Por esse motivo, a espécie 
 foi considerada como 'vagrant taxa' sensu IUCN (2012) durante as avaliações de ameaça. 
 Seguindo as recomendações da IUCN para avaliações regionais (IUCN 2012), essa espécie 
@@ -3301,68 +3301,476 @@ write.csv(allfields, "data/sis_connect/allfields_threat.csv",
 
 ## Generating the SIS CONNECT file "references.csv"
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/references.csv")
+sample <- read.csv("SIS_sample_6_1/references.csv", encoding = "UTF-8")
 head(sample, 3)
 apply(sample[,1:10], 2, unique)
 
 ## Finding citations in each SIS Connect file
 my.files <- list.files("data/sis_connect/", full.names = TRUE)
+# files with references in the notes
+keep <- "allfields|assessments|prev_assessment|researchneeded" 
+# maybe depending on the content of the 'note' or 'desc' fields
+maybe <- "conservationneeded|taxonomy|threats"
+my.files1 <- my.files[grepl(keep, my.files, perl = TRUE)]
 
-for (i in 1:length(my.files)) {
-  if (grepl("csv", my.files[i])) {
-    arquivo <- read.csv(my.files[i], encoding = "UTF-8")
-    planilha <- gsub('data/sis_connect/', '', my.files[i], fixed = TRUE)
-    planilha <- gsub('_threat.csv', '', planilha, fixed = TRUE)
-    
-    result1 <- vector("list", dim(arquivo)[2])
-    for(j in 1:dim(arquivo)[2]) {
-      coluna <- arquivo[, j]
-      sp.i <- arquivo[, "internal_taxon_id"]
-      ref1 <- grepl("[0-9]\\)", coluna, perl = TRUE)
-      if (any(ref1)) {
-        ref1.split <- strsplit(coluna[ref1], "(?<=[(])", perl = TRUE)
-        ref1.split <- lapply(ref1.split, function (x) x[grepl("[0-9]\\)", x, perl = TRUE)])
-        ref1.split <- lapply(ref1.split, 
-               function(x) sapply(strsplit(x, "(?<=[)])", perl = TRUE),
-                                  function(x1) x1[grepl("[0-9]\\)$", x1, perl = TRUE)]))
-        ref1.split <- lapply(ref1.split, function (x) gsub("\\.$", "", x, perl = TRUE))
-        ref1.split <- lapply(ref1.split, function (x) gsub("\\)$", "", x, perl = TRUE))
-        ref1.split <- lapply(ref1.split, function (x) gsub("sensu ", "", x, fixed = TRUE))
-        ref1.split <- lapply(ref1.split, function (x) gsub(", p\\.[0-9][0-9]", "", x, perl = TRUE))
-        ref1.split <- lapply(ref1.split, 
-                             function (x) matrix(unique(x), ncol = length(unique(x)), nrow = 1))
-        # ref1.split <- lapply(ref1.split, function(x) colnames(x) <- paste0("ref", 1:dim(x)[2]))
-        ref1.split <- lapply(ref1.split, 
-                             function (x) cbind(planilha = planilha, coluna = j, internal_taxon_id = sp.i, x))
-        res1 <- cbind(planilha, coluna = j, internal_taxon_id = sp.i, 
-                      ref = sapply(ref1.split, function (x) c(x)))
-        result1[[j]] <- res1
-      }
-      
-      # ref2 <- grepl("[0-9]\\)", coluna, perl = TRUE) & 
-      #           grepl("\\([0-9]", coluna, perl = TRUE) 
-    }
-    result1 <- result1[lengths(result1) != 0]
-    result1.1 <- dplyr::bind_rows(result1)
-    
-    
+result.all <- vector("list", length(my.files1))
+for (i in seq_len(length(my.files1))) {
+  if (grepl("csv", my.files1[i])) { 
+    arquivo <- read.csv(my.files1[i], encoding = "UTF-8")
   } else {
-    
+    arquivo <- readRDS(my.files1[i])
   } 
   
-}
+  planilha <- gsub('data/sis_connect/', '', my.files1[i], fixed = TRUE)
+  planilha <- gsub('_threat.csv|_threat.rds', '', planilha, perl = TRUE)
 
+  result1.spp <- vector("list", dim(arquivo)[1])
+  names(result1.spp) <- arquivo$internal_taxon_id
+    
+  patt <- "et al\\.|in prep\\.|[1-2][0-9][0-9][0-9]\\)"
+    
+  for(j in 1:dim(arquivo)[1]) {
+      linha <- arquivo[j, ]
+      sp.i <- linha[, "internal_taxon_id"]
+      if (any(grepl(patt, linha, perl = TRUE))) {
+        indices <- which(grepl(patt, linha, perl = TRUE))
+        res <- linha[, indices]
+        res.split <- strsplit(as.character(res), "(?<=[()])", perl = TRUE)
+        res.split1 <- lapply(res.split, function (x) x[grepl(patt, x, perl = TRUE)])
+        
+        res.split2 <- strsplit(as.character(res), " ", perl = TRUE)[[1]]
+        indices2 <- which(grepl("\\([1-2][0-9][0-9][0-9]\\)", res.split2, perl = TRUE))
+        if (length(indices2) > 0) {
+          res.split2 <- res.split2[sort(c(indices2, indices2 - 1))]
+          res.split1[[1]] <- c(res.split1[[1]], res.split2)
+        }
+        
+        # et al.
+        patt1 <- "et al\\. \\($"
+        correcao1 <- 
+          sapply(res.split1, function(x) any(grepl("et al\\. \\($", x, perl = TRUE)))
+        if (any(correcao1)) {
+          
+          for (w in seq_len(sum(correcao1))) {
+            input <- res.split1[which(correcao1)[w]][[1]]
+            correcao.i <- unlist(lapply(input, function(x) grepl(patt1, x, perl = TRUE)))
+            input[correcao.i] <- lapply(input[correcao.i], 
+                                        function (x) substring(x, head(tail(gregexpr(" ", x)[[1]], 4),1)))
+            input <- list(stringr::str_squish(unlist(input)))
+
+            patt2 <- "in prep\\.\\)$|^[1-2][0-9][0-9][0-9]\\)$|^\\([1-2][0-9][0-9][0-9]\\)$"
+            if (any(sapply(input, function(x) grepl(patt2, x, perl = TRUE)))) {
+              input2 <- lapply(input, 
+                               function(x) paste0(x[which(grepl(patt2, x, perl = TRUE))-1], 
+                                                  x[grepl(patt2, x, perl = TRUE)]))
+              input2 <- lapply(input2, 
+                               function(x) gsub("(\\))([1-2][0-9][0-9][0-9]\\)$)", "\\1", x, perl = TRUE))
+              input <- append(input, input2)
+            }
+            
+            res.split1[which(correcao1)[w]] <- list(stringr::str_squish(unlist(input)))
+            
+          }  
+        }
+        
+        # autor (data)
+        patt1 <- "^[1-2][0-9][0-9][0-9]\\)$"
+        correcao2 <- 
+          sapply(res.split1, function(x) any(!grepl("[0-9]", x, perl = TRUE)))
+        if (any(correcao2)) {
+          
+          for (w in seq_len(sum(correcao2))) {
+            input <- res.split1[which(correcao2)[w]][[1]]
+            # correcao.i <- unlist(lapply(input, function(x) grepl(patt1, x, perl = TRUE)))
+            # input[correcao.i] <- lapply(input[correcao.i], 
+            #                             function (x) substring(x, head(tail(gregexpr(" ", x)[[1]], 4),1)))
+            input <- list(stringr::str_squish(unlist(input)))
+            
+            patt2 <- "in prep\\.\\)$|^[1-2][0-9][0-9][0-9]\\)$|^\\([1-2][0-9][0-9][0-9]\\)$"
+            if (any(sapply(input, function(x) grepl(patt2, x, perl = TRUE)))) {
+              input2 <- lapply(input, 
+                               function(x) paste(x[which(grepl(patt2, x, perl = TRUE))-1], 
+                                                  x[grepl(patt2, x, perl = TRUE)]))
+              input2 <- lapply(input2, 
+                               function(x) gsub("(\\))( [1-2][0-9][0-9][0-9]\\)$)", "\\1", x, perl = TRUE))
+              input <- append(input, input2)
+            }
+            
+            res.split1[which(correcao2)[w]] <- list(stringr::str_squish(unlist(input)))
+            
+          }  
+        }
+  
+        #Cleaning
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[!grepl("et al\\. \\($", x, perl = TRUE)])
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[!x %in% "in prep.)"])
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[!grepl("^[1-2][0-9][0-9][0-9]\\)$", x, perl = TRUE)])
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[!grepl("^[1-2][0-9][0-9][0-9]$", x, perl = TRUE)])
+        
+        res.split1 <- lapply(res.split1, 
+                             function (x) gsub("\\)$", "", x, perl = TRUE))
+        res.split1 <- lapply(res.split1, 
+                             function (x) gsub(" \\(", " ", x, perl = TRUE))
+        res.split1 <- lapply(res.split1, 
+                             function (x) gsub("sensu ", "", x, fixed = TRUE))
+        res.split1 <- lapply(res.split1, 
+                             function (x) gsub(", p\\.[0-9][0-9]", "", x, perl = TRUE))
+        res.split1 <- lapply(res.split1, 
+                             function (x) gsub("^in prep\\.\\) ", "", x, perl = TRUE))
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[grepl("[0-9]|in prep", x, perl = TRUE)])
+        res.split1 <- lapply(res.split1, 
+                             function (x) x[!grepl("^\\([1-2][0-9][0-9][0-9]$", x, perl = TRUE)])
+        
+        #splitting and removing duplicates
+        res.split1 <- lapply(res.split1, strsplit, "; |, ", perl = TRUE)
+        
+        # res2 <- paste0(unique(sort(stringr::str_squish(unlist(res.split1)))),
+        #                collapse = "|")
+        res2 <- paste0(unique(stringr::str_squish(unlist(res.split1))),
+                       collapse = "|")
+        
+        resultado <- cbind(planilha, internal_taxon_id = sp.i, refs = res2)
+        result1.spp[[j]] <- resultado
+      }
+    }  
+      
+  result1 <- result1.spp[lengths(result1.spp) != 0]
+  result1.1 <- do.call("rbind", result1)
+  names(result.all)[i] <- planilha
+  result.all[[i]] <- result1.1   
+}  
+lapply(result.all, head, 2)
+
+
+# ASSESSMENTS
+plan <- "allfields"
+unique(result.all[[plan]][,"refs"])
+#"Dauby et al. 2017|IUCN 2019|Lima et al. in prep.|Stévart et al. 2019|Rivers et al. 2010"
+ 
+ref1 <- data.frame(Reference_type = "Assessment", 
+                   author = "Dauby, G., Stévart, T., Droissart, V., Cosiaux, A., Deblauwe, V., Simo-Droissart, M., Sosef, M.S.M., Lowry, P.P., Schatz, G.E., Gereau, R.E., & Couvreur, T.L.P.",
+                   year = "2017", volume = "7", number = "24", pages = "11292–11303",
+                   title = "ConR: An R package to assist large-scale multispecies preliminary conservation assessments using distribution data", 
+                   secondary_title = "Ecology and Evolution", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Dauby et al. 2017", result.all[[plan]][,"refs"])]
+ref1 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref1, simplify = FALSE))
+ref1$internal_taxon_id <- spp
+
+ref2 <- data.frame(Reference_type = "Assessment", 
+                   author = "IUCN Standards and Petitions Committee",
+                   year = "2019", pages = "113p.",
+                   title = "Guidelines for Using the IUCN Red List Categories and Criteria (Version 14)", 
+                   secondary_title = "Prepared by the Standards and Petitions Committee", type = "book")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("IUCN 2019", result.all[[plan]][,"refs"])]
+ref2 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref2, simplify = FALSE))
+ref2$internal_taxon_id <- spp
+
+ref3 <- data.frame(Reference_type = "Assessment", 
+                   author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
+                   year = "in prep.", volume = NA, number = NA, pages = NA,
+                   title = "The Atlantic Forest trees: a flora on the verge of extinction", 
+                   secondary_title = NA, type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Lima et al. in prep.", result.all[[plan]][,"refs"])]
+ref3 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref3, simplify = FALSE))
+ref3$internal_taxon_id <- spp
+
+ref4 <- data.frame(Reference_type = "Assessment", 
+                   author = "Rivers, M.C., Bachman, S.P., Meagher, T.R., Nic Lughadha, E., Brummitt, N.A.",
+                   year = "2010", volume = "19", number = "7", pages = "2071–2085",
+                   title = "Subpopulations, locations and fragmentation: applying IUCN red list criteria to herbarium specimen data", 
+                   secondary_title = "Biodiversity and Conservation", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Rivers et al. 2010", result.all[[plan]][,"refs"])]
+ref4 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref4, simplify = FALSE))
+ref4$internal_taxon_id <- spp
+
+ref5 <- data.frame(Reference_type = "Assessment", 
+                  author = "Stévart, T., Dauby, G., Lowry, P.P., Blach-Overgaard, A., Droissart, V., Harris, D.J., Mackinder, B.A., Schatz, G.E., Sonké, B., Sosef, M.S.M., Svenning, J.-C., Wieringa, J.J., Couvreur, T.L.P.",
+                  year = "2019", volume = "5", number = "11", pages = "eaax9444",
+                  title = "A third of the tropical African flora is potentially threatened with extinction", 
+                  secondary_title = "Science Advances", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+          grepl("Stévart et al. 2019", result.all[[plan]][,"refs"])]
+ref5 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref5, simplify = FALSE))
+ref5$internal_taxon_id <- spp
+
+
+# ASSESSMENTS
+plan <- "assessments"
+head(unique(unlist(sapply(result.all[[plan]][,"refs"], strsplit, "\\|"))), 10)
+#"IUCN 2012","Flora do Brasil 2020", "Lima et al. in prep.", 
+#"Argentina & WWF 2017","SOS Mata Atlântica e INPE 2018",
+#"Rosa et al. 2021","Ribeiro et al. 2009"
+
+#"Lima et al. 2020a
+ref6 <- data.frame(Reference_type = "Assessment", 
+                   author = "Lima, R.A.F., Souza, V.C., de Siqueira, M.F. & ter Steege, H.",
+                   year = "2020a", volume = "252", number = NA, pages = "108825",
+                   title = "Defining endemism levels for biodiversity conservation: Tree species in the Atlantic Forest hotspot", 
+                   secondary_title = "Biological Conservation", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Lima et al. 2020a", result.all[[plan]][,"refs"])]
+ref6 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref6, simplify = FALSE))
+ref6$internal_taxon_id <- spp
+
+#Lima et al. 2020b
+ref7 <- data.frame(Reference_type = "Assessment", 
+                   author = "Lima, R.A.F., Oliveira, A.A., Pitta, G.R., de Gasper, A.L., Vibrans, A.C., Chave, J., ter Steege, H., Prado, P.I.",
+                   year = "2020b", volume = "11", number = "1", pages = "6347",
+                   title = "The erosion of biodiversity and biomass in the Atlantic Forest biodiversity hotspot", 
+                   secondary_title = "Nature Communications", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Lima et al. 2020b", result.all[[plan]][,"refs"])]
+ref7 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref7, simplify = FALSE))
+ref7$internal_taxon_id <- spp
+
+#"IUCN 2012"
+ref8 <- data.frame(Reference_type = "Assessment", 
+                   author = "IUCN",
+                   year = "2012", volume = NA, number = NA, pages = NA,
+                   title = "Guidelines for Application of Iucn Red List Criteria At Regional and National Levels", 
+                   secondary_title = "IUCN, International Union for Conservation of Nature", type = "book")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("IUCN 2012", result.all[[plan]][,"refs"])]
+ref8 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref8, simplify = FALSE))
+ref8$internal_taxon_id <- spp
+
+#"Flora do Brasil 2020"
+ref9 <- data.frame(Reference_type = "Assessment", 
+                   author = "Brazil Flora Group",
+                   year = "2020", volume = NA, number = NA, pages = "doi:10.15468/1mtkaw",
+                   title = "Brazilian Flora 2020 project (v393.285)", 
+                   secondary_title = "Instituto de Pesquisas Jardim Botanico do Rio de Janeiro", type = "electronic source")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Flora do Brasil 2020", result.all[[plan]][,"refs"])]
+ref9 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref9, simplify = FALSE))
+ref9$internal_taxon_id <- spp
+
+#"Lima et al. in prep.", 
+ref10 <- data.frame(Reference_type = "Assessment", 
+                    author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
+                    year = "in prep.", volume = NA, number = NA, pages = NA,
+                    title = "The Atlantic Forest trees: a flora on the verge of extinction", 
+                    secondary_title = NA, type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Lima et al. in prep.", result.all[[plan]][,"refs"])]
+ref10 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref10, simplify = FALSE))
+ref10$internal_taxon_id <- spp
+
+#"Argentina & WWF 2017"
+ref11 <- data.frame(Reference_type = "Assessment", 
+                   author = "Fundación Vida Silvestre Argentina & WWF",
+                   year = "2017", volume = NA, number = NA, pages = NA,
+                   title = "State of the Atlantic Forest: Three countries, 148 million people, one of the richest forests on Earth", 
+                   secondary_title = "Fundación Vida Silvestre Argentina, WWF-Brazil and WWF-Paraguay, Puerto Iguazú.", type = "report")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Argentina & WWF 2017", result.all[[plan]][,"refs"])]
+ref11 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref11, simplify = FALSE))
+ref11$internal_taxon_id <- spp
+
+#"SOS Mata Atlântica e INPE 2018"
+ref12 <- data.frame(Reference_type = "Assessment", 
+                   author = "Fundação SOS Mata Atlântica & Instituto Nacional de Pesquisas Espaciais (INPE)",
+                   year = "2018", volume = NA, number = NA, pages = NA,
+                   title = "Atlas dos remanescentes florestais da Mata Atlântica: período 2016–2017", 
+                   secondary_title = "Fundação SOS Mata Atlântica, São Paulo", 
+                   type = "report")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("SOS Mata Atlântica e INPE 2018", result.all[[plan]][,"refs"])]
+ref12 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref12, simplify = FALSE))
+ref12$internal_taxon_id <- spp
+
+#"Rosa et al. 2021"
+ref13 <- data.frame(Reference_type = "Assessment", 
+                   author = "Rosa, M.R., Brancalion, P.H.S., Crouzeilles, R., Tambosi, L.R., Piffer, P.R., Lenti, F.E.B., Hirota, M.M., Santiami, E., Metzger, J.P.",
+                   year = "2021", volume = "7", pages = "eabc4547",
+                   title = "Hidden destruction of older forests threatens Brazil’s Atlantic Forest and challenges restoration programs", 
+                   secondary_title = "Science Advances", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Rosa et al. 2021", result.all[[plan]][,"refs"])]
+ref13 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref13, simplify = FALSE))
+ref13$internal_taxon_id <- spp
+
+#"Ribeiro et al. 2009"
+ref14 <- data.frame(Reference_type = "Assessment", 
+                   author = "Ribeiro, M.C., Metzger, J.P., Martensen, A.C., Ponzoni, F.J., Hirota, M.M.",
+                   year = "2009", volume = "142", number = "6", pages = "1141–1153",
+                   title = "The Brazilian Atlantic Forest: How much is left, and how is the remaining forest distributed? Implications for conservation", 
+                   secondary_title = "Biological Conservation", type = "journal article")
+spp <- result.all[[plan]][,"internal_taxon_id"][
+  grepl("Ribeiro et al. 2009", result.all[[plan]][,"refs"])]
+ref14 <- do.call(rbind.data.frame, 
+                replicate(length(spp), ref14, simplify = FALSE))
+ref14$internal_taxon_id <- spp
+
+
+# PREVIOUS ASSESSMENTS
+plan <- "prev_assessments"
+head(unique(unlist(sapply(result.all[[plan]][,"refs"], strsplit, "\\|"))), 10)
+#Sem citações para presente avaliação 
+
+# RESEARCH NEEDED
+plan <- "researchneeded"
+unique(result.all[[plan]][,"refs"])
+#Sem citações para presente avaliação 
+
+# USES 
+ref.usos <-  read.csv(my.files[grepl("usetrade", my.files)], encoding = "UTF-8")
+sort(unique(ref.usos$source))
+head(ref.usos)
+
+#wikipedia
+wiki <- data.frame(Reference_type = "Assessment", 
+                   author = "Wikipedia",
+                   year = "2019", #volume = 142, number = 6, pages = "1141–1153",
+                   title = ": The free encyclopedia", 
+                   secondary_title = "https://en.wikipedia.org/wiki/Main_Page", 
+                   type = "electronic source")
+spp <- ref.usos$internal_taxon_id[grepl("wikipedia", ref.usos$source)]
+wiki <- do.call(rbind.data.frame, 
+                 replicate(length(spp), wiki, simplify = FALSE))
+wiki$internal_taxon_id <- spp
+
+#Agroforestree Database
+agro <- data.frame(Reference_type = "Assessment", 
+                   author = "Orwa, C., Mutua, A., Kindt, R., Jamnadass, R., Simons, A.",
+                   year = "2009", #volume = 142, number = 6, pages = "1141–1153",
+                   title = "Agroforestree Database: a tree reference and selection guide", 
+                   secondary_title = "World Agroforestry Centre, Kenya.", 
+                   type = "electronic source")
+spp <- ref.usos$internal_taxon_id[grepl("Agroforestree", ref.usos$source)]
+agro <- do.call(rbind.data.frame, 
+                replicate(length(spp), agro, simplify = FALSE))
+agro$internal_taxon_id <- spp
+
+#Brazilian Woods database
+br.woods <- data.frame(Reference_type = "Assessment", 
+                          author = "Coordenação do Laboratório de Produtos Florestais",
+                          year = "2020", #volume = 142, number = 6, pages = "1141–1153",
+                          title = "Brazilian Woods Database", 
+                          secondary_title = "Available at: https://lpf.florestal.gov.br/en-us/brazilian-woods", 
+                          type = "electronic source")
+spp <- ref.usos$internal_taxon_id[grepl("Brazilian Woods database", ref.usos$source)]
+br.woods <- do.call(rbind.data.frame, 
+                replicate(length(spp), br.woods, simplify = FALSE))
+br.woods$internal_taxon_id <- spp
+      
+#Carvalho, P.E.R. (1998)
+car98 <- data.frame(Reference_type = "Assessment", 
+                       author = "Carvalho, P.E.R.",
+                       year = "1998", #volume = 142, number = 6, pages = "1141–1153",
+                       title = "Especies nativas para fins produtivos", 
+                       secondary_title = "Seminário sobre especies não tradicionais. Curitiba", 
+                       type = "report")
+spp <- ref.usos$internal_taxon_id[grepl("Especies nativas para fins produtivos", ref.usos$source)]
+car98 <- do.call(rbind.data.frame, 
+                    replicate(length(spp), car98, simplify = FALSE))
+car98$internal_taxon_id <- spp
+
+#Coradin et al. 2011
+cor11 <- data.frame(Reference_type = "Assessment", 
+                    author = "Coradin, L, Siminski, A., Reis, A. (eds,)",
+                    year = "2011", #volume = 142, number = 6, 
+                    pages = "934p.",
+                    title = "Espécies nativas da flora brasileira de valor econômico atual ou potencial: plantas para o futuro – Região Sul.", 
+                    secondary_title = "Ministério do Meio Ambiente, Brasília", 
+                    type = "book")
+spp <- ref.usos$internal_taxon_id[grepl("– Região Sul", ref.usos$source)]
+cor11 <- do.call(rbind.data.frame, 
+                 replicate(length(spp), cor11, simplify = FALSE))
+cor11$internal_taxon_id <- spp
+
+#Coradin et al. 2018
+cor18 <- data.frame(Reference_type = "Assessment", 
+                    author = "Coradin, L., Camillo, J., Pareyn, F.G.C. (eds.)",
+                    year = "2018", #volume = 142, number = 6, 
+                    pages = "1311p.",
+                    title = "Espécies nativas da flora brasileira de valor econômico atual ou potencial: plantas para o futuro: região Nordeste", 
+                    secondary_title = "Ministério do Meio Ambiente, Brasília", 
+                    type = "book")
+spp <- ref.usos$internal_taxon_id[grepl(" região Nordeste", ref.usos$source)]
+cor18 <- do.call(rbind.data.frame, 
+                 replicate(length(spp), cor18, simplify = FALSE))
+cor18$internal_taxon_id <- spp
+
+#Lorenzi 1992
+lor92 <- data.frame(Reference_type = "Assessment", 
+                    author = "Lorenzi, H.",
+                    year = "1992", volume = "1", pages = "384p.",
+                    title = "Árvores brasileiras: manual de identificação e cultivo de plantas arbóreas nativas do Brasil", 
+                    secondary_title = "Editora Plantarum, Nova Odessa", 
+                    type = "book")
+spp <- ref.usos$internal_taxon_id[grepl("LORENZI, H", ref.usos$source)]
+lor92 <- do.call(rbind.data.frame, 
+                 replicate(length(spp), lor92, simplify = FALSE))
+lor92$internal_taxon_id <- spp
+
+# Mark et al. 2014
+mark14 <- data.frame(Reference_type = "Assessment", 
+                    author = "Mark, J., Newton, A.C, Oldfield, S. & Rivers, M.",
+                    year = "2014", pages = "56p.",
+                    title = "The International Timber Trade: A Working List of Commercial Timber Tree Species", 
+                    secondary_title = "Botanic Gardens Conservation International, Richmond, UK", 
+                    type = "report")
+spp <- ref.usos$internal_taxon_id[grepl("The International Timber Trade", ref.usos$source)]
+mark14 <- do.call(rbind.data.frame, 
+                 replicate(length(spp), mark14, simplify = FALSE))
+mark14$internal_taxon_id <- spp
+
+
+#Vieira et al. 2016
+vie16 <- data.frame(Reference_type = "Assessment", 
+                    author = "Vieira, R.F., Camillo, J., Coradin, L. (eds.)",
+                    year = "2016", 
+                    pages = "1160p.",
+                    title = "Espécies nativas da flora brasileira de valor econômico atual ou potencial: Plantas para o Futuro: Região Centro-Oeste", 
+                    secondary_title = "Ministério do Meio Ambiente, Brasília", 
+                    type = "book")
+spp <- ref.usos$internal_taxon_id[grepl(" Região Centro-Oeste", ref.usos$source)]
+vie16 <- do.call(rbind.data.frame, 
+                 replicate(length(spp), vie16, simplify = FALSE))
+vie16$internal_taxon_id <- spp
+
+#Sistema Nacional de Informações Florestais
+snif <- data.frame(Reference_type = "Assessment", 
+                       author = "Sistema Nacional de Informações Florestais",
+                       year = "2019",
+                       title = "Espécies Florestais", 
+                       secondary_title = "Available at: https://snif.florestal.gov.br/pt-br/especies-florestais", 
+                       type = "electronic source")
+spp <- ref.usos$internal_taxon_id[grepl("Sistema Nacional de Informações Florestais", ref.usos$source)]
+snif <- do.call(rbind.data.frame, 
+                    replicate(length(spp), snif, simplify = FALSE))
+snif$internal_taxon_id <- spp
+
+# TAXONOMY 
 ## Brazilian Flora
 tax1 <- data.frame(Reference_type = "Taxonomy", 
-                   access_date = "6 May 2021", alternate_title = NA, 
+                   access_date = "6 May 2021",
                    author = "Flora do Brasil 2020 em construção",
-                   date = NA, edition = NA, externalBibCode = NA, isbnissn = NA,
-                   keywords = NA, number = NA, number_of_volumes = NA, 
-                   pages = NA, place_published = NA, publisher = NA, 
-                   secondary_author = NA, secondary_title = NA, section = NA, 
-                   short_title = NA, submission_type = NA, 
                    title = "Jardim Botânico do Rio de Janeiro", 
-                   type = "electronic source", volume = NA, year = NA)
+                   type = "electronic source")
 spp <- full.tax$internal_taxon_id[!is.na(full.tax$TaxonomicReference1)]
 tax1 <- do.call(rbind.data.frame, 
                 replicate(length(spp), tax1, simplify = FALSE))
@@ -3371,19 +3779,13 @@ url <- full.tax$TaxonomicReference1[!is.na(full.tax$TaxonomicReference1)]
 url <- gsub(".*Available at\\: ", "", url, perl = TRUE)
 url <- gsub("\\.$", "", url, perl = TRUE)
 tax1$url <- url
-tax1 <- tax1[ , match(names(sample), names(tax1))]
 
 ## Tropicos
 tax2 <- data.frame(Reference_type = "Taxonomy", 
-                   access_date = "6 May 2021", alternate_title = NA, 
+                   access_date = "6 May 2021",
                    author = "Tropicos.org",
-                   date = NA, edition = NA, externalBibCode = NA, isbnissn = NA,
-                   keywords = NA, number = NA, number_of_volumes = NA, 
-                   pages = NA, place_published = NA, publisher = NA, 
-                   secondary_author = NA, secondary_title = NA, section = NA, 
-                   short_title = NA, submission_type = NA, 
                    title = "Missouri Botanical Garden", 
-                   type = "electronic source", volume = NA, year = NA)
+                   type = "electronic source")
 spp2 <- full.tax$internal_taxon_id[!is.na(full.tax$TaxonomicReference2)]
 tax2 <- do.call(rbind.data.frame, 
                 replicate(length(spp2), tax2, simplify = FALSE))
@@ -3392,19 +3794,13 @@ url <- full.tax$TaxonomicReference2[!is.na(full.tax$TaxonomicReference2)]
 url <- gsub(".*Available at\\: ", "", url, perl = TRUE)
 url <- gsub("\\.$", "", url, perl = TRUE)
 tax2$url <- url
-tax2 <- tax2[ , match(names(sample), names(tax2))]
 
 ## GBIF
 tax3 <- data.frame(Reference_type = "Taxonomy", 
-                   access_date = "6 May 2021", alternate_title = NA, 
+                   access_date = "6 May 2021", 
                    author = "GBIF Secretariat",
-                   date = NA, edition = NA, externalBibCode = NA, isbnissn = NA,
-                   keywords = NA, number = NA, number_of_volumes = NA, 
-                   pages = NA, place_published = NA, publisher = NA, 
-                   secondary_author = NA, secondary_title = NA, section = NA, 
-                   short_title = NA, submission_type = NA, 
                    title = "GBIF Backbone Taxonomy", 
-                   type = "electronic source", volume = NA, year = NA)
+                   type = "electronic source") 
 spp3 <- full.tax$internal_taxon_id[!is.na(full.tax$TaxonomicReference3)]
 tax3 <- do.call(rbind.data.frame, 
                 replicate(length(spp3), tax3, simplify = FALSE))
@@ -3413,12 +3809,32 @@ url <- full.tax$TaxonomicReference3[!is.na(full.tax$TaxonomicReference3)]
 url <- gsub(".*Available at\\: ", "", url, perl = TRUE)
 url <- gsub("\\.$", "", url, perl = TRUE)
 tax3$url <- url
-tax3 <- tax3[ , match(names(sample), names(tax3))]
+
+## Binding everything together
+ref.template <- as.data.frame(matrix(NA, ncol = dim(sample)[2], nrow = 1,
+                                     dimnames = list(NULL, names(sample))))
+refs.assess <- dplyr::bind_rows(ref1, ref2, ref3, ref4, ref5, ref6, ref7,
+                                ref8, ref9, ref10, ref11, ref12, ref13,
+                                ref14)
+refs.usos <- dplyr::bind_rows(agro, br.woods, car98, cor11, cor18, lor92,
+                              mark14, vie16, snif, wiki)
+refs.tax <- rbind.data.frame(tax1, tax2, tax3)
+
+references <- as.data.frame(dplyr::bind_rows(ref.template, 
+                                             refs.assess,
+                                             refs.usos,
+                                             refs.tax))
+
+# Finale edits
+references <- references[ , match(names(sample), names(references))]
+references <- references[-1 ,]
+combo <- apply(references[,c("internal_taxon_id", "title")], 1, paste0, collapse = "_")
+references1 <- references[!duplicated(combo), ]
+references1 <- references1[order(references1$internal_taxon_id), ]
 
 ## Saving
-write.csv(conservation, "data/sis_connect/references_threat.csv", 
+write.csv(references1, "data/sis_connect/references_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
-
 
 
 ###############################################################################H
