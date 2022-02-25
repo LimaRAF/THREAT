@@ -167,11 +167,17 @@ full.tax3 <- full.tax3[, match(names(sample), names(full.tax3), nomatch = 0)]
 full.tax3$species <- 
   sapply(strsplit(full.tax3$species, " "), function(x) x[2])
 
+## Replacing NA by empty characters
+for (i in seq_len(dim(full.tax3)[2])) {
+  check_these <- is.na(full.tax3[,i])
+  if (any(check_these))
+    full.tax3[check_these, i] <- ""
+}
+
 ## Saving
 full.tax3 <- full.tax3[order(as.double(gsub("sp", "", full.tax3$internal_taxon_id))), ] 
 write.csv(full.tax3, "data/sis_connect/taxonomy_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
-
 
 
 ###############################################################################H
@@ -316,6 +322,13 @@ synonyms3$name[ids] <- paste(synonyms3$name[ids], synonyms3$infrarankAuthor[ids]
 head(sample, 3)
 head(synonyms3, 3)
 
+## Replacing NA by empty characters
+for (i in seq_len(dim(synonyms3)[2])) {
+  check_these <- is.na(synonyms3[,i])
+  if (any(check_these))
+    synonyms3[check_these, i] <- ""
+}
+
 ## Saving
 write.csv(synonyms3, "data/sis_connect/synonyms_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
@@ -416,7 +429,6 @@ hab1$vt <- gsub("\\|14\\.5$", "|Urban Areas", hab1$vt, perl = TRUE)
 hab1$vt <- gsub("\\|14\\.5\\|", "|Urban Areas|", hab1$vt, perl = TRUE)
 names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName"
 
-
 #GeneralHabitats.GeneralHabitatsSubfield.suitability:	Suitability - defaults to suitable if not provided
 
 #GenerationLength.range
@@ -491,8 +503,8 @@ hab1$p.est[is.na(hab1$p.est)] <- 0.454
 ## Sample of the SIS CONNECT taxonomy v6.1
 sample <- read.csv("SIS_sample_6_1/habitats.csv")
 head(sample, 3)
-apply(sample, 2, unique)
 names(sample)
+apply(sample, 2, unique)
 
 
 ##Organizing and saving
@@ -524,20 +536,34 @@ write.csv(hab2, "data/threat_habitats.csv",
 
 ## Saving the SIS connect file ##
 lookup <- strsplit(hab2$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup, "\\|")
+lookup.name <- strsplit(hab2$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName, "\\|")
+
 names(lookup) <- hab2$internal_taxon_id
+names(lookup.name) <- hab2$internal_taxon_id
+
 lookup1 <- unlist(lookup)
+lookup.name1 <- unlist(lookup.name)
 taxa_id <- rep(names(lookup), lengths(lookup))
 hab3 <- data.frame(
   GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup = lookup1,
-  GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName = NA,
+  GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName = lookup.name1,
   GeneralHabitats.GeneralHabitatsSubfield.majorImportance = NA,
   GeneralHabitats.GeneralHabitatsSubfield.season = "resident",
   GeneralHabitats.GeneralHabitatsSubfield.suitability = "Suitable",
   internal_taxon_id = taxa_id, stringsAsFactors = FALSE
 )
 head(sample, 3)
-head(hab3, 3)
-write.csv(hab3, "data/sis_connect/habitats_threat.csv", 
+head(hab3, 6)
+
+## Replacing NA by empty characters
+hab4 <- hab3[!hab3$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup %in% 
+               c("NA", "", NA),]
+for (i in seq_len(dim(hab4)[2])) {
+  check_these <- hab4[,i] %in% c("NA", "", NA)  
+  if (any(check_these))
+    hab4[check_these, i] <- ""
+}
+write.csv(hab4, "data/sis_connect/habitats_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
 
@@ -605,7 +631,7 @@ data.table::setkeyv(states.fbo, "species.correct2")
 ## Getting the country codes  (CountryOccurrenceLookup)
 # ISO2 (countries)
 countries <- occs[ , .N , by = c("loc.correct", "species.correct2")]
-rm(occs)
+# rm(occs)
 countries$loc.correct <- gsub("_NA$", "", countries$loc.correct, perl = TRUE)
 countries$loc.correct <- gsub("u\\.s\\. virgin islands", "united states virgin islands", 
                               countries$loc.correct, perl = TRUE)
@@ -643,8 +669,8 @@ saveRDS(countries0, "data/countries_per_species.rds")
 
 # Building the file
 countries[ , CountryOccurrenceLookup := tmp$code]
+countries[ , CountryOccurrenceName := tmp$NAME_0]
 countries <- countries[!is.na(CountryOccurrenceLookup), ]
-countries[ , CountryOccurrenceName := NA_character_]
 countries[ , formerlyBred := NA_character_]
 #Origin (originlookup: Native - 0, Reintroduced - 1, Introduced - 2, Prehistorically Introduced - 3, Vagrant - 4, Uncertain - 5)
 countries[ , origin := "Native"]
@@ -664,6 +690,7 @@ names(countries)[1:6] <- paste0("CountryOccurrence.CountryOccurrenceSubfield.",
                                 names(countries)[1:6])
 head(countries,3)
 head(read.csv("SIS_sample_6_1/countries.csv"),3)
+table(names(countries) == names(read.csv("SIS_sample_6_1/countries.csv")))
 write.csv(countries, "data/sis_connect/countries_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
@@ -1009,6 +1036,9 @@ usos1$UTEndUseLookup <-
 
 ##Creating the other required columns
 usos1$UTEndUseName <- NA
+usos1$UTEndUseName <- 
+  lookup.codes$description[match(usos1$uses, lookup.codes$treeco)]
+
 usos1$international <- NA
 usos1$national <- NA
 usos1$other <- NA
@@ -1043,6 +1073,13 @@ names(usos2)[1:6] <- paste0("UTEndUse.UTEndUseSubfield.",
                             names(usos2)[1:6])
 head(sample, 3)
 head(usos2, 3)
+
+## Replacing NA by empty characters
+for (i in seq_len(dim(usos2)[2])) {
+  check_these <- is.na(usos2[,i])
+  if (any(check_these))
+    usos2[check_these, i] <- ""
+}
 
 ##Saving the SIS Connet file
 write.csv(usos2, "data/sis_connect/usetrade_threat.csv", 
@@ -1090,20 +1127,23 @@ usos1 <- read.csv("data/threat_species_uses.csv", as.is = TRUE)
 ## CREATING THE TYPES OF THREATS FOR THE ATALNTIC FOREST ##
 ## Residential & commercial development
 # 1.1 Housing & urban areas (generalizado para a Mata Atlântica)
-res1.1 <- c(stress = "1.1|1.3|2.1|2.2", stressdesc = NA, ThreatsLookup = "1.1", 
-            ThreatsName = NA, ancestry = NA, ias = NA,
+res1.1 <- c(stress = "1.1|1.3|2.1|2.2", 
+            stressdesc = "Ecosystem Conversion|Indirect Ecosystem Effects|Species Mortality|Species Disturbance", 
+            ThreatsLookup = "1.1", ThreatsName = "Housing & Urban Areas", ancestry = NA, ias = NA,
             internationalTrade = NA, scope = "Majority (50-90%)", 
             severity = "Slow, Significant Declines", text = NA, 
             timing = "Ongoing", virus = NA)
 # 1.2 Commercial & industrial areas  (e.g. proximo de grandes centros urbanos)
-res1.2 <- c(stress = "1.1|1.3|2.1|2.2", stressdesc = NA, ThreatsLookup = "1.2", 
-            ThreatsName = NA, ancestry = NA, ias = NA,
+res1.2 <- c(stress = "1.1|1.3|2.1|2.2", 
+            stressdesc = "Ecosystem Conversion|Indirect Ecosystem Effects|Species Mortality|Species Disturbance", 
+            ThreatsLookup = "1.2", ThreatsName = "Commercial & Industrial Areas", ancestry = NA, ias = NA,
             internationalTrade = NA, scope = "Minority (<50%)", 
             severity = "Slow, Significant Declines", text = NA, 
             timing = "Ongoing", virus = NA)
 # 1.3 Tourism & recreation areas (e.g. proximo ao litoral)
-res1.3 <- c(stress = "1.2|2.2", stressdesc = NA, ThreatsLookup = "1.3", 
-            ThreatsName = NA, ancestry = NA, ias = NA,
+res1.3 <- c(stress = "1.2|2.2", 
+            stressdesc = "Ecosystem Degradation|Species Disturbance", 
+            ThreatsLookup = "1.3", ThreatsName = "Tourism & Recreation Areas", ancestry = NA, ias = NA,
             internationalTrade = NA, scope = "Minority (<50%)", 
             severity = "Causing/Could cause fluctuations", text = NA, 
             timing = "Ongoing", virus = NA)
@@ -1112,36 +1152,41 @@ res1.3 <- c(stress = "1.2|2.2", stressdesc = NA, ThreatsLookup = "1.3",
 ## Agriculture & aquaculture
 # 2.1	Annual & perennial non-timber crops
 #2.1.2	Small-holder farming (e.g. Araucaria)
-agr2.1.2 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = "2.1.2", 
-              ThreatsName = NA, ancestry = NA, ias = NA,
+agr2.1.2 <- c(stress = "1.1|1.2|2.1|2.2|2.3", 
+              stressdesc = "Ecosystem Conversion|Ecosystem Degradation|Species Mortality|Species Disturbance|Indirect Species Effects", 
+              ThreatsLookup = "2.1.2", ThreatsName = "Small-holder Farming", ancestry = NA, ias = NA,
               internationalTrade = NA, scope = "Majority (50-90%)", 
               severity = "Slow, Significant Declines", text = NA, 
               timing = "Ongoing", virus = NA) # Can be "Past, Unlikely to Return" for some species
 #2.1.3	Agro-industry farming (e.g. Araucaria, Ilex paraguariensis, Euterpe edulis)
-agr2.1.3 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = "2.1.3", 
-              ThreatsName = NA, ancestry = NA, ias = NA,
+agr2.1.3 <- c(stress = "1.1|1.2|2.1|2.2|2.3", 
+              stressdesc = "Ecosystem Conversion|Ecosystem Degradation|Species Mortality|Species Disturbance|Indirect Species Effects", 
+              ThreatsLookup = "2.1.3", ThreatsName = "Agro-industry Farming", ancestry = NA, ias = NA,
               internationalTrade = NA, scope = "Majority (50-90%)", 
               severity = "Rapid Declines", text = NA, 
               timing = "Ongoing", virus = NA)
 #2.1.4  Scale Unknown/Unrecorded (mais usado que os anteriored na AmSul)
-agr2.1.4 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = "2.1.4", 
-              ThreatsName = NA, ancestry = NA, ias = NA,
+agr2.1.4 <- c(stress = "1.1|1.2|2.1|2.2|2.3", 
+              stressdesc = "Ecosystem Conversion|Ecosystem Degradation|Species Mortality|Species Disturbance|Indirect Species Effects", 
+              ThreatsLookup = "2.1.4", ThreatsName = "Scale Unknown/Unrecorded", ancestry = NA, ias = NA,
               internationalTrade = NA, scope = "Majority (50-90%)", 
               severity = "Rapid Declines", text = NA, 
               timing = "Ongoing", virus = NA)
 
-
 # 2.2	Wood & pulp plantations
 #2.2.2	Agro-industry plantations (e.g. região de Aracruz)
-agr2.2.2 <- c(stress = "1.1|2.1|2.3", stressdesc = NA, ThreatsLookup = "2.2.2", 
-              ThreatsName = NA, ancestry = NA, ias = NA,
+agr2.2.2 <- c(stress = "1.1|2.1|2.3", 
+              stressdesc = "Ecosystem Conversion|Species Mortality|Indirect Species Effects", 
+              ThreatsLookup = "2.2.2", 
+              ThreatsName = "Agro-industry Plantations", ancestry = NA, ias = NA,
               internationalTrade = NA, scope = "Minority (<50%)", 
               severity = "Causing/Could cause fluctuations", text = NA, 
               timing = "Ongoing", virus = NA)
 
 #2.2.3	Scale Unknown/Unrecorded
-agr2.2.3 <- c(stress = "1.1|2.1|2.3", stressdesc = NA, ThreatsLookup = "2.2.3", 
-              ThreatsName = NA, ancestry = NA, ias = NA,
+agr2.2.3 <- c(stress = "1.1|2.1|2.3", 
+              stressdesc = "Ecosystem Conversion|Species Mortality|Indirect Species Effects", 
+              ThreatsLookup = "2.2.3", ThreatsName = "Scale Unknown/Unrecorded", ancestry = NA, ias = NA,
               internationalTrade = NA, scope = "Minority (<50%)", 
               severity = "Causing/Could cause fluctuations", text = NA, 
               timing = "Ongoing", virus = NA)
@@ -1149,14 +1194,16 @@ agr2.2.3 <- c(stress = "1.1|2.1|2.3", stressdesc = NA, ThreatsLookup = "2.2.3",
 
 # 2.3 Livestock farming & ranching
 #2.3.3	Agro-industry grazing, ranching or farming
-live2.3.3 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = "2.3.3", 
-               ThreatsName = NA, ancestry = NA, ias = NA,
+live2.3.3 <- c(stress = "1.1|1.2|2.1|2.2|2.3", 
+               stressdesc = "Ecosystem Conversion|Ecosystem Degradation|Species Mortality|Species Disturbance|Indirect Species Effects", 
+               ThreatsLookup = "2.3.3", ThreatsName = "Agro-industry Grazing, Ranching or Farming", ancestry = NA, ias = NA,
                internationalTrade = NA, scope = "Majority (50-90%)", 
                severity = "Rapid Declines", text = NA, 
                timing = "Ongoing", virus = NA)
 #2.3.4	Scale Unknown/Unrecorded (mais seguro/usado que o anterior)
-live2.3.4 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = "2.3.4", 
-               ThreatsName = NA, ancestry = NA, ias = NA,
+live2.3.4 <- c(stress = "1.1|1.2|2.1|2.2|2.3", 
+               stressdesc = "Ecosystem Conversion|Ecosystem Degradation|Species Mortality|Species Disturbance|Indirect Species Effects", 
+               ThreatsLookup = "2.3.4", ThreatsName = "Scale Unknown/Unrecorded", ancestry = NA, ias = NA,
                internationalTrade = NA, scope = "Majority (50-90%)", 
                severity = "Rapid Declines", text = NA, 
                timing = "Ongoing", virus = NA)
@@ -1164,8 +1211,9 @@ live2.3.4 <- c(stress = "1.1|1.2|2.1|2.2|2.3", stressdesc = NA, ThreatsLookup = 
 
 ## 3	Energy production & mining
 # 3.2	Mining & quarrying
-mine3.2 <- c(stress = "1.1|1.3|2.1|2.2", stressdesc = NA, ThreatsLookup = "3.2", 
-             ThreatsName = NA, ancestry = NA, ias = NA,
+mine3.2 <- c(stress = "1.1|1.3|2.1|2.2", 
+             stressdesc = "Ecosystem Conversion|Indirect Ecosystem Effects|Species Mortality|Species Disturbance", 
+             ThreatsLookup = "3.2", ThreatsName = "Mining & Quarrying", ancestry = NA, ias = NA,
              internationalTrade = NA, scope = "Minority (<50%)", 
              severity = "Causing/Could cause fluctuations", text = NA, 
              timing = "Ongoing", virus = NA)
@@ -1173,8 +1221,9 @@ mine3.2 <- c(stress = "1.1|1.3|2.1|2.2", stressdesc = NA, ThreatsLookup = "3.2",
 
 ## 4	Transportation & service corridors
 # 4.1	Roads & railroads
-road4.1 <- c(stress = "1.1|1.2", stressdesc = NA, ThreatsLookup = "3.2", 
-             ThreatsName = NA, ancestry = NA, ias = NA,
+road4.1 <- c(stress = "1.1|1.2", 
+             stressdesc = "Ecosystem Conversion|Ecosystem Degradation", 
+             ThreatsLookup = "3.2", ThreatsName = "Roads & Railroads", ancestry = NA, ias = NA,
              internationalTrade = NA, scope = "Minority (<50%)", 
              severity = "Causing/Could cause fluctuations", text = NA, 
              timing = "Ongoing", virus = NA) 
@@ -1183,28 +1232,38 @@ road4.1 <- c(stress = "1.1|1.2", stressdesc = NA, ThreatsLookup = "3.2",
 ## 5	Biological resource use
 # 5.2	Gathering terrestrial plants
 #5.2.1	Intentional use (species is the target) e.g. Araucaria
-bio5.2.1 <- c(stress = "2.2|2.3", stressdesc = NA, ThreatsLookup = "5.2.1", 
-              ThreatsName = NA, ancestry = NA, ias = NA, 
+bio5.2.1 <- c(stress = "2.2|2.3", 
+              stressdesc = "Species Disturbance|Indirect Species Effects", 
+              ThreatsLookup = "5.2.1", 
+              ThreatsName = "Intentional Use (species being assessed is the target)", 
+              ancestry = NA, ias = NA, 
               internationalTrade = "No", scope = "Unknown", 
               severity = "Causing/Could cause fluctuations", text = NA, 
               timing = "Ongoing", virus = NA)
 
 # 5.3	Logging & wood harvesting
 #5.3.1	Intentional use: (subsistence/small scale) [harvest]
-wood5.3.1 <- c(stress = "2.1|2.3", stressdesc = NA, ThreatsLookup = "5.3.1", 
-               ThreatsName = NA, ancestry = NA, ias = NA, 
+wood5.3.1 <- c(stress = "2.1|2.3", 
+               stressdesc = "Species Mortality|Indirect Species Effects", 
+               ThreatsLookup = "5.3.1", 
+               ThreatsName = "Intentional Use: subsistence/small scale (species being assessed is the target) [harvest]", ancestry = NA, ias = NA, 
                internationalTrade = "No", scope = "Minority (<50%)", 
                severity = "Causing/Could cause fluctuations", text = NA, 
                timing = "Ongoing", virus = NA)
 #5.3.2	Intentional use: (large scale) [harvest]
-wood5.3.2 <- c(stress = "2.1|2.3", stressdesc = NA, ThreatsLookup = "5.3.2", 
-               ThreatsName = NA, ancestry = NA, ias = NA, 
+wood5.3.2 <- c(stress = "2.1|2.3", 
+               stressdesc = "Species Mortality|Indirect Species Effects", 
+               ThreatsLookup = "5.3.2", 
+               ThreatsName = "Intentional Use: large scale (species being assessed is the target) [harvest]", 
+               ancestry = NA, ias = NA, 
                internationalTrade = "No", scope = "Majority (50-90%)", 
                severity = "Rapid Declines", text = NA, 
                timing = "Ongoing", virus = NA)
 #5.3.5	Motivation Unknown/Unrecorded (mais seguro/usado que o anterior)
-wood5.3.5 <- c(stress = "2.1|2.3", stressdesc = NA, ThreatsLookup = "5.3.5", 
-               ThreatsName = NA, ancestry = NA, ias = NA, 
+wood5.3.5 <- c(stress = "2.1|2.3", 
+               stressdesc = "Species Mortality|Indirect Species Effects", 
+               ThreatsLookup = "5.3.5",  ThreatsName = "Motivation Unknown/Unrecorded", 
+               ancestry = NA, ias = NA, 
                internationalTrade = "No", scope = "Unknown", 
                severity = "Slow, Significant Declines", text = NA, 
                timing = "Ongoing", virus = NA)
@@ -1221,8 +1280,8 @@ wood5.3.5 <- c(stress = "2.1|2.3", stressdesc = NA, ThreatsLookup = "5.3.5",
 ## 8	Invasive and other problematic species, genes & diseases
 # 8.1	Invasive non-native/alien species/diseases
 #8.1.1	Unspecified species (mais usado para AmSul) - competição com gramíneas exóticas
-invade8.1.1 <- c(stress = "2.3.2", stressdesc = NA, ThreatsLookup = "8.1.1", 
-                 ThreatsName = NA, ancestry = NA, ias = NA, 
+invade8.1.1 <- c(stress = "2.3.2", stressdesc = "Competition", ThreatsLookup = "8.1.1", 
+                 ThreatsName = "Unspecified Species", ancestry = NA, ias = NA, 
                  internationalTrade = NA, scope = "Unknown",  
                  severity = "Causing/Could cause fluctuations", text = NA, 
                  timing = "Ongoing", virus = NA)
@@ -1336,6 +1395,13 @@ names(threats)[3:12] <- paste0("Threats.ThreatsSubfield.",
                                names(threats)[3:12])
 table(names(threats) == names(sample))
 
+## Replacing NA by empty characters
+for (i in seq_len(dim(threats)[2])) {
+  check_these <- is.na(threats[,i])
+  if (any(check_these))
+    threats[check_these, i] <- ""
+}
+
 ## Saving the SIS Connet file
 write.csv(threats, "data/sis_connect/threats_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
@@ -1353,55 +1419,55 @@ sample <- read.csv("SIS_sample_6_1/conservationneeded.csv")
 
 ## CREATING THE TYPES OF CONSERVATION NEEDS FOR THE ATLANTIC FOREST ##
 # 1.1 Site/area protection (generalizado para a Mata Atlântica)
-con1.1 <- c(ConservationActionsLookup = "1.1", ConservationActionsName = NA, 
+con1.1 <- c(ConservationActionsLookup = "1.1", ConservationActionsName = "Site/area Protection", 
             note = "Criar ou expandir unidades de conservação (Categorias IUCN I-VI) dentro da área de distribuição da espécie")
 # 1.2	Resource & habitat protection
-con1.2 <- c(ConservationActionsLookup = "1.2", ConservationActionsName = NA, 
+con1.2 <- c(ConservationActionsLookup = "1.2", ConservationActionsName = "Resource & Habitat Protection", 
             note = "Proteção dos recursos naturais aos quais a espécie está associada, mesmo que fora de Unidades de Conservação")
 # 2.3	Habitat & natural process restoration
-con2.3 <- c(ConservationActionsLookup = "2.3", ConservationActionsName = NA, 
+con2.3 <- c(ConservationActionsLookup = "2.3", ConservationActionsName = "Habitat & Natural Process Restoration", 
             note = "Recuperar a degradação ambiental e/ou restaurar os habitats, corredores ecológicos e funções do ecossistema aos quais a espécie está associada")
 # 3.1.1	Harvest management
-con3.1.1 <- c(ConservationActionsLookup = "3.1.1", ConservationActionsName = NA, 
+con3.1.1 <- c(ConservationActionsLookup = "3.1.1", ConservationActionsName = "Harvest Management", 
               note = "Regulamentar o volume e frequência da colheita de produtos florestais não-madeireiros associados à espécie")
 # 3.1.2	Trade management
-con3.1.2 <- c(ConservationActionsLookup = "3.1.2", ConservationActionsName = NA, 
+con3.1.2 <- c(ConservationActionsLookup = "3.1.2", ConservationActionsName = "Trade Management", 
               note = "Regulamentar o comércio de produtos florestais não-madeireiros associados à espécie")
 # 3.3.1	Reintroduction
-con3.3.1 <- c(ConservationActionsLookup = "3.3.1", ConservationActionsName = NA, 
+con3.3.1 <- c(ConservationActionsLookup = "3.3.1", ConservationActionsName = "Species Re-Introduction", 
               note = "Reintrodução (i.e. plantio) de indivíduos em áreas onde a espécie foi extirpada, seguindo as orientações da IUCN")
 # 3.4	Ex-situ conservation
-con3.4 <- c(ConservationActionsLookup = "3.4", ConservationActionsName = NA, 
+con3.4 <- c(ConservationActionsLookup = "3.4", ConservationActionsName = "Ex-situ Conservation", 
             note = "Proteção ex-situ da espécie via plantios em jardins botânicos e incorporação em bancos de germoplasma e/ou bases de dados genéticos (e.g. GenBank)")
 # 4.2	Training
-con4.2 <- c(ConservationActionsLookup = "4.2", ConservationActionsName = NA, 
+con4.2 <- c(ConservationActionsLookup = "4.2", ConservationActionsName = "Training", 
             note = "Capacitação de profissionais que possam atuar diretamente em ações de conservação da espécie (e.g. gestores de unidades de conservação, agentes de fiscalização, produtores de semente), aprimorando conhecimentos, habilidades e troca de informações entre esses profissionais (e.g. melhorando habilidades de identificação da espécie)")
-# 4.3	Awareness & communications
-con4.3 <- c(ConservationActionsLookup = "4.3", ConservationActionsName = NA, 
+# 4.3	Awareness & Communications
+con4.3 <- c(ConservationActionsLookup = "4.3", ConservationActionsName = "Awareness & Communications", 
             note = "Sensibilização ambiental da sociedade em geral sobre o grau de ameaça da espécie via diferentes meios de comunicação")
-# 5.1.1	International level
-con5.1.1 <- c(ConservationActionsLookup = "5.1.1", ConservationActionsName = NA, 
+# 5.1.1	International Level
+con5.1.1 <- c(ConservationActionsLookup = "5.1.1", ConservationActionsName = "International Level", 
               note = "Criar, implementar ou adaptar dispositivos inter-nacionais que facilitem a proteção da espécie")
-# 5.1.2	National level
-con5.1.2 <- c(ConservationActionsLookup = "5.1.2", ConservationActionsName = NA, 
+# 5.1.2	National Level
+con5.1.2 <- c(ConservationActionsLookup = "5.1.2", ConservationActionsName = "National Level", 
               note = "Criar, implementar ou adaptar leis nacionais que oficializem a proteção da espécie")
-# 5.2	Policies and regulations
-con5.2 <- c(ConservationActionsLookup = "5.2", ConservationActionsName = NA, 
+# 5.2	Policies & Regulations
+con5.2 <- c(ConservationActionsLookup = "5.2", ConservationActionsName = "Policies & Regulations", 
             note = "Criar, implementar ou das suporte a políticas públicas que facilitem a proteção da espécie")
-# 5.4.1	International level
-con5.4.1 <- c(ConservationActionsLookup = "5.4.1", ConservationActionsName = NA, 
+# 5.4.1	International Level
+con5.4.1 <- c(ConservationActionsLookup = "5.4.1", ConservationActionsName = "Katharine Davies", 
               note = "Reforçar e garantir a implementação de tratados e regulamentações internacionais que envolvem a espécie (e.g. CITES), incluindo a implementação das sanções e punições legais cabíveis")
 # 6.2	Substitution
-con6.2 <- c(ConservationActionsLookup = "6.2", ConservationActionsName = NA, 
+con6.2 <- c(ConservationActionsLookup = "6.2", ConservationActionsName = "Substitution", 
             note = "Promover o uso de produtos oriundos de espécies manejadas e que causem menores pressões sobre as populações naturais da espécie")
-# 6.3	Market forces
-con6.3 <- c(ConservationActionsLookup = "6.3", ConservationActionsName = NA, 
+# 6.3	Market Forces
+con6.3 <- c(ConservationActionsLookup = "6.3", ConservationActionsName = "Market Forces", 
             note = "Promover o uso de mecanismos de mercado que promovam mudanças de comportamento em relação ao uso da espécie (e.g. certificação florestal)")
 # 7.1	Institutional & Civil Society Development
-con7.1 <- c(ConservationActionsLookup = "7.1", ConservationActionsName = NA, 
+con7.1 <- c(ConservationActionsLookup = "7.1", ConservationActionsName = "Institutional & Civil Society Development", 
             note = "Dar suporte e capacitar organizações, empresas e comunidades que possam atuar diretamente em ações para a conservação da espécie")
 # 7.2	Alliance & Partnership Development
-con7.2 <- c(ConservationActionsLookup = "7.2", ConservationActionsName = NA, 
+con7.2 <- c(ConservationActionsLookup = "7.2", ConservationActionsName = "Alliance & Partnership Development", 
             note = "Formar redes de colaboração multi-setoriais para divulgar e promover a conservação da espécie")
 
 ## CREATING COMBINED INFO FOR ALL SPECIES ##
@@ -1412,7 +1478,8 @@ cites <- readRDS("data/threat_cites_EU.rds")
 all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appendix", "annotation")],
                  by.x = "internal_taxon_id", 
                  by.y = "internal_taxon_id", all.x = TRUE, sort = FALSE)
-all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ] 
+all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ]
+saveRDS(all.spp, "data/all_spp_crits_tax_cites.rds")
 n.spp <- dim(all.spp)[1]
 
 #species uses
@@ -1662,7 +1729,6 @@ names(conservation)[1:3] <- paste0("ConservationActions.ConservationActionsSubfi
                                    names(conservation)[1:3])
 table(names(conservation) == names(sample))
 
-
 ## Saving the SIS Connet file
 write.csv(conservation, "data/sis_connect/conservationneeded_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
@@ -1682,44 +1748,44 @@ apply(sample, 2, unique)
 ## CREATING THE TYPES OF RESEARCH NEEDS FOR THE ATLANTIC FOREST ##
 # 1	Research					
 #1.1	Taxonomy depend (if most records are old)		
-res1.1 <- c(ResearchLookup = "1.1", ResearchName = NA, 
+res1.1 <- c(ResearchLookup = "1.1", ResearchName = "Taxonomy", 
             note = "Espécie conhecida apenas para a localidade onde o espécimen tipo foi coletado e/ou que não tenha sido re-coletado nos últimos 50 anos. Pode se tratar de uma sinônimo de outra espécie que não tenha recebido o tratamento taxonômico necessário. Caso contrário, pode se tratar de uma espécie possivelmente extinta na natureza")
-#1.2 Population size, distribution & trends	depend (if no plot data is available)
-res1.2 <- c(ResearchLookup = "1.2", ResearchName = NA, 
+#1.2 Population size, Distribution and Past Trends (if no plot data is available)
+res1.2 <- c(ResearchLookup = "1.2", ResearchName = "Population size, Distribution and Past Trends", 
             note = "Espécie não registrada em nenhum dos mais de 1100 inventários florestais compilados para a Mata Atlântica, portanto sem estimativas de seu tamanho populacional e tendências de declínio. Adicionalmente, a espécie foi registrada em poucas localidades (menos que 10). Provavelmente trata-se de uma espécie que ocorre em baixas densidades na floresta (i.e. espécie rara) ou uma espécie de ocrrência restrita à um tipo de habitat específico e sub-representado nos registros de herbário e inventários florestais compilados")
-#1.3	Life history & ecology					
-res1.3 <- c(ResearchLookup = "1.3", ResearchName = NA, 
+#1.3	Life History and Ecology
+res1.3 <- c(ResearchLookup = "1.3", ResearchName = "Life History and Ecology", 
             note = "Espécie classificada como criticamente ameaçada, porém com pouca ou nenhuma informação sobre sua distribuição, ecologia e história de vida")
-#1.4	Harvest, use & livelihoods					
-res1.4 <- c(ResearchLookup = "1.4", ResearchName = NA, 
+#1.4	Harvest, Use and Livelihoods			
+res1.4 <- c(ResearchLookup = "1.4", ResearchName = "Harvest, Use and Livelihoods", 
             note = "Espécie classificada como criticamente ameaçada, porém sem nenhuma informação sobre usos, colheita e seu papel para a subsistência de populações locais")
-#1.5	Threats					
-res1.5 <- c(ResearchLookup = "1.5", ResearchName = NA, 
+#1.5	Threats		
+res1.5 <- c(ResearchLookup = "1.5", ResearchName = "Threats", 
             note = "Espécie classificada como criticamente ameaçada, porém sem nenhuma informação específica sobre as ameaças à manutenção a longo prazo de suas populações na natureza")
 # #1.6	Conservation Actions	Research to determine how to mitigate particular threats (e.g., how to mitigate impacts of long-lining to reduce bycatch), or whether ex-situ breeding is possible	
 # res1.6 <- c(ResearchLookup = "1.6", ResearchName = NA, note = NA)
 
 # 2	Conservation Planning					
 #2.1	Species Action/Recovery Plan	depend (if CR or CR PE)			
-res2.1 <- c(ResearchLookup = "2.1", ResearchName = NA, 
+res2.1 <- c(ResearchLookup = "2.1", ResearchName = "Species Action/Recovery Plan", 
             note = "Estabelecer um Plano de Ação em escala nacional para recuperar as populações da espécie")
 #2.2	Area-based Management Plan					
-res2.2 <- c(ResearchLookup = "2.2", ResearchName = NA, note = NA)
-#2.3	Harvest & Trade Management Plan					
-res2.3 <- c(ResearchLookup = "2.3", ResearchName = NA, 
+res2.2 <- c(ResearchLookup = "2.2", ResearchName = "Area-based Management Plan", note = "")
+#2.3	Harvest and Trade Management Plan
+res2.3 <- c(ResearchLookup = "2.3", ResearchName = "Harvest and Trade Management Plan", 
             note = "Espécie criticamente ameaçada com algum tipo de uso conhecido, real ou potencial, para a obtenção de produtos madereiros ou não-madereiro")
 
 # 3	Monitoring					
-#3.1	Population trends	depend (if threatened based on C or D)	
-res3.1 <- c(ResearchLookup = "3.1", ResearchName = NA, 
+#3.1	Population Trends (if threatened based on C or D)	
+res3.1 <- c(ResearchLookup = "3.1", ResearchName = "Population Trends", 
             note = "Espécie com estimativas ou indícios de tamanho populacional pequeno e em declínio ou com tamanho populacionais muito pequenos. Estudos populacionais mais refinados são necessários para melhor estimar qual é o real tamanho populacional da espécie ao longo da sua área de distribuição")
 #3.2	Harvest level trends depend (if overharvested)
-res3.2 <- c(ResearchLookup = "3.2", ResearchName = NA, 
+res3.2 <- c(ResearchLookup = "3.2", ResearchName = "Harvest level Trends", 
             note = "Espécie com histórico de exploração na Mata Atlântica. Apesar das estimativas do tamanho populacional da espécie estarem disponíveis (baseadas em perda de área florestal), pouco se conhece sobre a intensidade da exploração histórica e de seu impacto no tamanho populacional efetivo da espécie ao longo do tempo. Estudos populacionais mais refinados são necessários para melhor estimar qual a real situação das populacões ao longo da área de distribuição da espécie")
-#3.3	Trade trends	depend (if traded)?	Espécie de uso comercial comum na Mata Atlântica. Contudo, pouco se conhece sobre o impacto desse uso sobre a espécie.
-res3.3 <- c(ResearchLookup = "3.3", ResearchName = NA, note = NA)
-#3.4	Habitat trends					
-res3.4 <- c(ResearchLookup = "3.4", ResearchName = NA, note = NA)
+#3.3	Trade Trends	depend (if traded)?	Espécie de uso comercial comum na Mata Atlântica. Contudo, pouco se conhece sobre o impacto desse uso sobre a espécie.
+res3.3 <- c(ResearchLookup = "3.3", ResearchName = "Trade Trends", note = "")
+#3.4	Habitat Trends
+res3.4 <- c(ResearchLookup = "3.4", ResearchName = "Habitat Trends", note = "")
 
 
 ## CREATING COMBINED INFO FOR ALL SPECIES ##
@@ -1942,16 +2008,21 @@ countries0 <- merge(countries0, regions[, c("Country_Names", "WWF_Realm", "NAME_
                     by.x = "NAME_0", by.y = "Country_Names", sort = FALSE, all.x = TRUE)
 # countries0$UN_Bioregion <- gsub(" Region", "", countries0$UN_Bioregion)
 sort(unique(countries0$WWF_Realm))
-
 tmp <- as.data.frame.matrix(table(countries0$species.correct2, countries0$WWF_Realm))
 tmp <- tmp[, -which(names(tmp) == "NA")]
 tmp1 <- apply(tmp, 1, function(x) 
                         paste0(names(tmp)[x > 0], collapse = "|"))
+# tmp1 <- table(countries0$species.correct2)
+# assess <- data.frame(species.correct2 = names(tmp1),
+#                      BiogeographicRealm.realm = as.double(tmp1))
 assess <- data.frame(species.correct2 = names(tmp1),
                      BiogeographicRealm.realm = tmp1)
-assess <- assess[assess$species.correct2 %in% all.spp$species,]
-assess <- assess[match(assess$species.correct2, all.spp$species),]
+assess <- assess[assess$species.correct2 %in% all.spp$species, , drop = FALSE]
+assess <- assess[match(assess$species.correct2, all.spp$species), , drop = FALSE]
 table(assess$species.correct2 == tax$species.correct2)
+# toto <- read.csv("data/sis_connect/assessments_threat.csv", encoding = "UTF-8")
+# table(toto$species.correct2 == assess$species.correct2)
+# assess$BiogeographicRealm.realm <- toto$BiogeographicRealm.realm
 assess$internal_taxon_id <- tax$internal_taxon_id
 
 ## Population Trend
@@ -2004,14 +2075,20 @@ crits[!fill_these] <- ""
 crits <- gsub("A1+A2","A2b", crits, fixed = TRUE)
 crits <- gsub("^A2$","A2b", crits, perl = TRUE)
 crits <- gsub("^A2\\+","A2b+", crits, perl = TRUE)
-crits <- gsub("B1","B1a,B1biii", crits, fixed = TRUE)
-crits <- gsub("B2","B2a,B2biii", crits, fixed = TRUE)
-crits <- gsub("C2","C2aii", crits, fixed = TRUE)
+crits <- gsub("B1+B2","B1ab(iii)_2ab(iii)", crits, fixed = TRUE)
+crits <- gsub("B2","B2ab(iii)", crits, perl = TRUE)
+crits <- gsub("B1$","B1ab(iii)", crits, perl = TRUE)
+# crits <- gsub("B1","B1a,B1biii", crits, fixed = TRUE)
+# crits <- gsub("B2","B2a,B2biii", crits, fixed = TRUE)
+crits <- gsub("C2","C2a(ii)", crits, fixed = TRUE)
+crits <- gsub("C1+C2","C1_2", crits, fixed = TRUE)
 crits <- gsub("D","D1", crits, fixed = TRUE)
-crits <- gsub("\\+",",", crits, perl = TRUE)
+crits <- gsub("\\+","; ", crits, perl = TRUE)
+crits <- gsub("_","+", crits, perl = TRUE)
+
 # crits <- gsub("B1ab(iii)+B2ab(iii)","B1ab(iii)+2ab(iii)", crits, fixed = TRUE)
 exploit <- grepl("Extra reduction", all.spp$basis_d)
-crits[exploit] <- gsub("A2b","A2b,A2d", crits[exploit], fixed = TRUE)
+crits[exploit] <- gsub("A2b","A2bd", crits[exploit], fixed = TRUE)
 assess$RedListCriteria.manualCriteria <- crits
 assess$RedListCriteria.manualCriteriaString <- ""
 
@@ -2029,7 +2106,7 @@ assess$RedListCriteria.yearLastSeen[replace_these] <-
 ## Data deficient 
 assess$RedListCriteria.dataDeficientReason <- ""
 replace_these <- assess$RedListCriteria.manualCategory %in% "DD" 
-assess$RedListCriteria.dataDeficientReason[replace_these] <- "Provenance"
+assess$RedListCriteria.dataDeficientReason[replace_these] <- "Taxonomic"
 
 ## Date of the Assessment (dd/mm/yyyy)
 assess$RedListAssessmentDate.value <- "28/05/2021"
@@ -2043,7 +2120,6 @@ all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appen
                  by.x = "internal_taxon_id", 
                  by.y = "internal_taxon_id", all.x = TRUE, sort = FALSE)
 all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ] 
-
 
 ## Re-assessments
 prev.assess <- readRDS("data/sis_connect/prev_assessments_threat.rds")
@@ -2200,7 +2276,9 @@ for (i in 1:dim(paises)[1]) {
 
 
 ## Map status (single select)??
-assess$MapStatus.status <- ""
+assess$MapStatus.status <- "false"
+check_these <- assess$species.correct2 %in% readLines("data/sis_connect/spp_with_shapes.txt") 
+assess$MapStatus.status[check_these] <- "true"
 
 ## Population description (all assessments but LC and NA)
 info.threat <- readRDS("data/assess_iucn_spp.rds")
@@ -2931,9 +3009,15 @@ table(names(assess1) == names(sample))
 head(sample, 2)
 head(assess1, 2)
 
+## Replacing NA by empty characters
+for (i in seq_len(dim(assess1)[2])) {
+  check_these <- assess1[,i] %in% c("", NA, NA_character_)
+  if (any(check_these))
+    assess1[check_these, i] <- ""
+}
 
 ## Saving
-write.csv(assess, "data/sis_connect/assessments_threat.csv", 
+write.csv(assess1, "data/sis_connect/assessments_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
 ###############################################################################H
@@ -2946,6 +3030,7 @@ sample <- read.csv("SIS_sample_6_1/allfields.csv")
 # head(sample, 3)
 # apply(sample, 2, unique)
 
+all.spp <- readRDS("data/all_spp_crits_tax_cites.rds")
 allfields <- data.frame(internal_taxon_id = all.spp$internal_taxon_id)
 
 ## AOO
@@ -2958,8 +3043,9 @@ allfields$AOODetails.nonbreedingRangeJustification <- NA
 #Continuing decline in AOO: "1" (meaning true), "0" (meaning false), or "U" (meaning “unknown”)
 allfields$AOOContinuingDecline.isInContinuingDecline <- "U"
 allfields$AOOContinuingDecline.qualifier <- "Unknown"
-allfields$AOOContinuingDecline.justification <- 
-  "Não foram feitas inferências sobre o declínuo contínuo da Área de Ocupação (AOO) da espécie. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
+allfields$AOOContinuingDecline.justification <- ""
+# allfields$AOOContinuingDecline.justification <- 
+#   "Não foram feitas inferências sobre o declínuo contínuo da Área de Ocupação (AOO) da espécie. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
 allfields$AOOExtremeFluctuation.isFluctuating <- NA
 allfields$AOOExtremeFluctuation.justification <- NA
 
@@ -2967,10 +3053,18 @@ allfields$AOOExtremeFluctuation.justification <- NA
 allfields$EOO.range <- all.spp$EOO
 allfields$EOO.justification <- 
   "EOO foi definida como a área do polígono convexo mínimo que contém todas as ocorrências conhecidas para a espécies, incluindo áreas não-terrestres"
+# se EOO não for gerado ou for menor que AOO
+check_these <- !is.na(allfields$EOO.range) &
+                  (allfields$EOO.range %in% 0 | allfields$EOO.range < allfields$AOO.range)
+allfields$EOO.range[check_these] <- allfields$AOO.range[check_these]
+allfields$EOO.justification[check_these] <- 
+  "EOO foi definida como sendo igual a AOO, pois o EOO estimado foi 0 ou menor que o AOO"
+
 allfields$EOOContinuingDecline.isContinuingDecline <- "U"
 allfields$EOOContinuingDecline.qualifier <- "Unknown"
-allfields$EOOContinuingDecline.justification <- 
-  "Não foram feitas inferências sobre o declínuo contínuo da Área de Extensão (EOO) da espécie. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
+allfields$EOOContinuingDecline.justification <- ""
+# allfields$EOOContinuingDecline.justification <- 
+#   "Não foram feitas inferências sobre o declínuo contínuo da Área de Extensão (EOO) da espécie. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
 allfields$EOOExtremeFluctuation.isFluctuating <- NA
 allfields$EOOExtremeFluctuation.justification <- NA
 # allfields$EOODetails.breedingRange <- NA
@@ -2982,8 +3076,9 @@ allfields$LocationsNumber.justification <-
   "O número de locais no qual a espécies ocorre foi estimado como a soma entre o número de Unidades de Conservação de Proteção Integral no qual a espécies ocorre e o número de células ocupadas for de Unidades de Conservação em um grid de 10 km de resolução, assumindo 10 km como uma escala espacial razoável da influêcia das ameaças à espécie (Dauby et al. 2017; Stévart et al. 2019)."
 allfields$LocationContinuingDecline.inDecline <- "U"
 allfields$LocationContinuingDecline.qualifier <- "Unknown"
-allfields$LocationContinuingDecline.justification <- 
-  "Não foram feitas inferências sobre o declínuo contínuo do número de locais nos quais a espécie ocorre. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
+allfields$LocationContinuingDecline.justification <- ""
+# allfields$LocationContinuingDecline.justification <- 
+#   "Não foram feitas inferências sobre o declínuo contínuo do número de locais nos quais a espécie ocorre. Porém, foi estimado o declínio contínuo da Área de Habitat (AOH) dentro a área de extensão terrestre da espécie."
 allfields$LocationExtremeFluctuation.isFluctuating <- NA
 allfields$LocationExtremeFluctuation.justification <- NA
 
@@ -3047,8 +3142,11 @@ allfields$SevereFragmentation.justification <-
 allfields$PopulationContinuingDecline.isDeclining <- ifelse(all.spp$any.decline == "Decreasing", 1, 0)
 allfields$PopulationContinuingDecline.isDeclining[is.na(allfields$PopulationContinuingDecline.isDeclining)] <- "U"
 allfields$PopulationContinuingDecline.qualifier <- NA
-allfields$PopulationContinuingDecline.justification <- 
-  "O tamanho da população foi considerada como em declínio continuo se houve uma diminuição de 1% ou mais no tamanho da população entre 2000 e 2018."
+allfields$PopulationContinuingDecline.justification <- ""
+replace_these <- !allfields$PopulationContinuingDecline.isDeclining %in% "U"
+allfields$PopulationContinuingDecline.justification[replace_these] <- "Estimated" 
+# allfields$PopulationContinuingDecline.justification <- 
+#   "O tamanho da população foi considerada como em declínio continuo se houve uma diminuição de 1% ou mais no tamanho da população entre 2000 e 2018."
 
 # critC <- readRDS("data\criterionC_optmim_params.rds")
 critC <- readRDS("data/criterionC_all_prop_mature.rds")
@@ -3060,29 +3158,29 @@ critC <- dplyr::left_join(all.spp,
 reduc <- round(as.double(critC$reduction_1gen), 1)
 reduc[!is.na(reduc) & reduc <= 0] <- 0
 add_these <- !is.na(reduc)
-allfields$PopulationDeclineGenerations1.range <- reduc
-allfields$PopulationDeclineGenerations1.qualifier <- NA
-allfields$PopulationDeclineGenerations1.justification <- NA
-allfields$PopulationDeclineGenerations1.justification[add_these] <- 
-  "Declínio populacional calculado para um comprimento/tempo de geração"
+allfields$PopulationDeclineGenerations1.range <- ""
+allfields$PopulationDeclineGenerations1.range[add_these] <- reduc[add_these]
+allfields$PopulationDeclineGenerations1.qualifier <- ""
+allfields$PopulationDeclineGenerations1.justification <- ""
+allfields$PopulationDeclineGenerations1.justification[add_these] <- "Estimated"
 
 reduc <- round(as.double(critC$reduction_2gen), 1)
 reduc[!is.na(reduc) & reduc <= 0] <- 0
 add_these <- !is.na(reduc)
-allfields$PopulationDeclineGenerations2.range <- reduc
-allfields$PopulationDeclineGenerations2.qualifier <- NA
-allfields$PopulationDeclineGenerations2.justification <- NA
-allfields$PopulationDeclineGenerations2.justification[add_these] <- 
-  "Declínio populacional calculado para dois comprimentos/tempos de geração"
+allfields$PopulationDeclineGenerations2.range <- ""
+allfields$PopulationDeclineGenerations2.range[add_these] <- reduc[add_these]
+allfields$PopulationDeclineGenerations2.qualifier <- ""
+allfields$PopulationDeclineGenerations2.justification <- ""
+allfields$PopulationDeclineGenerations2.justification[add_these] <- "Estimated"
 
 reduc <- round(as.double(critC$reduction_3gen), 1)
 reduc[!is.na(reduc) & reduc <= 0] <- 0
 add_these <- !is.na(reduc)
-allfields$PopulationDeclineGenerations3.range <- reduc
-allfields$PopulationDeclineGenerations3.qualifier <- NA
-allfields$PopulationDeclineGenerations3.justification <- NA
-allfields$PopulationDeclineGenerations2.justification[add_these] <- 
-  "Declínio populacional calculado para três comprimentos/tempos de geração"
+allfields$PopulationDeclineGenerations3.range <- ""
+allfields$PopulationDeclineGenerations3.range[add_these] <- reduc[add_these]
+allfields$PopulationDeclineGenerations3.qualifier <- ""
+allfields$PopulationDeclineGenerations3.justification <- ""
+allfields$PopulationDeclineGenerations2.justification[add_these] <- "Estimated"
 
 allfields$SubpopulationExtremeFluctuation.isFluctuating <- NA
 allfields$SubpopulationExtremeFluctuation.justification <- NA
@@ -3107,9 +3205,12 @@ allfields$ExtinctionProbabilityYears100.range <- NA
 
 ## Past Reduction 
 allfields$PopulationReductionPast.range <- abs(all.spp$reduction_A12)
-allfields$PopulationReductionPast.direction <- ifelse(all.spp$reduction_A12 > 0, "Reduction", "Increase")
-allfields$PopulationReductionPast.qualifier <- NA
-allfields$PopulationReductionPast.justification <- NA
+allfields$PopulationReductionPast.direction <- 
+  ifelse(all.spp$reduction_A12 > 0, "Reduction", "Increase")
+allfields$PopulationReductionPast.qualifier <- ""
+allfields$PopulationReductionPast.justification <- ""
+check_these <- !is.na(allfields$PopulationReductionPast.direction)
+allfields$PopulationReductionPast.justification[check_these] <- "Estimated"
 
 allfields$PopulationReductionPastBasis.value <- NA
 allfields$PopulationReductionPastBasis.value[!is.na(all.spp$reduction_A12)] <- 
@@ -3118,7 +3219,8 @@ allfields$PopulationReductionPastBasis.value[grepl("Extra", all.spp$basis_d)] <-
   "b) an index of abundance appropriate for the taxon|d) actual or potential levels of exploitation"
 
 allfields$PopulationReductionPastBasis.detail <- NA
-allfields$PopulationReductionPastBasis.detail[!is.na(all.spp$reduction_A12)] <- "Número de indivíduos adultos na população"
+allfields$PopulationReductionPastBasis.detail[!is.na(all.spp$reduction_A12)] <- 
+  "Número de indivíduos adultos na população"
 
 allfields$PopulationReductionPastReversible.value <- NA
 allfields$PopulationReductionPastReversible.value[!is.na(all.spp$reduction_A12)] <- "U"
@@ -3152,9 +3254,11 @@ allfields$PopulationReductionPastandFutureCeased.value <- NA
 allfields$HabitatContinuingDecline.isDeclining <- ifelse(all.spp$declineB == "Decreasing", 1, 0)
 check_these <- is.na(all.spp$declineB)
 allfields$HabitatContinuingDecline.isDeclining[check_these] <- "U"
-allfields$HabitatContinuingDecline.qualifier <- NA
-allfields$HabitatContinuingDecline.justification <- 
-  "O declínuo contínuo foi estimado como a perda de área de habitat dentro da parte terrestre da EOO da espécie (i.e. extensão de habitat adequado) para o período entre 2000 e 2018."
+allfields$HabitatContinuingDecline.qualifier <- ""
+allfields$HabitatContinuingDecline.justification <- ""
+allfields$HabitatContinuingDecline.justification[!check_these] <- "Estimated"
+# allfields$HabitatContinuingDecline.justification <- 
+#   "O declínuo contínuo foi estimado como a perda de área de habitat dentro da parte terrestre da EOO da espécie (i.e. extensão de habitat adequado) para o período entre 2000 e 2018."
 
 ## Life history
 hab2 <- read.csv("data/threat_habitats.csv", as.is = TRUE, encoding = "UTF-8")
@@ -3217,7 +3321,6 @@ allfields$UTLocalLivelihood.localcommercialDetail <- NA
 allfields$UTNatlCommercialValue.value <- NA
 check_these <- all.spp$internal_taxon_id %in% unique(usos2$internal_taxon_id[usos2$UTEndUse.UTEndUseSubfield.national %in% "true"])
 allfields$UTNatlCommercialValue.value[check_these] <- 1
-
 
 allfields$UTIntlCommercialValue.value <- NA
 check_these <- all.spp$internal_taxon_id %in% unique(usos2$internal_taxon_id[usos2$UTEndUse.UTEndUseSubfield.international %in% "true"])
@@ -3289,6 +3392,13 @@ names(sample)[!names(sample) %in% names(allfields)]
 names(allfields)[!names(allfields) %in% names(sample)]
 allfields <- allfields[ , names(sample)]
 table(names(allfields) == names(sample))
+
+## Replacing NA by empty characters
+for (i in seq_len(dim(allfields)[2])) {
+  check_these <- is.na(allfields[,i])
+  if (any(check_these))
+    allfields[check_these, i] <- ""
+}
 
 ## Saving the SIS Connet file
 write.csv(allfields, "data/sis_connect/allfields_threat.csv", 
@@ -3825,12 +3935,19 @@ references <- as.data.frame(dplyr::bind_rows(ref.template,
                                              refs.usos,
                                              refs.tax))
 
-# Finale edits
+# Final edits
 references <- references[ , match(names(sample), names(references))]
 references <- references[-1 ,]
 combo <- apply(references[,c("internal_taxon_id", "title")], 1, paste0, collapse = "_")
 references1 <- references[!duplicated(combo), ]
 references1 <- references1[order(references1$internal_taxon_id), ]
+
+# Removing NAs
+for (i in seq_len(dim(references1)[2])) {
+  check_these <- references1[,i] %in% c("NA", "", NA)  
+  if (any(check_these))
+    references1[check_these, i] <- ""
+}
 
 ## Saving
 write.csv(references1, "data/sis_connect/references_threat.csv", 
@@ -3847,27 +3964,26 @@ apply(sample, 2, unique)
 
 ## Creating the assessor(s) vector
 assess1 <- data.frame(Order = 1L, 
-                      affiliation = "Naturalis Biodiversity Center & IUCN SSC Global Tree Specialist Group", 
-                      credit_type = "Assessor", email = "renato.lima@naturalis.nl",
-                      firstName = "Renato A. Ferreira de",
-                      initials = "R.A.F.", lastName = "Lima", nickname = "",
+                      affiliation = "Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
+                      credit_type = "Assessor", email = "raflima@usp.br",
+                      firstName = "Renato A.",
+                      initials = "R.", lastName = "Ferreira de Lima", nickname = "",
                       user_id = "") 
 
 ## Creating the compiler(s) vector
 compila1 <- data.frame(Order = 1L, 
-                       affiliation = "Naturalis Biodiversity Center & IUCN SSC Global Tree Specialist Group", 
-                       credit_type = "Compiler", email = "renato.lima@naturalis.nl",
-                       firstName = "Renato A. Ferreira de",
-                       initials = "R.A.F.", lastName = "Lima", nickname = "",
+                       affiliation = "Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
+                       credit_type = "Compiler", email = "raflima@usp.br",
+                       firstName = "Renato A.",
+                       initials = "R.", lastName = "Ferreira de Lima", nickname = "",
                        user_id = "") 
-
 
 ## Creating the reviewer(s) vector
 review1 <- data.frame(Order = 1L, affiliation = "",  credit_type = "Reviewer", 
                       email = "", firstName = "", initials = "", lastName = "", 
                       nickname = "", user_id = "") 
 
-## Creating the reviewer(s) vector
+## Creating the contributors(s) vector
 contrib1 <- data.frame(Order = 1L, 
                        affiliation = "Centro Nacional de Conservação da Flora (CNCFlora) & IUCN SSC Brazil Plant Red List Authority",
                        credit_type = "Contributor", 
@@ -3875,9 +3991,8 @@ contrib1 <- data.frame(Order = 1L,
                        nickname = "", user_id = "") 
 
 ## Combining all info
-tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 3)]
 n.spp <- dim(tax)[1]
-temp <- rbind.data.frame(assess1,  review1,  contrib1, 
+temp <- rbind.data.frame(assess1,  compila1, review1,  contrib1, 
                          stringsAsFactors = FALSE)
 credits <- do.call(rbind.data.frame, 
                    replicate(n.spp, temp, simplify = FALSE))
@@ -3891,3 +4006,53 @@ credits[credits$internal_taxon_id %in% "sp1",]
 credits <- credits[ , match(names(sample), names(credits))]
 write.csv(credits, "data/sis_connect/credits_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
+
+
+###############################################################################H
+###############################################################################H
+# OCCURRENCES ------------------------------------------------------------------
+
+sample <- read.csv("SIS_sample_6_1/ex_maps.csv", sep = "\t")
+oc.data <- readRDS("data/threat_occ_data_final.rds")
+# oc.data.loc <- readRDS("data/threat_species_by_country.rds")
+oc.data1 <- readRDS("data/threat_occ_data.rds")
+names(oc.data1)[grepl("numTombo", names(oc.data1))] <- "vouchers"
+oc.data <- dplyr::left_join(oc.data, 
+                            oc.data1[, c("vouchers", "coletor.name", 
+                                         "coletor.number", "dup.ID1", "geo.check1")])
+oc.data <- oc.data[!is.na(oc.data$ddlat) | !is.na(oc.data$ddlon), ]
+oc.data$SpatialRef <- "WGS84"
+oc.data$Compiler <- "RAF Lima"
+oc.data$Year <- "2019"
+cols <- c("tax", "ddlat", "ddlon", "Compiler", "SpatialRef", "source", "coly", "vouchers",
+          #"dup.ID1", 
+          "coletor.name", "coletor.number", "detBy", "dety", 
+          #"tax.check2", 
+          "UC", "tax.check.final", "geo.check1", "typeStatus")
+oc.data2 <- oc.data[, .SD, .SDcols = c(cols)]
+head(sample, 3)
+head(oc.data2, 3)
+colnames(oc.data2) <- c("Binomial", "Dec_Lat", "Dec_Long", "Compiler", "SpatialRef",
+                        "BasisOfRec", "Event_Year", "collectID", "recordedBy", 
+                        "recordNo", "detBy", "detYear", "UC", 
+                        "taxCheck", "coordCheck", "typeStatus")
+data.table::fwrite(oc.data2, "data/sis_connect/occurrences_threat.csv.zip", compress = "gzip")
+
+
+###############################################################################H
+###############################################################################H
+# EOO SHAPEFILES ---------------------------------------------------------------
+
+shapes <- readRDS("data/spp.convex.hull.polys_sf_uncropped.rds")
+shapes <- sf::st_transform(shapes, crs = 3857)
+shapes <- sf::st_transform(shapes, crs = 4326)
+sf::sf_use_s2(FALSE)
+shp.area <- sf::st_area(shapes)
+small.area <- !as.double(shp.area) <= (2010*2010) # EOO smaller than the minimum AOO
+shapes1 <- shapes[small.area, ]
+writeLines(shapes1$tax, "data/sis_connect/spp_with_shapes.txt")
+toto <- full.tax[ , c("species.correct2", "internal_taxon_id")]
+names(shapes1)[1] <- "species.correct2"
+shapes2 <- dplyr::left_join(shapes1, toto)
+saveRDS(shapes2, "data/sis_connect/polygons_threat.rds", compress = TRUE)
+

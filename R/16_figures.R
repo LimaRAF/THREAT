@@ -71,6 +71,7 @@ donut.all <- my.PieDonut(dados, aes(category, main.criteria),
 
 ## Endemicas
 dados <- pie.df[pie.df$endemic %in% "endemic",]
+dim(dados)
 toto <- rep(TRUE, length(table(dados$category, dados$main.criteria)))
 toto[c(19)] <- FALSE
 pie.end <- my.PieDonut(dados, aes(category, main.criteria),
