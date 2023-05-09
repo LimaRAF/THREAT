@@ -8,6 +8,8 @@ rm(list = ls())
 ##Loading the data
 all.crit <- readRDS("data/all.criteria.rds")
 
+## MAKE SURE THERE IS NOT MORE CRITERIA C1 IN THE ASSESSMENTS
+
 ##Loading packages
 require(circlize)
 require(webr)
@@ -25,14 +27,15 @@ cores <- c(CR_PE = "darkred", CR = "red", EN = "darkorange", VU = "gold", NT = "
 pie.df <- all.crit[,c("cat.reg.clean","main.criteria","endemic")]
 names(pie.df)[1] <- "category"
 pie.df$category[pie.df$category %in% "CR_PE"] <- "CR" 
-pie.df$main.criteria[pie.df$main.criteria %in% "A1+A2+B1+B2+C1+C2+D"] <- "all" 
-pie.df$main.criteria[pie.df$main.criteria %in% c("A1+A2+B1+B2+C1","A1+A2+B2+C1")] <- "other" #"A+B+C"
-pie.df$main.criteria[pie.df$main.criteria %in% c("A2+C1","A1+A2+C1+C2","A1+A2+C1")] <- "other" #"A+C"
-pie.df$main.criteria[pie.df$main.criteria %in% c("A1+A2+B2","A2+B1+B2","A2+B2","A1+A2+B1+B2")] <- "A2, B2"
+pie.df$main.criteria[pie.df$main.criteria %in% "A2+B1+B2+C2+D"] <- "all" 
+pie.df$main.criteria[pie.df$main.criteria %in% c("A2+B2")] <- "A2, B1+2"
+pie.df$main.criteria[pie.df$main.criteria %in% c("A2+B1+B2")] <- "A2, B1+2"
+pie.df$main.criteria[pie.df$main.criteria %in% c("A2+B1+B2+C2","A2+B2+C2")] <- "other" #"A+B+C"
+pie.df$main.criteria[pie.df$main.criteria %in% c("A2+C1","A2+C1+C2","A2+C2")] <- "other" #"A+C"
 # pie.df$main.criteria[pie.df$main.criteria %in% c("B1")] <- "other"
-pie.df$main.criteria[pie.df$main.criteria %in% c("A1+A2+C2+D")] <- "other" #"A+C+D"
+pie.df$main.criteria[pie.df$main.criteria %in% c("A2+C2+D")] <- "other" #"A+C+D"
 pie.df$main.criteria[is.na(pie.df$main.criteria)] <- "other"
-pie.df$main.criteria[pie.df$main.criteria %in% c("A1+A2")] <- "A2"
+# pie.df$main.criteria[pie.df$main.criteria %in% c("A1+A2")] <- "A2"
 pie.df$main.criteria[pie.df$category %in% "NA"] <- ""
 pie.df <- pie.df[order(match(pie.df$category, names(cores)[-1])),]
 pie.df <- pie.df[!pie.df$category %in% "DD",]
@@ -112,7 +115,7 @@ fig1 <- plot_grid(pie.donut.all, pie.donut.end,
                   align="v", vjust = 7, label_size = 16
 )
 
-path <- "C:/Users/renato/Documents/raflima/Pos Doc/Manuscritos/Artigo Extincao na MA/data analysis/figures"
+path <- "./figures"
 ggsave2("Figure1.jpg", fig1, "jpeg", path,
         width = 50, height = 22, units = "cm", dpi = 320)
 
@@ -128,12 +131,15 @@ par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
 ## NEW VS. PREVIOUS (GLOBAL)
 mat <- as.matrix(table(paste0(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"],"_new"), 
                        paste0(all.crit$redlistCategory[all.crit$endemic %in% "endemic"],"_prev")))
-mat <- mat[c(1,3,6,5,4,2), rev(c(5,4,1,3,9,8,6,2))]
+mat <- mat[c(1,3,6,5,4,2), rev(c(4,1,3,8,7,5,2))]
+
+#how many LC actually remained as LC?
+100*mat[5,2]/sum(mat[,2]) # 14.94%
 
 #Defining the colors of tracks and links
-grid.col = c(EX_prev = "black", EW_prev = "purple", CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
+grid.col = c(EX_prev = "black", CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
              CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
-col_mat = rep(rev(c("black", "purple", "red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
+col_mat = rep(rev(c("black", "red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
 #col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
 #col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
 #col_mat[mat < 5] = "#00000000"
@@ -147,11 +153,13 @@ circos.clear()
 circos.par(start.degree = 90)
 visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
 #diag(visible) = FALSE
-lava::revdiag(visible[,-c(1:2)]) = FALSE
+lava::revdiag(visible[,-c(7)]) = FALSE
 chordDiagram(mat, big.gap = 10, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
              grid.col = grid.col, col = col_mat,
-             transparency = transp ,
-             #self.link = 1, #link.visible = visible,
+             transparency = 0.3 ,
+             # transparency = transp ,
+             #self.link = 1, 
+             # link.visible = visible,
              #h=1.1, #w=0.5,
              #direction.type = "arrows", link.arr.length = 0.2, link.arr.width = 0.1, directional = -1,
              link.lwd = 4,
@@ -161,7 +169,7 @@ chordDiagram(mat, big.gap = 10, annotationTrack = "grid", annotationTrackHeight 
              #point1 = rep(0,16)
 )
 #Putting legends on
-sec.ind <- c("CR","EN","VU","NT","LC","DD","DD","LC","NT","VU","EN","CR")#,"EW","EX")
+sec.ind <- c("CR","EN","VU","NT","LC","","DD","LC","NT","VU","EN","CR")#,"EW","EX")
 for(si in get.all.sector.index()) {
   lab <- sec.ind[which(si == get.all.sector.index())]
   xlim = get.cell.meta.data("xlim", sector.index = si, track.index = 1)
@@ -177,12 +185,14 @@ for(si in get.all.sector.index()) {
               facing = "bending", niceFacing = TRUE, col = "black")
   #  }  
 }
-legend("topleft","Previous", bty="n", cex=1.3, adj=c(-.5,2.5))
+legend("topleft","Previous assess.", bty="n", cex=1.3, adj=c(.25,2.5))
 legend("topright","New assess.", bty="n", cex=1.3, adj=c(0.25,2.5))
 legend("topleft",legend=expression(bold("A - Global")),
        bty="n",horiz=F,cex=1.5,x.intersp=-0.7,y.intersp=-0.3)
-text(-0.16,1.02,"EW", cex=0.9)
-text(-0.06,1.04,"EX", cex=0.9)
+# text(-0.16,1.02,"EW", cex=0.9)
+text(-0.07,1.04,"EX", cex=1.1)
+text(0.1,-1.025,"DD", cex=1.1)
+
 
 ## NEW VS. PREVIOUS (NATIONAL)
 all.crit$redlistCategory.national <- all.crit$status.reflora
@@ -196,11 +206,16 @@ all.crit$redlistCategory.national <- sapply(strsplit(all.crit$redlistCategory.na
 
 mat <- as.matrix(table(paste0(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"],"_new"), 
                        paste0(all.crit$redlistCategory.national[all.crit$endemic %in% "endemic"],"_prev")))
-mat <- mat[c(1,3,6,5,4,2), c(2,4,6,7,3,1)]
+mat <- mat[c(1,3,6,5,4,2), rev(c(1,3,7,6,4,2))]
+
+#how many LC actually remained as LC?
+100*mat[5,2]/sum(mat[,2]) # 14.94%
+
 
 #Defining the colors of tracks and links
 grid.col = c(CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
              CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
+adjustcolor("forestgreen", alpha.f = 0.7)
 col_mat = rep(rev(c("red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=5)
 # mat[mat < 15] = mat[mat < 15]*1.25
 # mat[mat > 0 & mat < 5] = 5
@@ -214,7 +229,8 @@ circos.clear()
 circos.par(start.degree = 90)
 chordDiagram(mat, big.gap = 10, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
              grid.col = grid.col, col = col_mat,
-             transparency = transp ,
+             transparency = 0.3,
+             #transparency = transp ,
              link.lwd = 4,
              h.ratio = 0.9,
              w2=0.5, rou=0.2
@@ -229,7 +245,7 @@ for(si in get.all.sector.index()) {
               sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
               facing = "bending", niceFacing = TRUE, col = "black")
 }
-legend("topleft","Previous", bty="n", cex=1.3, adj=c(-.5,2.5))
+legend("topleft","Previous assess.", bty="n", cex=1.3, adj=c(.25,2.5))
 legend("topright","New assess.", bty="n", cex=1.3, adj=c(0.25,2.5))
 legend("topleft",legend=expression(bold("B - Regional")),
        bty="n",horiz=F,cex=1.5,x.intersp=-0.7,y.intersp=-0.2)
@@ -241,10 +257,10 @@ dev.off()
 ## see code 15_maps.R
 
 
-#### OLD FIGURE 4, NOW FIGURE YY ####
+#### OLD FIGURE 4, NOW FIGURE XX ####
 #Proportion of protected areas
 
-jpeg(filename = "figures/FigureYY.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_XX.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
 cexs <- pchs <- cores1 <- as.factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"])
@@ -348,7 +364,6 @@ LABELS <- generate_label_df(TUKEY , "cats.f")
 par(xpd=T)
 text( pos, log(120),  rev(LABELS[,1])  , col=1 )
 par(xpd=F)
-
 dev.off()
 
 
@@ -358,8 +373,8 @@ dev.off()
 
 
 
-#### Figure XX ####
-jpeg(filename = "figures/FigureXX.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
+#### Figure WW ####
+jpeg(filename = "figures/Figure_WW.jpg", width = 2500, height = 2250, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
 cats.f <- factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"],

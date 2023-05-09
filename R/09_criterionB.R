@@ -96,7 +96,7 @@ shps_df <- SpatialPolygonsDataFrame(shps, data.frame(tax = names(shps), row.name
 #shps_df <-EOO.hull[[2]]
 shps_df$tax <- as.character(shps_df$tax) 
 
-#inpecting
+#inspecting
 par(mar=c(1,0,1,0))
 sp <- "Abarema limae" # restrictd range
 sp <- "Anadenanthera peregrina" # more widespread

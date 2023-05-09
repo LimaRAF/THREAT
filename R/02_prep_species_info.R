@@ -24,7 +24,26 @@ options(ENTREZ_KEY = "c9366b59140a833ccd26fe9ac4f92e48d208")
 
 #higher taxonomy
 fams <- sort(unique(tax$family.correct1))
-tmp  <- sapply(fams, taxize::classification, "ncbi")
+# tmp  <- sapply(fams, taxize::classification, "ncbi") ## was having Bad Request Errors (HTTP 400)
+tmp <- vector("list", length = length(fams))
+for (i in seq_along(tmp)) {
+  res <- try(taxize::classification(fams[i], db = "ncbi"), TRUE)
+  
+  if(class(res) == "try-error") {
+    Sys.sleep(5)
+    res <- try(taxize::classification(fams[i], db = "ncbi"), TRUE)
+    
+    if(class(res) == "try-error") {
+      Sys.sleep(15)
+      res <- try(taxize::classification(fams[i], db = "ncbi"), TRUE)
+    } 
+  }
+  
+  if(class(res) == "try-error")
+    warning(fams[i])
+  
+  tmp[i] <- res
+}  
 tmp1 <- lapply(tmp, function(x) x$name[x$rank %in% c("kingdom","phylum","class","order")]) 
 tmp1 <- do.call(rbind.data.frame, tmp1)
 tmp2 <- cbind.data.frame(tmp1, fams, stringsAsFactors = FALSE)
@@ -187,7 +206,7 @@ full.tax$source[is.na(full.tax$scientificNameAuthorship)] <- "GBIF (www.gbif.org
 
 #Final search using other databases (GBIF works better)
 splist <- full.tax$species.correct2[is.na(full.tax$scientificNameAuthorship)]
-miss.tax <- get_gbifid_(splist)
+miss.tax <- taxize::get_gbifid_(splist)
 miss.tax1 <- lapply(1:length(miss.tax), function(x) {
   out <- miss.tax[[x]][,c("usagekey","kingdom","phylum","order","class","family","genus","canonicalname",
                           "rank","status","matchtype","synonym","scientificname")]
@@ -401,6 +420,8 @@ hab$ecol.group[is.na(hab$ecol.group) & !hab$family.correct1 %in% c("Arecaceae","
                  !is.na(hab$wsg) & hab$wsg > 0.7 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g > 0.75] <- 3
 hab$ecol.group <- stringr::str_replace_all(hab$ecol.group, c("1" = "pioneer", "2" = "early_secondary", "3" = "late_secondary", "4" = "climax"))
 hab$ecol.group[is.na(hab$ecol.group)] <- "unknown"
+hab$ecol.group[hab$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
+hab$ecol.group[hab$Name_submitted %in% "Tococa guianensis"] <- "early_secondary"
 table(hab$ecol.group, useNA = "always")
 
 ## Including other traits that may be important

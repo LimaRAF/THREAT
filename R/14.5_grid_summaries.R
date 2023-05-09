@@ -28,7 +28,7 @@ occs <- occs[!is.na(ddlat) | !is.na(ddlon),]
 all.crit <- readRDS("data/all.criteria.rds")
 # Getting NT for each criteria
 subcriteria <- c("category_A", "category_B","category_C","category_D")
-subcriteria1 <- list(c("A2"), c("B1","B2"),c("C1", "C2"), "D")
+subcriteria1 <- list(c("A2"), c("B1","B2"),c("C2"), "D")
 for(i in 1:length(subcriteria)) {
   all.crit[,subcriteria[i]] <- 
     ConR::near.threatened(all.crit[,subcriteria[i]],
@@ -51,7 +51,7 @@ occs <- occs[ , .SD, .SDcols = col.order]
 names(occs) <- c("Name", "Lat", "Long", "Endemism", "Category",
                  "Category_A", "Category_B", "Category_C", "Category_D")
 occs$Ordem <- 1:dim(occs)[1]
-
+occs$Category[occs$Category == "NA"] <- "NAreg"
 
 ##Transforming the occurrences into spatial points
 occs.sp = SpatialPointsDataFrame(coords = cbind(occs$Long, occs$Lat), 
@@ -62,7 +62,7 @@ occs.sp = SpatialPointsDataFrame(coords = cbind(occs$Long, occs$Lat),
                                                 "Ordem")])
 
 ## Getting only the occurrences within the AF buffer
-path <- "E://ownCloud//W_GIS" # Renato's path
+path <- "D://ownCloud//W_GIS" # Renato's path
 af <- rgdal::readOGR(dsn=paste(path,"//AF_limites_milton",sep=""),layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
 af <- rgeos::gBuffer(af, byid=TRUE, width=0) #correcting possible overlapping polygons
 af <- cleangeo::clgeo_Clean(af) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
@@ -77,11 +77,12 @@ crs.geo <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 proj4string(toto) <- crs.geo
 af.buf <- rbind(af.buf[2:9], toto)
 af.buf <- raster::aggregate(af.buf)
+
 # #cropping
 # occs.sp1 <- raster::crop(occs.sp, af.buf)
 # #calculating the distance between points and all grid cells
 # # plot(grid1)
-#   
+# 
 # ## Saving data for the Infomap Bioregions application
 # occs1 <- as.data.frame(occs.sp1)
 # names(occs1)[names(occs1) %in% c("coords.x1", "coords.x2")] <- c("Long", "Lat")
@@ -96,7 +97,7 @@ af.buf <- raster::aggregate(af.buf)
 #   shp1 <- shp[(over(shp, af1) %in% 1),]
 #   shp1@data$plotOrder <- shp1@plotOrder
 #   shp1@data$ID <- NA
-#   for(i in 1:length(shp1)) { shp1@data$ID[i] <- as.character(slot(slot(shp1, "polygons")[[i]],"ID")) } 
+#   for(i in 1:length(shp1)) { shp1@data$ID[i] <- as.character(slot(slot(shp1, "polygons")[[i]],"ID")) }
 #   shp1@data <- shp1@data[, c("plotOrder","ID")]
 #   saveRDS(shp1, paste0(nome.i,"/clean_grid.rds"))
 # }
@@ -109,14 +110,37 @@ grid0 <- readRDS("./data/adaptative_resolution_AF_min200_max500_cellmax2/clean_g
 ids.polys <- grid0$ID
 grid_sf <- sf::st_as_sf(grid0)
 grid_inter <- sf::st_intersection(grid_sf)
+grid_inter_df <- sf::st_drop_geometry(grid_inter)
+grid_inter_df$geo.type <- sf::st_geometry_type(grid_inter)
+get_these <- grepl("POLYGON", grid_inter_df$geo.type) 
+grid_inter1 <- grid_inter[get_these,]
+grid_inter1$plotOrder <- order(grid_inter1$plotOrder) 
+grid_inter1$ID <- as.character(0:631)
+row.names(grid_inter1) <- grid_inter1$ID
 # x_inter <- x_inter[x_inter$n.overlaps == 1,]
-grid_inter <- grid_inter[rownames(grid_inter) %in% ids.polys,]
-grid <- as(grid_inter, "Spatial")
+# grid_inter1 <- grid_inter[rownames(grid_inter) %in% ids.polys,]
+grid <- as(grid_inter1, "Spatial")
+grid@data$n.overlaps <- NULL
+grid@data$origins <- NULL
 
-#Checking the result
+# #inspecting the result
+# plot(grid0[2:5,], col = "grey")
+# plot(grid0, add = TRUE)
+# res <- grid_inter1[grid_inter1$plotOrder %in% grid0[2,]@data$plotOrder , 1] # plotOrder 251 (no overlap)
+# plot(res[,1], add= TRUE, col = NA, border = 2)
+# res <- grid_inter1[grid_inter1$plotOrder %in% grid0[3,]@data$plotOrder , 1] # plotOrder 554 (no overlap)
+# plot(res[1,], add= TRUE, col = NA,  border = 3)
+# plot(res[2,], add= TRUE, col = NA,  border = 4)
+# plot(res[3,], add= TRUE, col = NA,  border = 5)
+# plot(res[4,], add= TRUE, col = NA,  border = 6)
+
+# #Checking the result
 # par(mfrow = c(1,2), mar = c(0.5,0.5,0.5,0.5))
 # plot(grid0); plot(af.buf, add=TRUE)
 # plot(grid); plot(af.buf, add=TRUE)
+
+#Saving the edited grid
+saveRDS(grid, "./data/adaptative_resolution_AF_min200_max500_cellmax2/clean_grid_final.rds")
 
 ## Crossing the occurrences with the grid
 occs.over <- over(occs.sp, grid) 
@@ -124,13 +148,13 @@ occs1 <- cbind.data.frame(occs, occs.over[,c("plotOrder", "ID")])
 
 ## Re-assing grid ID for occurrences outside the grid
 # plot(grid)
-# plot(occs.sp1[is.na(occs1$ID),], add= TRUE, col =2, pch = 19, cex = 0.5)
+# plot(occs.sp[is.na(occs1$ID),], add= TRUE, col =2, pch = 19, cex = 0.5)
 tmp <- occs.sp[is.na(occs1$ID),]
 #cropping for the AF 25 km buffer
 tmp <- raster::crop(tmp, af.buf)
 
 #calculating the distance between points and all grid cells
-# plot(grid1)
+# plot(grid)
 # plot(tmp, add= TRUE)
 tmp.proj <- spTransform(tmp,  CRS("+init=epsg:5641"))
 grid.proj <- spTransform(grid,  CRS("+init=epsg:5641"))
@@ -141,7 +165,7 @@ for(i in 1:dim(tmp1)[2]) {
   IDi = which.min(tmp1[,i])
   dist1 = tmp1[which.min(tmp1[,i]),i]
   # if(dist1 > 0 & dist1 < 10000) result$cell.ID[i] = as.character(paste("ID", IDi, sep = ""))
-  if(dist1 > 0 & dist1 < 10000) result$cell.ID[i] = as.character(IDi)
+  if(dist1 > 0 & dist1 < 10000) result$cell.ID[i] = as.character(names(IDi))
 }
 occs1$ID[match(tmp$Ordem, occs1$Ordem)] <- result$cell.ID
 
@@ -149,7 +173,7 @@ occs1$ID[match(tmp$Ordem, occs1$Ordem)] <- result$cell.ID
 occs1 <- occs1[!is.na(occs1$ID), ]
 # plot(grid)
 # points(occs1$Long, occs1$Lat, pch=19, col=2, cex = 0.3)
-tail(sort(table(occs1$ID, useNA = "always")))
+tail(sort(table(occs1$ID, useNA = "always")), 10)
 
 ## Removing grid cells without any occurrence? not for now
 # cells.ids <- sort(unique(occs1$ID))
@@ -240,18 +264,30 @@ boot = 4999
 boot.log = FALSE
 for (i in 1: length(resultado)) {
   nome.i <- names(resultado)[i]
-
+  cat(i,"\n")
   ## ALL POPULATIONS
   grid.data.i <- grid.data[grid.data$ID %in% nome.i,]  
   if (dim(grid.data.i)[1] > 0) { # All records
     #RLI
-    rli.i <- red::rli(grid.data.i$Category, boot = boot.log, runs = boot)
+    #since RLI is for alpha of 5%, we can calculate the RLI standard error using: (UpCL - LowCL)/ 3.92
+    rli.0 <- try(red::rli(grid.data.i$Category, boot = TRUE, runs = boot), TRUE)
+    
+    if(class(rli.0)[1] == "try-error") {
+      replace_these <- grid.data.i$Category %in% c(NA, "NA", "")
+      moda <- 
+        names(sort(table(grid.data.i$Category[!replace_these]), decreasing = TRUE))[1]
+      grid.data.i$Category[replace_these] <- moda
+      rli.0 <- try(red::rli(grid.data.i$Category, boot = TRUE, runs = boot), TRUE)
+    }
+    rli.i <- rli.0[2]
+    rli.i.erro.pad <- (rli.0[3] - rli.0[1])/3.92  
+    # rli.i <- red::rli(grid.data.i$Category, boot = boot.log, runs = boot)
     rli.i.A <- red::rli(grid.data.i$Category_A, boot = boot.log, runs = boot)
     rli.i.B <- red::rli(grid.data.i$Category_B, boot = boot.log, runs = boot)
     rli.i.C <- red::rli(grid.data.i$Category_C, boot = boot.log, runs = boot)
     rli.i.D <- red::rli(grid.data.i$Category_D, boot = boot.log, runs = boot)
     rli.i.new <- red::rli(grid.data.i$Category.new, boot = boot.log, runs = boot)
-    rli.i <- c(rli.i, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
+    rli.i <- c(rli.i, rli.i.erro.pad, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
     
     #Proportion of threatened
     threat.cats <- c("EN","VU","CR")
@@ -270,8 +306,7 @@ for (i in 1: length(resultado)) {
                     dim(grid.data.i)[1]
     prop.i <- c(prop.i, prop.i.A, prop.i.B, prop.i.C, prop.i.D, prop.i.new)
   } else {
-    # rli.i <- c("LowCL" = NA,  "Median" = NA, "UpCL" = NA)
-    rli.i <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
     prop.i <- c("Threat" = NA, "Threat_catA" = NA, "Threat_catB" = NA, 
                "Threat_catC" = NA, "Threat_catD" = NA, "Threat_new" = NA)
@@ -280,13 +315,24 @@ for (i in 1: length(resultado)) {
   grid.data.i <- grid.data.i[!duplicated(grid.data.i$Name),]  
   if (dim(grid.data.i)[1] > 0) { # One record per species
     #RLI
-    rli.i.pa <- red::rli(grid.data.i$Category, boot = boot.log, runs = boot)
+    rli.0 <- try(red::rli(grid.data.i$Category, boot = TRUE, runs = boot), TRUE)
+    
+    if(class(rli.0)[1] == "try-error") {
+      replace_these <- grid.data.i$Category %in% c(NA, "NA", "")
+      moda <- 
+        names(sort(table(grid.data.i$Category[!replace_these]), decreasing = TRUE))[1]
+      grid.data.i$Category[replace_these] <- moda
+      rli.0 <- try(red::rli(grid.data.i$Category, boot = TRUE, runs = boot), TRUE)
+    }
+    rli.i.pa <- rli.0[2]
+    rli.i.pa.erro.pad <- (rli.0[3] - rli.0[1])/3.92  
+    # rli.i.pa <- red::rli(grid.data.i$Category, boot = boot.log, runs = boot)
     rli.i.A <- red::rli(grid.data.i$Category_A, boot = boot.log, runs = boot)
     rli.i.B <- red::rli(grid.data.i$Category_B, boot = boot.log, runs = boot)
     rli.i.C <- red::rli(grid.data.i$Category_C, boot = boot.log, runs = boot)
     rli.i.D <- red::rli(grid.data.i$Category_D, boot = boot.log, runs = boot)
     rli.i.new <- red::rli(grid.data.i$Category.new, boot = boot.log, runs = boot)
-    rli.i.pa <- c(rli.i.pa, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
+    rli.i.pa <- c(rli.i.pa, rli.i.pa.erro.pad, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
     
     #Proportion of threatened
     threat.cats <- c("EN","VU","CR")
@@ -307,23 +353,27 @@ for (i in 1: length(resultado)) {
     
   } else {
     # rli.i <- c("LowCL" = NA,  "Median" = NA, "UpCL" = NA)
-    rli.i.pa <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i.pa <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
     prop.i.pa <- c("Threat" = NA, "Threat_catA" = NA, "Threat_catB" = NA, 
                 "Threat_catC" = NA, "Threat_catD" = NA, "Threat_new" = NA)
   }
   
   ## ONLY ENDEMICS
+  grid.data.i <- grid.data[grid.data$ID %in% nome.i,]  
   grid.data.ii <- grid.data.i[grid.data.i$Endemism %in% "endemic",]
   if (dim(grid.data.ii)[1] > 0) { # All records
     #RLI
-    rli.i.end <- red::rli(grid.data.ii$Category, boot = boot.log, runs = boot)
+    rli.0 <- red::rli(grid.data.ii$Category, boot = TRUE, runs = boot)
+    rli.i.end <- rli.0[2]
+    rli.i.end.erro.pad <- (rli.0[3] - rli.0[1])/3.92  
+    # rli.i.end <- red::rli(grid.data.ii$Category, boot = boot.log, runs = boot)
     rli.i.end.A <- red::rli(grid.data.ii$Category_A, boot = boot.log, runs = boot)
     rli.i.end.B <- red::rli(grid.data.ii$Category_B, boot = boot.log, runs = boot)
     rli.i.end.C <- red::rli(grid.data.ii$Category_C, boot = boot.log, runs = boot)
     rli.i.end.D <- red::rli(grid.data.ii$Category_D, boot = boot.log, runs = boot)
     rli.i.end.new <- red::rli(grid.data.ii$Category.new, boot = boot.log, runs = boot)
-    rli.i.end <- c(rli.i.end, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
+    rli.i.end <- c(rli.i.end, rli.i.end.erro.pad, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
     
     #Proportion of threatened
     threat.cats <- c("EN","VU","CR")
@@ -343,7 +393,7 @@ for (i in 1: length(resultado)) {
     prop.i.end <- c(prop.i.end, prop.i.end.A, prop.i.end.B, prop.i.end.C, prop.i.end.D, prop.i.end.new)
   } else {
     # rli.i.end <- c("LowCL" = NA,  "Median" = NA, "UpCL" = NA)
-    rli.i.end <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i.end <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
     prop.i.end <- c("Threat" = NA, "Threat_catA" = NA, "Threat_catB" = NA, 
                 "Threat_catC" = NA, "Threat_catD" = NA, "Threat_new" = NA)
@@ -352,16 +402,20 @@ for (i in 1: length(resultado)) {
   grid.data.ii <- grid.data.ii[!duplicated(grid.data.ii$Name),]  
   if (dim(grid.data.i)[1] > 0) { # One record per species
     #RLI
-    rli.i.end.pa <- red::rli(grid.data.ii$Category, boot = boot.log, runs = boot)
+    rli.0 <- red::rli(grid.data.ii$Category, boot = TRUE, runs = boot)
+    rli.i.end.pa <- rli.0[2]
+    rli.i.end.pa.erro.pad <- (rli.0[3] - rli.0[1])/3.92  
+    # rli.i.end.pa <- red::rli(grid.data.ii$Category, boot = boot.log, runs = boot)
     rli.i.end.A <- red::rli(grid.data.ii$Category_A, boot = boot.log, runs = boot)
     rli.i.end.B <- red::rli(grid.data.ii$Category_B, boot = boot.log, runs = boot)
     rli.i.end.C <- red::rli(grid.data.ii$Category_C, boot = boot.log, runs = boot)
     rli.i.end.D <- red::rli(grid.data.ii$Category_D, boot = boot.log, runs = boot)
     rli.i.end.new <- red::rli(grid.data.ii$Category.new, boot = boot.log, runs = boot)
-    rli.i.end.pa <- c(rli.i.end.pa, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
+    rli.i.end.pa <- c(rli.i.end.pa, rli.i.end.pa.erro.pad, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
     
     #Proportion of threatened
     threat.cats <- c("EN","VU","CR")
+    rm_these <- !grid.data.ii$Category %in% "NA"
     prop.i.end.pa <- dim(grid.data.ii[grid.data.ii$Category %in% threat.cats & rm_these,])[1]/
       dim(grid.data.ii[rm_these,])[1]
     prop.i.end.A <- dim(grid.data.ii[grid.data.ii$Category_A %in% threat.cats & rm_these,])[1]/
@@ -377,17 +431,17 @@ for (i in 1: length(resultado)) {
     prop.i.end.pa <- c(prop.i.end.pa, prop.i.end.A, prop.i.end.B, prop.i.end.C, prop.i.end.D, prop.i.end.new)
     
   } else {
-    rli.i.end.pa <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i.end.pa <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                   "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
     prop.i.end.pa <- c("Threat" = NA, "Threat_catA" = NA, "Threat_catB" = NA, 
                     "Threat_catC" = NA, "Threat_catD" = NA, "Threat_new" = NA)
   }
   
   res <- c(rli.i, rli.i.end, rli.i.pa, rli.i.end.pa)
-  names(res) <- c("RLI", "RLI_catA", "RLI_catB", "RLI_catC", "RLI_catD", "RLI_new",
-                  "RLI.end", "RLI_catA.end", "RLI_catB.end", "RLI_catC.end", "RLI_catD.end", "RLI_new.end",
-                  "RLI.pa", "RLI_catA.pa", "RLI_catB.pa", "RLI_catC.pa", "RLI_catD.pa", "RLI_new.pa",
-                  "RLI.end.pa", "RLI_catA.end.pa", "RLI_catB.end.pa", "RLI_catC.end.pa", "RLI_catD.end.pa", "RLI_new.end.pa")
+  names(res) <- c("RLI", "RLI_erro_pad", "RLI_catA", "RLI_catB", "RLI_catC", "RLI_catD", "RLI_new",
+                  "RLI.end", "RLI_erro_pad.end", "RLI_catA.end", "RLI_catB.end", "RLI_catC.end", "RLI_catD.end", "RLI_new.end",
+                  "RLI.pa", "RLI_erro_pad.pa", "RLI_catA.pa", "RLI_catB.pa", "RLI_catC.pa", "RLI_catD.pa", "RLI_new.pa",
+                  "RLI.end.pa", "RLI_erro_pad.end.pa", "RLI_catA.end.pa", "RLI_catB.end.pa", "RLI_catC.end.pa", "RLI_catD.end.pa", "RLI_new.end.pa")
   resultado[[i]] <- res
   
   res1 <- c(prop.i, prop.i.end, prop.i.pa, prop.i.end.pa)
@@ -396,20 +450,19 @@ for (i in 1: length(resultado)) {
                   "Threat.pa", "Threat_catA.pa", "Threat_catB.pa", "Threat_catC.pa", "Threat_catD.pa", "Threat_new.pa",
                   "Threat.end.pa", "Threat_catA.end.pa", "Threat_catB.end.pa", "Threat_catC.end.pa", "Threat_catD.end.pa", "Threat_new.end.pa")
   resultado1[[i]] <- res1
-  
-  
+ 
 }
 #RLI
 all <- do.call(rbind.data.frame, resultado)
 names(all) <- names(resultado[[1]])
 all$ID <- names(resultado)
-head(all)
-apply(all[,-c(25)], 2, summary)
+head(all, 3)
+apply(all[,-c(29)], 2, summary)
 #Proportion of threatened
 all1 <- do.call(rbind.data.frame, resultado1)
 names(all1) <- names(resultado1[[1]])
 all1$ID <- names(resultado1)
-head(all1)
+head(all1, 3)
 apply(all1[,-c(25)], 2, summary)
 #merging
 all <- merge(all, all1, 
@@ -706,7 +759,7 @@ occs.sp$ordem <- 1:dim(occs.sp)[1]
 occs.sp <- spTransform(occs.sp, CRS("+init=epsg:5641"))
 
 ## Getting the grid and editing it
-grid <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//af_hex_grid_50km.rds")
+grid <- readRDS("data//af_hex_grid_50km.rds")
 
 ## Making sure grid IDs are the same internally
 grid1 <- grid
@@ -730,7 +783,7 @@ ext <- raster::extent(grid1) + c(-50000,50000,-50000,50000)
 tmp <- raster::crop(tmp, ext)
 
 #Second, lets remove points too far away from the AF grid
-path <- "E://ownCloud//W_GIS" # Renato's path
+path <- "D://ownCloud//W_GIS" # Renato's path
 am.lat <- rgdal::readOGR(dsn=paste(path,"//Am_Lat_ADM_ArcGis",sep=""),layer="LatinAmerica")
 #s.am <- readRDS(paste(path,"//Am_Lat_ADM_GADM_v3.6//gadm36_SouthAm_0_sp.rds",sep=""))
 brasil = readRDS(paste(path,"//Am_Lat_ADM_GADM_v3.6//gadm36_BRA_1_sp.rds",sep=""))
@@ -769,7 +822,7 @@ for(i in 1:dim(tmp1)[2]){
   dist1 = tmp1[which.min(tmp1[,i]),i]
   if(dist1>0 & dist1<5000) result$cell.ID[i] = as.character(paste("ID", IDi, sep = ""))
 }
-occs.sp@data$cell.ID[match(tmp$ordem,occs.sp@data$ordem)] <- result$cell.ID
+occs.sp@data$cell.ID[match(tmp$ordem, occs.sp@data$ordem)] <- result$cell.ID
 
 ## Removing points falling outside the grid limits
 occs.sp <- occs.sp[!occs.sp@data$cell.ID %in% "IDNA", ]
@@ -835,44 +888,58 @@ grid.data$cat.reg.clean.new <- grid.data$cat.reg.clean
 grid.data$cat.reg.clean.new[grid.data$cat.reg.clean %in% "NA"] <- "LC"
 resultado <- vector("list", dim(grid.result)[1])
 names(resultado) <- grid.result$ID
-
-boot = 499
+boot = 4999
 boot.log = FALSE
 for (i in 1: length(resultado)) {
   nome.i <- names(resultado)[i]
   grid.data.i <- grid.data[grid.data$cell.ID == nome.i,]  
-  if (dim(grid.data.i)[1] > 0) {
-    rli.i <- red::rli(grid.data.i$cat.reg.clean, boot = boot.log, runs = boot)
+  if (dim(grid.data.i)[1] > 0 & !all(unique(grid.data.i$cat.reg.clean) == "NA")) {
+    #since RLI is for alpha of 5%, we can calculate the RLI standard error using: (UpCL - LowCL)/ 3.92
+    rli.0 <- try(red::rli(grid.data.i$cat.reg.clean, boot = TRUE, runs = boot), TRUE)
+    
+    if(class(rli.0)[1] == "try-error") {
+      replace_these <- grid.data.i$cat.reg.clean %in% c(NA, "NA", "")
+      moda <- 
+        names(sort(table(grid.data.i$cat.reg.clean[!replace_these]), decreasing = TRUE))[1]
+      grid.data.i$cat.reg.clean[replace_these] <- moda
+      rli.0 <- try(red::rli(grid.data.i$cat.reg.clean, boot = TRUE, runs = boot), TRUE)
+    }
+    rli.i <- rli.0[2]
+    rli.i.erro.pad <- (rli.0[3] - rli.0[1])/3.92  
+    # rli.i <- red::rli(grid.data.i$cat.reg.clean, boot = boot.log, runs = boot)
     rli.i.A <- red::rli(grid.data.i$category_A, boot = boot.log, runs = boot)
     rli.i.B <- red::rli(grid.data.i$category_B, boot = boot.log, runs = boot)
     rli.i.C <- red::rli(grid.data.i$category_C, boot = boot.log, runs = boot)
     rli.i.D <- red::rli(grid.data.i$category_D, boot = boot.log, runs = boot)
     rli.i.new <- red::rli(grid.data.i$cat.reg.clean.new, boot = boot.log, runs = boot)
-    rli.i <- c(rli.i, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
+    rli.i <- c(rli.i, rli.i.erro.pad, rli.i.A, rli.i.B, rli.i.C, rli.i.D, rli.i.new)
   } else {
     # rli.i <- c("LowCL" = NA,  "Median" = NA, "UpCL" = NA)
-    rli.i <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
   }
   
   grid.data.ii <- grid.data.i[grid.data.i$endemic %in% "endemic",]
-  if (dim(grid.data.ii)[1] > 0) {
-    rli.i.end <- red::rli(grid.data.ii$cat.reg.clean, boot = boot.log, runs = boot)
+  if (dim(grid.data.ii)[1] > 0 & !all(unique(grid.data.ii$cat.reg.clean) == "NA")) {
+    rli.0 <- red::rli(grid.data.ii$cat.reg.clean, boot = TRUE, runs = boot)
+    rli.i.end <- rli.0[2]
+    rli.i.end.erro.pad <- (rli.0[3] - rli.0[1])/3.92
+    # rli.i.end <- red::rli(grid.data.ii$cat.reg.clean, boot = boot.log, runs = boot)
     rli.i.end.A <- red::rli(grid.data.ii$category_A, boot = boot.log, runs = boot)
     rli.i.end.B <- red::rli(grid.data.ii$category_B, boot = boot.log, runs = boot)
     rli.i.end.C <- red::rli(grid.data.ii$category_C, boot = boot.log, runs = boot)
     rli.i.end.D <- red::rli(grid.data.ii$category_D, boot = boot.log, runs = boot)
     rli.i.end.new <- red::rli(grid.data.ii$cat.reg.clean.new, boot = boot.log, runs = boot)
-    rli.i.end <- c(rli.i.end, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
+    rli.i.end <- c(rli.i.end, rli.i.end.erro.pad, rli.i.end.A, rli.i.end.B, rli.i.end.C, rli.i.end.D, rli.i.end.new)
   } else {
     # rli.i.end <- c("LowCL" = NA,  "Median" = NA, "UpCL" = NA)
-    rli.i.end <- c("RLI" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
+    rli.i.end <- c("RLI" = NA, "RLI_erro" = NA, "RLI_catA" = NA, "RLI_catB" = NA, 
                    "RLI_catC" = NA, "RLI_catD" = NA, "RLI_new" = NA)
     
   }
   res <- c(rli.i, rli.i.end)
-  names(res) <- c("RLI", "RLI_catA", "RLI_catB", "RLI_catC", "RLI_catD", "RLI_new",
-                  "RLI.end", "RLI_catA.end", "RLI_catB.end", "RLI_catC.end", "RLI_catD.end", "RLI_new.end")
+  names(res) <- c("RLI", "RLI_erro_pad", "RLI_catA", "RLI_catB", "RLI_catC", "RLI_catD", "RLI_new",
+                  "RLI.end", "RLI_erro_pad.end", "RLI_catA.end", "RLI_catB.end", "RLI_catC.end", "RLI_catD.end", "RLI_new.end")
   resultado[[i]] <- res
 }
 all <- do.call(rbind.data.frame, resultado)

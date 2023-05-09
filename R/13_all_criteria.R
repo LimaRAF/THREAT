@@ -19,9 +19,23 @@ require(data.table)
 ## Loading and merging the assessments ##
 #Criterion A
 critA <- readRDS("data/criterionA_all_GLs.rds")
-critA <- critA[,c("species","assessment.period","reduction_A12","A1","A2","category_A","category_A_code","basis_d","reduction_A12.25ys","A1.25ys","A2.25ys")]
+critA <- critA[,c("species","assessment.period","reduction_A12","category_A","category_A_code",
+                  "reduction_A12_obs","basis_d",
+                  "reduction_A12.10ys","reduction_A12.15ys","reduction_A12.20ys",
+                  "reduction_A12.25ys","reduction_A12.30ys","reduction_A12.35ys",
+                  "reduction_A12.40ys","reduction_A12.45ys","reduction_A12.50ys", 
+                  "A2.20ys", "A2.25ys")]
 critA$reduction_A12 <- round(as.double(critA$reduction_A12), 2)
+critA$reduction_A12.10ys <- round(as.double(critA$reduction_A12.10ys), 2)
+critA$reduction_A12.15ys <- round(as.double(critA$reduction_A12.15ys), 2)
+critA$reduction_A12.20ys <- round(as.double(critA$reduction_A12.20ys), 2)
 critA$reduction_A12.25ys <- round(as.double(critA$reduction_A12.25ys), 2)
+critA$reduction_A12.30ys <- round(as.double(critA$reduction_A12.30ys), 2)
+critA$reduction_A12.35ys <- round(as.double(critA$reduction_A12.35ys), 2)
+critA$reduction_A12.40ys <- round(as.double(critA$reduction_A12.40ys), 2)
+critA$reduction_A12.45ys <- round(as.double(critA$reduction_A12.45ys), 2)
+critA$reduction_A12.50ys <- round(as.double(critA$reduction_A12.50ys), 2)
+critA$A2 <- critA$category_A
 
 #Criterion B
 critB_opt <- readRDS("data/criterionB_all_optim_tax_confidence.rds")
@@ -46,15 +60,34 @@ names(critB)[grepl("\\.y", names(critB))] <- gsub("\\.y",".high.tax",names(critB
 
 #Criterion C
 critC <- readRDS("data/criterionC_all_prop_mature.rds")
-critC <- critC[,c("species","any.decline","cont.decline","C1","C2","category_C","category_C_code","C1.p0.45")]
+# critC <- critC[,c("species","any.decline","cont.decline","C1","C2","category_C","category_C_code","C1.p0.45")]
+critC <- critC[,c("species","any.decline","cont.decline","assess.pop.size",
+                  "reduction_3gen","reduction_2gen","reduction_1gen","reduction_obs",
+                  "C1","C2","category_C","category_C_code",
+                  "C2.p0.18","C2.p0.25","C2.p0.33","C2.p0.45", "C2.p0.51")]
+replace_these <- critC$category_C_code %in% "C1" & critC$C2 %in% "LC or NT" 
+critC$category_C[replace_these] <- "LC or NT"
+critC$category_C_code[replace_these] <- ""
+
+replace_these <- critC$category_C_code %in% "C1" & !critC$C2 %in% "LC or NT" & as.double(critC$assess.pop.size) < 1000
+critC$category_C[replace_these] <- critC$C2[replace_these]
+critC$category_C_code[replace_these] <- "C2ai"
+
+replace_these <- critC$category_C_code %in% "C1" & !critC$C2 %in% "LC or NT" & as.double(critC$assess.pop.size) > 1000
+critC$category_C[replace_these] <- "LC or NT"
+critC$category_C_code[replace_these] <- ""
+critC$category_C_code <- gsub("C1\\+", "", critC$category_C_code)
+critC$assess.pop.size <- NULL
 
 #Criterion D
 critD <- readRDS("data/criterionD_all_prop_mature.rds")
-critD <- critD[,c("species","pop.size","pop.size.low","D","D.AOO","D2.Loc","category_D","category_D_code","D.p0.45")]
+critD <- critD[,c("species","pop.size","pop.size.low","D","D.AOO","D2.Loc",
+                  "category_D","category_D_code",
+                  "D.p0.18","D.p0.25","D.p0.33","D.p0.45", "D.p0.51")]
 critD$pop.size <- round(as.double(critD$pop.size),1)
 critD$pop.size.low <- round(as.double(critD$pop.size.low),1)
 
-#Estimated pop. sizes based on AOO, taxonomy, life-form and endemism level
+#Estimated pop. sizes based on AOO, taxonomy, life-form and endemism level (not used in the assessments)
 est.pop <- readRDS("data/estimated_pop_size_from_AOO.rds")
 critD <- merge(critD, est.pop[,c("species","pred","pred.low")], by = "species", all = TRUE, sort = FALSE)
 critD$pop.size[is.na(critD$pop.size)] <- 
@@ -62,7 +95,9 @@ critD$pop.size[is.na(critD$pop.size)] <-
 critD$pop.size.low[is.na(critD$pop.size.low)] <- 
   round(as.double(critD$pred.low[is.na(critD$pop.size.low)]),1)
 critD <- critD[order(critD$species),]
-critD <- critD[,c("species","pop.size","pop.size.low","D","D.AOO","D2.Loc","category_D","category_D_code","D.p0.45")]
+critD <- critD[,c("species","pop.size","pop.size.low","D","D.AOO","D2.Loc",
+                  "category_D","category_D_code",
+                  "D.p0.18","D.p0.25","D.p0.33","D.p0.45", "D.p0.51")]
 
 #Desregarding assessments based on criteria D2 only (no species-specific info on threats)
 critD$category_D_code[!critD$category_D %in% "LC or NT" & 
@@ -81,7 +116,7 @@ rm(critA, critB, critB_high, critB_low, critB_opt, critC, critD, est.pop)
 #########################
 #### NEAR THREATENED ####
 #########################
-subcriteria <- c("A1", "A2", "B1","B2","C1", "C2", "D")
+subcriteria <- c("A2", "B1", "B2", "C2", "D")
 for(i in 1:length(subcriteria)) {
   all.crit[,subcriteria[i]] <- 
     ConR::near.threatened(all.crit[,subcriteria[i]],
@@ -97,10 +132,11 @@ rm(subcriteria)
 #### CONSENSUS ASSESSMENT ####
 ##############################
 
-assess.df <- all.crit[,c("species", "A1", "A2", "B1","B2","C1", "C2", "D")]
+assess.df <- all.crit[,c("species", "A2", "B1", "B2", "C2", "D")]
 tmp <- ConR:::cat_mult_criteria(assess.df)
 table(tmp$species == all.crit$species)
-all.crit <- cbind.data.frame(all.crit,tmp[,c("category","main.criteria","aux.criteria")], stringsAsFactors = FALSE)
+all.crit <- cbind.data.frame(all.crit, 
+                             tmp[,c("category","main.criteria","aux.criteria")], stringsAsFactors = FALSE)
 rm(assess.df)
 
 ###############################################################################################################################################################################################H
@@ -178,11 +214,12 @@ tmp <- tmp[order(tmp$species),]
 
 #Binding with the rest of the information
 table(tmp$species == all.crit$species)
-all.crit <- cbind.data.frame(all.crit,tmp[,c("last.record","prop.coly.na","prop.high.tax","only.type")], stringsAsFactors = FALSE)
+all.crit <- cbind.data.frame(all.crit,
+                             tmp[,c("last.record","prop.coly.na","prop.high.tax","only.type")], stringsAsFactors = FALSE)
 
 ### DATA DEFICIENCY ###
 ## No taxonomic valid occurrence (unknown provenance)
-all.crit$category[is.na(all.crit$category)] <- "DD"
+all.crit$category[all.crit$category %in% c("", " ", NA)] <- "DD"
 
 rm(tmp, tmp.1, tmp.2, tmp0, tmp0.1, tmp1)
 ###############################################################################################################################################################################################H
@@ -205,7 +242,8 @@ rm(MyData); gc()
 endemism <- readRDS("data/sis_connect/endemism_threat.rds") # endemism levels from Lima et al. (2020)
 all.crit <- merge(all.crit, endemism, by = "species", all.x = TRUE)
 #Getting missing endemism status
-SA.spp <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
+# SA.spp <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
+SA.spp <- read.csv("C://Users//renato//Desktop//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 tmp <- all.crit[is.na(all.crit$endemic),]
 tmp1 <- merge(tmp[,c("species","endemic")] , 
               SA.spp[,c("SpeciesKTSA","geographical_distribution","domain.reflora","endemism.Reflora",
@@ -358,20 +396,72 @@ rm(cites, cites.syns, tmp,tmp1,tmp2,tmp3,tmp4,tmp5,tmp6)
 
 ###############################################################################################################################################################################################H
 ###############################################################################################################################################################################################H
+#####################################################
+#### ADDING GL AND UNKNOWN ECOLOGICAL GROUP INFO ####
+####################################################
+
+hab <- read.csv("data/threat_habitats.csv")
+hab$ecol.group[hab$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
+hab$ecol.group[hab$Name_submitted %in% "Tococa guianensis"] <- "early_secondary"
+tmp <- hab[,c("GenerationLength.range", "ecol.group", 
+              "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName",
+              "Name_submitted"), drop = FALSE]
+names(tmp) <- c("gen.length", "ecol.group", "growth.form", "Name_submitted")
+table(all.crit$species == tmp$Name_submitted)
+all.crit <- cbind.data.frame(all.crit,
+                             tmp[,c(1, 2, 3)], stringsAsFactors = FALSE)
+
+
+
+###############################################################################################################################################################################################H
+###############################################################################################################################################################################################H
 ##############################
 #### PREVIOUS ASSESSMENTS ####
 ##############################
 
-## Loading previous assessments from IUCN, CNCFlora, Argentina and Paraguay
-prev.assess <- readRDS("data/sis_connect/prev_assessments_threat.rds")
+## Loading previous assessments from IUCN, Argentina and Paraguay
+prev.assess <- readRDS("IUCN_2022_v2_assessments_THREAT.rds")
+# prev.assess <- readRDS("data/sis_connect/prev_assessments_threat.rds")
 prev.assess.PY <- read.csv("especies_ameacadas_Paraguay.csv", as.is = TRUE, na.strings = c("", " ", NA))
 prev.assess.AR <- read.csv("especies_ameacadas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
 end.AR <- read.csv("especies_endemicas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
 
-## Merging IUCN and CNCFlora with THREAT assessments
+## Merging IUCN with THREAT assessments
+prev.spp.name <- "scientificName"
+prev.cols <- c("redlistCategory", "redlistCriteria", "yearPublished",
+               "assessmentDate", "criteriaVersion","language", "rationale", "habitat",
+               "threats","population","populationTrend","range","useTrade",
+               "conservationActions", "systems", "realm", 
+               "yearLastSeen", "possiblyExtinct", "possiblyExtinctInTheWild",
+               "scopes",
+               "AOO.range", "EOO.range",
+               "Congregatory.value", "NoThreats.noThreats", 
+               "ElevationLower.limit", "ElevationUpper.limit", 
+               "PopulationSize.range", 
+               "ThreatsUnknown.value",
+               "LocationsNumber.range", "GenerationLength.range", 
+               "SubpopulationNumber.range", 
+               "AreaRestricted.isRestricted",
+               "CropWildRelative.isRelative",
+               "YearOfPopulationEstimate.value", 
+               "InPlaceEducationControlled.value", 
+               "SevereFragmentation.isFragmented", 
+               "InPlaceResearchRecoveryPlan.value", 
+               "InPlaceLandWaterProtectionInPA.value", 
+               "InPlaceSpeciesManagementExSitu.value", 
+               "InPlaceResearchMonitoringScheme.value", 
+               "InPlaceSpeciesManagementHarvestPlan.value", 
+               "InPlaceLandWaterProtectionAreaPlanned.value",     
+               "InPlaceEducationInternationalLegislation.value",
+               "InPlaceLandWaterProtectionInvasiveControl.value",
+               "InPlaceLandWaterProtectionSitesIdentified.value",
+               "InPlaceLandWaterProtectionPercentProtected.value")
+
 tmp <- merge(all.crit[,c("species","category")],
-             prev.assess[,c("species.correct2","status.reflora","redlistCategory","redlistCriteria","yearPublished","population","populationTrend","threats","rationale")],
-             by.x = "species", by.y="species.correct2", all.x = TRUE, sort = FALSE)
+             # prev.assess[,c("species.correct2","status.reflora","redlistCategory","redlistCriteria","yearPublished","population","populationTrend","threats","rationale")],
+             # by.x = "species", by.y="species.correct2", all.x = TRUE, sort = FALSE)
+              prev.assess[, c(prev.spp.name, prev.cols)],
+              by.x = "species", by.y = prev.spp.name, all.x = TRUE, sort = FALSE)
 tmp$redlistCategory[tmp$redlistCategory %in% "Extinct"] <- "EX"
 tmp$redlistCategory[tmp$redlistCategory %in% "Extinct in the Wild"] <- "EW"
 tmp$redlistCategory[tmp$redlistCategory %in% "Critically Endangered"] <- "CR"
@@ -383,8 +473,15 @@ tmp$redlistCategory[tmp$redlistCategory %in% c("Least Concern","Lower Risk/least
 tmp <- tmp[order(tmp$species),]
 table(all.crit$species == tmp$species)
 all.crit <- cbind.data.frame(all.crit, 
-                             tmp[,c("status.reflora","redlistCategory","redlistCriteria","yearPublished","population","populationTrend","threats","rationale")], 
+                             # tmp[,c("status.reflora","redlistCategory","redlistCriteria","yearPublished","population","populationTrend","threats","rationale")], 
+                             tmp[, prev.cols], 
                              stringsAsFactors = FALSE)
+
+## Getting CNCFlora previous assessments with THREAT assessments
+tmp <- flora::get.taxa(all.crit$species, replace.synonyms = FALSE,
+                       drop = c())
+table(all.crit$species == tmp$original.search)
+all.crit$status.reflora <- tmp$threat.status
 
 ## Merging Argentina and Paraguay with THREAT assessments
 prev.assess.AR$species <- stringr::str_trim(prev.assess.AR$species)

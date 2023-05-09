@@ -62,7 +62,18 @@ PopData$timber <- !is.na(PopData$times.cites)
 PopData$timber <- ifelse(PopData$timber == FALSE, 0, 10)
 PopData$timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
 PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10
+PopData$timber[PopData$species %in% "Dicksonia sellowiana"] <- 10
+PopData$timber <- as.numeric(PopData$timber)
 
+#### GETTING THREAT ECOLOGICAL GROUP INFORMATION  ####
+hab1 <- hab[match(PopData$species, hab$Name_submitted), ]
+table(hab1$Name_submitted == PopData$species)
+early.sucession <- hab1$ecol.group
+early.sucession[hab1$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
+early.sucession[early.sucession %in% c("late_secondary", "climax", "unknown")] <- 1L
+early.sucession[early.sucession %in% c("early_secondary")] <- 0.9
+early.sucession[early.sucession %in% c("pioneer")] <- 0.8
+early.sucession <- as.numeric(early.sucession)
 
 #########################################################################################################################################################H
 #########################################################################################################################################################H
@@ -104,6 +115,9 @@ df$p1 <- df$p - (df$p * df$exploitation/100)
 df1 <- merge(df, spp1, by.x = "species", by.y = "species.correct2",
              all.x = TRUE, sort = FALSE)
 
+
+## Should we apply the corrections to early-successional species here as well?
+
 ### ASSESSMENTS ###
 #Optimal params
 critD <- ConR::criterion_D(pop.size = df1$pop.size, 
@@ -144,8 +158,13 @@ all.GL2 <- critD.all[,c(1:4,6:9,5,10:27)]
 for(i in 9:27) all.GL2[,i] <- as.character(all.GL2[,i])
 for(i in 9:27) all.GL2[,i] <- gsub("LC or NT", "LC", all.GL2[,i])
 
+
+## Calculating the Red List Index for subcriterion A2
 rli.all2 <- apply(all.GL2[,9:27], 2, red::rli, boot = TRUE, runs = 4999)
 apply(all.GL2[,9:27], 2, table)
+rli.all.opt2 <- red::rli(gsub("LC or NT", "LC", as.character(all.GL2[,"category_D"])), boot = TRUE, runs = 4999)
+rli.all.opt.low2 <- red::rli(gsub("LC or NT", "LC", as.character(all.GL2[,"D.low"])), boot = TRUE, runs = 4999)
+rli.all.opt.high2 <- red::rli(gsub("LC or NT", "LC", as.character(all.GL2[,"D.high"])), boot = TRUE, runs = 4999)
 
 
 ## Renaming columns
@@ -189,7 +208,7 @@ arrows(x0=rev(ps), y0 = rev(rli.all2[1,grepl("D\\.[0-9]", colnames(rli.all2))]),
 #       code = 3, angle = 90, length = 0.05, col=2)
 #legend("topleft", expression(bold(A)), bty="n", cex=1.3)
 abline(h=rli.all2[2,1], lty = 2)
-legend("bottomright", c("Group-specific", "Fixed"),
+legend("bottomright", c("Group-specific", "Fixed values"),
        lty = c(3,0), pch=c(NA,19),
        bty = "n", lwd=2)
 dev.off()

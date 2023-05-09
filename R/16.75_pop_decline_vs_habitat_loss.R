@@ -281,7 +281,8 @@ saveRDS(simula.result, "data//simula_pop_decline.rds")
 ##################################
 #### THE ATLANTIC FOREST CASE ####
 ##################################
-af.grid <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//af_hex_grid_50km.rds")
+# af.grid <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//af_hex_grid_50km.rds")
+af.grid <- readRDS("data/af_hex_grid_50km.rds")
 pop.sizes <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//pop.size.est_nmx50_mxd5_idp2.rds")
 pop.sizes <- pop.sizes$`1850`$mean
 row.names(pop.sizes) <- paste0("ID", 1:dim(pop.sizes)[1])
@@ -374,7 +375,6 @@ for (j in seq_len(iterations)){
         simula.result.af[[j]] <- all.losses
 }                
 saveRDS(simula.result.af, "data//simula_pop_decline_AtlanticForest.rds")
-
 
 #### ONLY ENDEMICS ####
 all.crit <- readRDS("data/all.criteria.rds")
@@ -655,6 +655,8 @@ arrows(x0 = c(0,as.double(tmp1$Group.1),1)+0.001,
 # points(threat.end ~ loss, pch = 19)
 points(threat.end.A ~ loss, pch = 19, cex = 1.1)
 points(0.114, 0.09, pch = 17, cex = 1.2) # Hans criterion A
+# points(0.137, 0.358,pch = 15, cex = 1.2) # BArstow for Papua New Guinea
+
 legend("bottomright", c("Random", "Aggregate"),
        # col = seq_along(combos) + 1,
        lty = 1,

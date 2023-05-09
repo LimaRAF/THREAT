@@ -12,7 +12,7 @@ require(sp)
 require(gstat)
 
 ## Getting only the necessau shapefiles
-path <- "E://ownCloud//W_GIS" # Renato's path
+path <- "D://ownCloud//W_GIS" # Renato's path
 am.lat <- rgdal::readOGR(dsn=paste(path,"//Am_Lat_ADM_ArcGis",sep=""),layer="LatinAmerica")
 brasil = readRDS(paste(path,"//Am_Lat_ADM_GADM_v3.6//gadm36_BRA_1_sp.rds",sep=""))
 af <- rgdal::readOGR(dsn=paste(path,"//AF_limites_milton",sep=""),layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
@@ -25,7 +25,6 @@ brasil.proj= spTransform(brasil,  CRS("+init=epsg:5641"))
 af.proj = spTransform(af, CRS("+init=epsg:5641"))
 
 
-
 ####################################################################################################################################################################################H
 ####################################################################################################################################################################################H
 #### FIGURES ####
@@ -36,6 +35,7 @@ af.proj = spTransform(af, CRS("+init=epsg:5641"))
 #### ADAPTIVE RESOLUTION GRID ####
 ##################################
 ## reading the results per grid cell
+# toto <- readRDS("data/grid.results_adaptive_resol_old.rds")
 grid.result = readRDS("data/grid.results_adaptive_resol.rds")#[[1]]
 # samp.cov.cutoff = readRDS("data/grid.results_adaptive_resol.rds")[[2]]
 samp.cov.cutoff = quantile(grid.result$SampCover[!is.na(grid.result$N.total) & 
@@ -49,6 +49,7 @@ plot(RLI ~ N.total, grid.result, log="x"); abline(v=c(30,50,100))
 plot(RLI.end ~ N.total, grid.result, log="xy"); abline(v=c(30,50,100))
 plot(RLI ~ S.total, grid.result, log="x"); abline(v=c(30,50,100, 250))
 plot(RLI.end ~ S.total, grid.result, log="xy"); abline(v=c(30,50,100, 250))
+plot(RLI_erro_pad ~ N.total, grid.result, log="x"); abline(v=c(30,50,100))
 
 plot(Threat ~ N.total, grid.result, log="x"); abline(v=c(30,50,100))
 plot(Threat.end ~ N.total, grid.result, log="xy"); abline(v=c(30,50,100))
@@ -89,6 +90,8 @@ grid.result$select1 = ((grid.result$SampCover >= samp.cov.cutoff[5]  & grid.resu
                          (grid.result$SampCover >= samp.cov.cutoff[3] & grid.result$SampCover < samp.cov.cutoff[4] & grid.result$S.total >= spp[3]))
 grid.result$select[grid.result$N.total < 250] <- FALSE
 grid.result$select1[grid.result$N.total < 250] <- FALSE
+# grid.result$select[is.na(grid.result$select)] <- FALSE
+# grid.result$select1[is.na(grid.result$select1)] <- FALSE
 
 #Result by N.total
 par(mfrow = c(1,2))
@@ -105,8 +108,10 @@ points(SampCover ~ S.total, subset(grid.result,select1), col=2, pch=21)
 summary(grid.result$S.total[grid.result$select1])
 head(sort(grid.result$S.total[grid.result$select1]),50)
 summary(grid.result$SampCover[grid.result$select1])
+summary(grid.result$SampCover.end[grid.result$select1])
 
 ## For the SOM
+table(grid.result$select1, useNA = "always")
 summary(grid.result$N.total[!is.na(grid.result$select) & grid.result$select])
 summary(grid.result$S.total[!is.na(grid.result$select) & grid.result$select])
 summary(grid.result$RLI.pa[!is.na(grid.result$select) & grid.result$select])
@@ -117,54 +122,79 @@ summary(grid.result$SampCover[!is.na(grid.result$select) & grid.result$select])
 ############################################################H
 #### CENTRES OF HIGH CONCENTRATION OF THREATENED SPECIES ####
 ############################################################H
-## Getting the grid and editing it
-grid0 <- readRDS("./data/adaptative_resolution_AF_min200_max500_cellmax2/clean_grid.rds")
-
-## removing overllaping parts of the grid cells
-ids.polys <- grid0$ID
-grid_sf <- sf::st_as_sf(grid0)
-grid_inter <- sf::st_intersection(grid_sf)
-# x_inter <- x_inter[x_inter$n.overlaps == 1,]
-grid_inter <- grid_inter[rownames(grid_inter) %in% ids.polys,]
-grid <- as(grid_inter, "Spatial")
-
-## Making sure grid IDs are the same internally
-grid1 <- grid
-tmp <- SpatialPoints(coords = coordinates(grid), proj4string = raster::crs(grid))
-tmp1 <- over(tmp, grid)
-for(i in 1:length(grid1)) { slot(slot(grid1, "polygons")[[i]],"ID") = as.character(paste("ID",i,sep=""))} 
+# ## Getting the grid and editing it
+# grid0 <- readRDS("./data/adaptative_resolution_AF_min200_max500_cellmax2/clean_grid.rds")
+# 
+# ## removing overllaping parts of the grid cells
+# ids.polys <- grid0$ID
+# grid_sf <- sf::st_as_sf(grid0)
+# grid_inter <- sf::st_intersection(grid_sf)
+# # x_inter <- x_inter[x_inter$n.overlaps == 1,]
+# grid_inter <- grid_inter[rownames(grid_inter) %in% ids.polys,]
+# grid <- as(grid_inter, "Spatial")
+# 
+# ## Making sure grid IDs are the same internally
+# grid1 <- grid
+# tmp <- SpatialPoints(coords = coordinates(grid), proj4string = raster::crs(grid))
+# tmp1 <- over(tmp, grid)
+# for(i in 1:length(grid1)) { slot(slot(grid1, "polygons")[[i]],"ID") = as.character(paste("ID",i,sep=""))} 
 
 ## Projecting the Grid
-grid1 <- spTransform(grid1, CRS("+init=epsg:5641"))
+grid <- readRDS("./data/adaptative_resolution_AF_min200_max500_cellmax2/clean_grid_final.rds")
+grid1 <- spTransform(grid, CRS("+init=epsg:5641"))
 
 #### EXPLORING THE OBSERVED RESULTS ####
 ## Defining the color scales
 # cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen", "forestgreen")
+brks <- seq(0,1,0.05)
 cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen")
 colfunc <- colorRampPalette(cores)
-brks1 <- seq(0.5, 1, 0.025)
-cores1 <- c("darkred", "red", "gold", "green")
-colfunc1 <- colorRampPalette(cores1)
-cres1 <- rev(colfunc1(length(brks1)-1))
+
+# brks.threat <- seq(0.28, 1, 0.0375)
+brks.threat <- seq(0, 1, 0.05)
+cores.threat <- c("darkred", "red", "gold", "green")
+colfunc.threat <- colorRampPalette(cores.threat)
+cres1.threat <- rev(colfunc.threat(length(brks.threat)-1))
+
+cores2 <- c("darkred","red", "lightpink2","cornflowerblue", "blue", "blue4")
+colfunc2 <- colorRampPalette(cores2)
+brks2 <- seq(0,0.21,0.01)
 grid.result$RLI.col = as.character(cut(grid.result$RLI, 
                                        # breaks = quantile(grid.result$RLI, na.rm=TRUE, prob = seq(0,1,0.05)), 
-                                       breaks = seq(0,1,0.05), 
+                                       breaks = brks, 
                                        labels = colfunc(20), include.lowest = TRUE))
 grid.result$RLI.end.col = as.character(cut(grid.result$RLI.end, 
                                            # breaks = quantile(grid.result$RLI.end, na.rm=TRUE, prob = seq(0,1,0.05)), 
-                                           breaks = seq(0,1,0.05), 
+                                           breaks = brks, 
                                            labels = colfunc(20), include.lowest = TRUE))
 grid.result$Threat.col = as.character(cut(grid.result$Threat.pa, 
-                                       breaks = brks1,  
-                                       labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
+                                       breaks = brks,  
+                                       labels = rev(colfunc(length(brks)-1)), include.lowest = TRUE))
 grid.result$Threat.end.col = as.character(cut(grid.result$Threat.end.pa, 
-                                              breaks = brks1,  
-                                              labels = rev(colfunc1(length(brks1)-1)), include.lowest = TRUE))
+                                              breaks = brks,  
+                                              labels = rev(colfunc(length(brks)-1)), include.lowest = TRUE))
+brks.N <- seq(0.25, 4.25, 0.2)
+grid.result$N.col = as.character(cut(log10(grid.result$N.total), 
+                                          breaks = brks.N,  
+                                          labels = rev(colfunc(length(brks.N)-1)), include.lowest = TRUE))
+brks.S <- seq(0.25, 3.6, 0.2)
+grid.result$S.col = as.character(cut(log10(grid.result$S.total), 
+                                              breaks = brks.S,  
+                                              labels = rev(colfunc(length(brks.S)-1)), include.lowest = TRUE))
+grid.result$RLI.error.col = as.character(cut(grid.result$RLI_erro_pad, 
+                                       # breaks = quantile(grid.result$RLI, na.rm=TRUE, prob = seq(0,1,0.05)), 
+                                       breaks = brks2, 
+                                       labels = rev(colfunc2(length(brks2)-1)), include.lowest = TRUE))
+grid.result$RLI.error.end.col = as.character(cut(grid.result$RLI_erro_pad.end, 
+                                           # breaks = quantile(grid.result$RLI.end, na.rm=TRUE, prob = seq(0,1,0.05)), 
+                                           breaks = brks2, 
+                                           labels = rev(colfunc2(length(brks2)-1)), include.lowest = TRUE))
 
 # Grids with no data -> "White" ()
 grid.result$Threat.col[is.na(grid.result$select)] <- "#FFFFFF"
+# grid.result$Threat.col[is.na(grid.result$Threat.col)] <- "#FFFFFF"
 grid.result$Threat.end.col[is.na(grid.result$select)] <- "#FFFFFF"
-grid.result$Threat.end.col[is.na(grid.result$Threat.end.col)] <- "#FFFFFF"
+# grid.result$Threat.end.col[is.na(grid.result$Threat.end.col)] <- "#FFFFFF"
 
 # Grids with insuficient data -> "Light Grey" ("#D3D3D3") or "Grey" ("#808080") or "Dark Grey" ("#A9A9A9")
 grid.result$Threat.col[!is.na(grid.result$select) & 
@@ -186,8 +216,8 @@ brasil.proj1 = raster::crop(brasil.proj, bb)
 ###################
 #### FIGURE SR ####
 ###################
-at.leg <- seq(0,100,20)
-at.leg1 <- seq(50,100,10)
+at.leg <- seq(00,100,20)
+at.leg1 <- seq(10,100,10)
 vals.leg <- paste0(at.leg,"%")
 
 #PANEL A
@@ -203,9 +233,7 @@ plot(brasil.proj1, add=TRUE,
      border= cor.br)
 plot(am.lat.proj1, add=TRUE, border = cor.am)
 
-rm.cells <- !grid.result$Threat.col %in% c("#FFFFFF", "#D3D3D3")
-plot(grid1[rm.cells, ],
-     col = adjustcolor(grid.result$Threat.col[rm.cells],
+plot(grid1, col = adjustcolor(grid.result$Threat.col,
                        alpha.f = 0.75,
                        offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
                        # transform = diag(c(1,1,1,0.5))),
@@ -214,14 +242,15 @@ plot(grid1[rm.cells, ],
 # plot(af.proj, add=TRUE, border= cor.af)
 legend("topleft", "A - All populations", cex=1.5, bty="n",inset=c(0.02,0.03))
 
+at.leg <- c(0,1,2,3,4)
 par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
 fields::image.plot( legend.only=TRUE, add=TRUE,
                     col = adjustcolor(cres1, alpha.f = 0.75),
                     legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
                     legend.line = 1, legend.cex = 0.5,
-                    zlim=c(50,100),
-                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
-                                   labels= at.leg1/100))
+                    zlim=c(0,4.5),
+                    axis.args=list(at= at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg/100))
 legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
        cex=1.1,bty="n",y.intersp=-0.01)
 dev.off()
@@ -254,13 +283,91 @@ fields::image.plot( legend.only=TRUE, add=TRUE,
                     col = adjustcolor(cres1, alpha.f = 0.75),
                     legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
                     legend.line = 1, legend.cex = 0.5,
-                    zlim=c(50,100),
-                    axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
-                                   labels= at.leg1/100))
+                    zlim=c(10,100),
+                    axis.args=list(at= at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= at.leg/100))
 legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
        cex=1.1,bty="n",y.intersp=-0.01)
 dev.off()
 
+
+###################
+#### FIGURE UU ####
+###################
+# LOG10 of the number of occurrences and species per grid cell
+
+#PANEL A
+jpeg(filename = "figures/Figure_UU_A.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+# rm.cells <- !grid.result$Threat.col %in% c("#FFFFFF", "#D3D3D3")
+plot(grid1, col = adjustcolor(grid.result$N.col,
+                       alpha.f = 0.75,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+     # transform = diag(c(1,1,1,0.5))),
+     border = "black",
+     add=TRUE)
+# plot(af.proj, add=TRUE, border= cor.af)
+legend("topleft", "A - Number of occurrences", cex=1.5, bty="n",inset=c(0.02,0.03))
+
+cres1.N <- rev(colfunc(length(brks.N)-1))
+at.leg <- c(0,1,2,3,4)
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1.N, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(0,5),
+                    axis.args=list(at= at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= c(1,10,100,1000,10000)))
+# legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+#        cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()
+
+#PANEL B
+jpeg(filename = "figures/Figure_UU_B.jpg", width = 3000*1.5, height = 3000*2, 
+     units = "px", pointsize = 12,
+     res = 600, family = "sans", type="cairo", bg="white")
+
+par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
+plot(af.proj, border="white")
+plot(grid1, border=grey(0.75), add = TRUE)
+plot(brasil.proj1, add=TRUE, 
+     #lty="1414", 
+     border= cor.br)
+plot(am.lat.proj1, add=TRUE, border = cor.am)
+
+plot(grid1, col = adjustcolor(grid.result$S.col,
+                       alpha.f = 0.75,
+                       offset = c(0.1, 0.1, 0.1, 0.15)), # <- "more white"
+     # transform = diag(c(1,1,1,0.5))),
+     border = "black",
+     add=TRUE)
+legend("topleft", "B - Number of species", cex=1.5, bty="n",inset=c(0.02,0.03))
+
+cres1.S <- rev(colfunc(length(brks.S)-1))
+at.leg <- c(0,1,2,3)
+
+par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
+fields::image.plot( legend.only=TRUE, add=TRUE,
+                    col = adjustcolor(cres1.S, alpha.f = 0.75),
+                    legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
+                    legend.line = 1, legend.cex = 0.5,
+                    zlim=c(0,4),
+                    axis.args=list(at= at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                                   labels= c(1,10,100,1000)))
+# legend(4500000,6024198,expression(bold("Prop. Threatened Species")),
+#        cex=1.1,bty="n",y.intersp=-0.01)
+dev.off()
 
 # -------------------------------------------------------------------------
 #### CREATING THE GRID FOR PREDICTION ###
@@ -336,18 +443,23 @@ brasil.proj1 = raster::crop(brasil.proj, bb)
 #               "C - Endemic, % Threat", "D - Endemics, Red List Index"),2)
 #Figure 3
 vars = c("RLI.pa","RLI.end.pa")
-nomes = rep(c("A - All populations","B - Endemics"),4)
+nomes = rep(c("A - All species","B - Endemics"),4)
 figura <- "Figure3_"
 
 #Figure SQ
 vars = c("Threat.pa","Threat.end.pa")
-nomes = rep(c("A - All populations","B - Endemics"),4)
+nomes = rep(c("A - All species","B - Endemics"),4)
 figura <- "FigureSQ_"
 
-#Figure SS
+#Figure SS (Aqui só os painéis C e D - A e B são gerados abaixo no item DISTRIBUTIONS AND INTERPOLATION FOR CR SPECIES)
 vars = c("Threat.pa_CR", "Threat.end.pa_CR")
-nomes = rep(c("C - Predicted, all populations", "D - Predicted, endemics"),4)
+nomes = rep(c("C - Predicted, all species", "D - Predicted, endemics"),4)
 figura <- "Figure_SS_"
+
+#Figure VV
+vars = c("RLI_erro_pad", "RLI_erro_pad.end")
+nomes = rep(c("A - All species","B - Endemics"),4)
+figura <- "Figure_VV_"
 
 
 #Figure # abortando...
@@ -357,13 +469,13 @@ figura <- "Figure_SS_"
 
 for(i in 1:length(vars)) {
   var = vars[i]
-  nome.fig = paste("figures/",figura, LETTERS[i],"adpt_",var,".jpg",sep="")
+  nome.fig = paste("figures/",figura, LETTERS[i],"_adpt_",var,".jpg",sep="")
   #nome.fig = paste("Figure2_",var,"_BW.jpg",sep="")
   nome.shp = gsub("\\.","_",paste("shp_centre_",var,sep=""))
   
   if (var == "N.total") {
     dados1 = grid.result[!is.na(grid.result[,var]),] 
-    dados2 = log(dados1[,var]+1)
+    dados2 = log10(dados1[,var]+1)
     
     grid2.1 = grid1
     x.data.1 = as.double(coordinates(grid2.1)[,1])
@@ -371,7 +483,7 @@ for(i in 1:length(vars)) {
     grid2.1 = cbind.data.frame(x.data.1, y.data.1, grid.result)
     names(grid2.1)[1:2] = c("x","y")
     coordinates(grid2.1) = ~x+y
-    proj4string(grid2.1) <- crs(grid1)
+    proj4string(grid2.1) <- raster::crs(grid1)
     grid3 = grid2.1[!is.na(grid2.1@data[,var]),]
   } else { 
     dados2 = dados[!is.na(dados[,var]), var]
@@ -432,9 +544,14 @@ for(i in 1:length(vars)) {
   krig <- gstat::krige(formula= dados2 ~ 1, locations= grid3, newdata= grid.out, model= best.m, nmax = 25)
   #krig1<-krige(formula= dados2 ~ x+y, locations= grid3, newdata= grid.out, model= fit.variog.exp, nmax = 20)
   krig.output = cbind.data.frame(coordinates(grid.out), krig$var1.pred)
+  if (grepl("RLI", var) & grepl("erro", var))
+    krig.output = cbind.data.frame(coordinates(grid.out), krig$var1.var)
+  
   names(krig.output)<-c("x","y","z")
   krig.output0 <- raster::rasterFromXYZ(krig.output)
-  
+  krig.output2 <- raster::crop(krig.output0, af.proj)
+  krig.output3 <- raster::mask(krig.output2, af.proj)
+
   jpeg(filename = nome.fig, width = 3000*1.5, height = 3000*2, units = "px", pointsize = 12,
        res = 600, family = "sans", type="cairo", bg="white")
   
@@ -454,9 +571,8 @@ for(i in 1:length(vars)) {
   if (uns>0) {
     brks[brks==1] = seq(1 - (uns-1)*0.00001, 1, 0.00001)
   }
-  #ploting
-  par(mfrow=c(1,1), las=1,mar=c(0,0,0,0),mgp=c(1.7,0.4,0),tcl=-.3)
-  plot(af.proj, border="white")
+  
+  #Plot settings
   # raster::image(krig.output, col = cres, add=TRUE,  breaks = brks)
   if (grepl("Threat", var))
     cres <- rev(cres)
@@ -467,12 +583,15 @@ for(i in 1:length(vars)) {
   if (grepl("Threat", var) & grepl("_CR", var))
     brks1 <- seq(0, 0.45, 0.02)
   
+  cores <- c("darkred", "red", "darkorange", "gold", "yellowgreen")
+  colfunc <- colorRampPalette(cores)
+
   cores1 <- c("darkred", "red", "gold", "green")
   colfunc1 <- colorRampPalette(cores1)
   cres1 <- colfunc(length(brks1)-1)
   if (grepl("Threat", var))
     cres1 <- rev(cres1)
-  raster::image(krig.output0, col = cres1, add=TRUE,  breaks = brks1)
+  
   # krig.output1 = xtabs(z~x+y, krig.output)
   # cl <- contourLines(as.double(attributes(krig.output1)$dimnames$x),
   #                    as.double(attributes(krig.output1)$dimnames$y),
@@ -491,33 +610,101 @@ for(i in 1:length(vars)) {
   # shp.krig.cut = sp::disaggregate(shp[which(shp@data$level == qts[which(names(qts)==cutoff)]),])
   # shp.krig.cut1 = shp.krig.cut[gLength(shp.krig.cut, byid = TRUE) >= mean(gLength(shp.krig.cut, byid = TRUE)),]
   # shp.krig.cut1 = shp.krig.cut[rgeos::gLength(shp.krig.cut, byid = TRUE) >=2*pi*25000,]
+  
+  #ploting
+  par(mfrow=c(1,1), las=1, mar=c(0,0,0,0), mgp=c(1.7,0.4,0), tcl=-.3)
+  plot(af.proj, border="white")
+  # raster::image(krig.output3, col = cres1, add=TRUE) #,  breaks = brks1)
+  
+  if (grepl("RLI", var) & !grepl("erro", var)) {
+    # cores.plot <- cres1
+    quebras <- seq(0.3, 1, 0.025)
+    # quebras <- seq(0.30, 0.75, 0.025)
+    cores <- c("darkred", "red", "darkorange", "gold", "yellow")
+    colfunc <- colorRampPalette(cores)
+    cores.plot <- colfunc(length(quebras)-1)
+    raster::image(krig.output3, col = cores.plot, add=TRUE) #,  breaks = brks1)
+    zlim <- c(30,75)
+    breaks <- seq(0,100,20)
+    at.leg <- seq(30,70,10)
+    at.leg.lab <- at.leg/100
+  }  
+  
+  if (grepl("Threat", var)) {
+    # cores.plot <- cres1
+    quebras <- seq(0,1,0.05)
+    cores <- c("darkred", "red", "darkorange", "gold", "yellow")
+    colfunc <- colorRampPalette(cores)
+    cores.plot <- rev(colfunc(length(quebras)-1))
+    
+    raster::image(krig.output3, col = cores.plot, add=TRUE) #,  breaks = brks1)
+    zlim <- c(35,100)
+    breaks <- seq(0,100,20)
+    at.leg <- seq(0,100,20)
+    at.leg.lab <- at.leg/100
+  }
+  
+  if (grepl("Threat", var) & grepl("CR", var)) {
+    # cores.plot <- cres1
+    quebras <- seq(0, 0.35, 0.025)
+    cores <- c("darkred","red", "gold", "green")
+    colfunc <- colorRampPalette(cores)
+    cores.plot <- rev(colfunc(length(quebras)-1))
+
+    raster::image(krig.output3, col = cores.plot, add=TRUE) #,  breaks = brks1)
+    zlim <- c(0,55)
+    breaks <- seq(0,55,10)
+    at.leg <- seq(0,55,10)
+    at.leg.lab <- at.leg/100
+  }
+
+  # at.leg <- seq(0,100,20)
+  # at.leg1 <- seq(60,100,10)
+  # at.leg1 <- seq(0,60,10)
+  # vals.leg <- paste0(at.leg,"%")
+  
+  if (grepl("RLI", var) & grepl("erro", var)) {
+    # cores.plot <- cres1
+    quebras <- seq(7e-05, 0.00018, 0.075e-04)
+    cores <- c("darkred","red3","red", "lightpink2","cornflowerblue", "cyan","blue1")
+    colfunc <- colorRampPalette(cores)
+    cores.plot <- rev(colfunc(length(quebras)-1))
+    
+    raster::image(krig.output3, col = cores.plot, add=TRUE) #,  breaks = brks1)
+    zlim <- c(7e-05,0.00018)
+    breaks <- seq(0,100,20)
+    at.leg <- seq(7e-05,0.00018,0.15e-04)
+    at.leg.lab <- at.leg/100
+    
+  }    
+  
   plot(brasil.proj1, add=TRUE, lty="1414", border= cor.br)
   plot(af.proj, add=TRUE, border= cor.af)
   plot(am.lat.proj1, add=TRUE, border = cor.am)
   nome = nomes[i]
   legend("topleft", nome, cex=1.5, bty="n",inset=c(0.02,0.03))
   # plot(shp.krig.cut1, add=TRUE, lwd=2, col=1)
+  
   par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
-  at.leg <- seq(0,100,20)
-  at.leg1 <- seq(60,100,10)
-  at.leg1 <- seq(0,60,10)
-
-  vals.leg <- paste0(at.leg,"%")
   fields::image.plot( legend.only=TRUE, add=TRUE,
-                      col = cres1,
+                      col = cores.plot,
                       legend.shrink = 1, legend.width = 4, legend.mar = 1.2,
                       legend.line = 1, legend.cex = 0.5,
+                      zlim = zlim,
                       # zlim=c(2.5,97.5),
                       # zlim=c(60,100),
-                      zlim=c(0,55),
+                      # zlim=c(0,55),
+                      #breaks = breaks,
                       #breaks = seq(0,100,20),
-                      axis.args=list(at= at.leg1,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
+                      axis.args=list(at= at.leg,  mgp=c(1.5,0.6,0), tcl=-.3, cex.axis=1, 
                                      # labels = round(qts[names(qts) %in% vals.leg],2)))
-                                     labels= at.leg1/100))
+                                     labels= at.leg.lab))
   if (grepl("Threat", var))  
     legend(4500000,6024198,expression(bold("Prop. Threatened Species")),cex=1.1,bty="n",y.intersp=-0.01)
-  if (grepl("RLI", var))  
+  if (grepl("RLI", var) & !grepl("erro", var))  
     legend(4900000,6024198,expression(bold("Red List Index")),cex=1.1,bty="n",y.intersp=-0.01)
+  if (grepl("RLI", var) & grepl("erro", var))  
+    legend(4800000,6024198, expression(bold("Prediction error")),cex=1.1,bty="n",y.intersp=-0.01)
   #colorbar.plot(5549396, 7757332, strip=cbind(0:100), horizontal=F, 
   #	    strip.width = 0.04, strip.length = 0.6,
   #      col=cres)
@@ -1153,9 +1340,12 @@ dev.off()
 #### FIGURE SS  ####
 ## PANELS C AND D TOGETHER WITH THE KRIGING FIGURES ABOVE
 
+colunas <- c("Threat.pa", "Threat.end.pa", "Threat.pa_CR", "Threat.end.pa_CR")
+apply(grid.result[, colunas], 2 , summary)
+
 #### OBSERVED OCCURRENCESS ####
 ## Defining the color scales
-brks1 <- seq(0, 0.55, 0.01)
+brks1 <- seq(0, 0.35, 0.025)
 cores1 <- c("darkred","red", "gold", "green")
 colfunc1 <- colorRampPalette(cores1)
 cres1 <- rev(colfunc1(length(brks1)-1))
@@ -1199,8 +1389,13 @@ am.lat.proj1 = raster::crop(am.lat.proj, bb)
 brasil.proj1 = raster::crop(brasil.proj, bb)
 
 ## First panels ##
+zlim <- c(35,100)
+breaks <- seq(0,100,20)
 at.leg <- seq(0,100,20)
-at.leg1 <- seq(0,60,10)
+at.leg.lab <- at.leg/100
+
+# at.leg <- seq(0,100,20)
+at.leg1 <- seq(0,55,10)
 vals.leg <- paste0(at.leg,"%")
 
 #PANEL A
@@ -1225,7 +1420,7 @@ plot(grid1[rm.cells, ],
      border = "black",
      add=TRUE)
 # plot(af.proj, add=TRUE, border= cor.af)
-legend("topleft", "A - Observed, all populations", cex=1.5, bty="n",inset=c(0.02,0.03))
+legend("topleft", "A - Observed, all species", cex=1.5, bty="n",inset=c(0.02,0.03))
 
 par(fig = c(0.5, 0.85, 0.015, 0.4), mar=c(0,0,0,0), new=TRUE)
 fields::image.plot( legend.only=TRUE, add=TRUE,

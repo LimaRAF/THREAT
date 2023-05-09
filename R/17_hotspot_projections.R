@@ -61,8 +61,8 @@ get_threat <- function(habitat_loss = NULL, spp_richness = NULL,
            function(i) red::rli(rep(colnames(dados), times = dados[i,])))
   dados <- cbind(VU = threat.VU[,3], EN = threat.EN[,3], CR = threat.CR[,3])
   dados <- round(100 * cbind(dados, LC = 1 - apply(dados, 1, sum)), 0)
-  dados[apply(dados,1,sum) != 100, 4] <- 
-    dados[apply(dados,1,sum) != 100, 4] + 
+  dados[apply(dados, 1, sum) != 100, 4] <-
+    dados[apply(dados, 1, sum) != 100, 4] +
     (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
   dados[,4][dados[,4] < 0 ] <- 0
   low.RLI <- 
@@ -87,13 +87,13 @@ get_threat <- function(habitat_loss = NULL, spp_richness = NULL,
 
         threat_end_spp <- threat_spp * endemism_ratio
         colnames(threat_end_spp) <- gsub("_spp", "end_spp", colnames(threat_end_spp))
-        threat <- cbind(round(100*threat, 1), threat_spp, threat_end_spp)
-
+        threat <- cbind(round(100 * threat, 1), threat_spp, threat_end_spp)
+        
       } else {
-        threat <- cbind(round(100*threat, 1), threat_spp)
+        threat <- cbind(round(100 * threat, 1), threat_spp)
       }
   } else {
-    threat <- round(100*threat, 1)
+    threat <- round(100 * threat, 1)
   }
   
   threat <- cbind(threat, RLI)
@@ -185,33 +185,43 @@ threatened_per_hotspot <-
 head(threatened_per_hotspot, 3)
 
 #### Sumary stats ####
+#BGCI 2021: total = 58497
+#BGCI 2021: without Neartic, Paleartic and Oceania = 49469
+58497 - (1432 + 5994 + 1602)
+#BGCI 2021: without Neartic, Paleartic and Oceania + species and Australia and New Zealand endemcis = 48140  
+58497 - (1432 + 5994 + 2730 + 201) # or 48,140
+23631 + 9237 + 13739 + (7442 - (2730 + 201)) # 51,118
+
+
 sum(threatened_per_hotspot$area_km2) / 1000000 # area cover in million km2
 round(apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
                                        "high_all_spp")], 2, sum, na.rm = TRUE), 0)
 
 apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
-                                "high_all_spp")], 2, sum, na.rm = TRUE)/581.73 # 34.9-42.3% total number of trees in the world
+                                "high_all_spp")], 2, sum, na.rm = TRUE)/584.97 # 34.9-38.9-42.3% total number of trees in the world
+apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
+                                "high_all_spp")], 2, sum, na.rm = TRUE)/481.40 # 42.1-47.0-51.1% total number of tropical trees in the world
 apply(threatened_per_hotspot[,c("low_all_spp", "med_all_spp", 
                                 "high_all_spp")], 2, sum, na.rm = TRUE)/
-      sum(threatened_per_hotspot$tree_end_richness) # 56.5-68.5% of the total number of trees in these forests
-sum(threatened_per_hotspot$tree_end_richness)/581.73 #61.7% of total number of trees in the world
+sum(threatened_per_hotspot$tree_end_richness) # 56.5-68.5% of the total number of trees in these forests
+sum(threatened_per_hotspot$tree_end_richness)/584.97 #61.7% of total number of trees in the world
+sum(threatened_per_hotspot$tree_end_richness)/481.40 #76.6% of total number of tropical trees in the world
 
-sum(threatened_per_hotspot$med_all_spp)/581.73 #38.9% of endemic trheat in respet to the total number of trees in the world
-
+sum(threatened_per_hotspot$med_all_spp)/584.97 #38.9% of endemic threat in respect to the total number of trees in the world
+sum(threatened_per_hotspot$med_all_spp)/481.40 #47.0% of endemic threat in respect to the number of tropical trees in the world
 
 rem_habitat_area <- ((100 - threatened_per_hotspot$habitat_loss)/100) * threatened_per_hotspot$area_km2
 sum(rem_habitat_area)/sum(threatened_per_hotspot$area_km2) # overall 57.9% of lost in these regions  
 
 100*round(sum(threatened_per_hotspot$med_all_spp), 0)/
-  sum(threatened_per_hotspot$tree_end_richness) # 62.9% of the endemic tree species are 
+  sum(threatened_per_hotspot$tree_end_richness) # 62.9% of the endemic tree species are threatened
 
 # Simples regra de três: quantas árvores no total devem estar ameaçadas no mundo)
-other.spp <- 58173 - sum(threatened_per_hotspot$tree_end_richness)
-sum(threatened_per_hotspot$med_all_spp)/581.73 + 
-  (0.25*other.spp)/581.73 # considering a 25% theat level for non-endemic tropical trees
+other.spp <- 58497 - sum(threatened_per_hotspot$tree_end_richness)
+sum(threatened_per_hotspot$med_all_spp)/584.97 + 
+  (0.25*other.spp)/584.97 # considering a 25% theat level for non-endemic tropical trees
 
-
-saveRDS(threatened_per_hotspot, "data/hotspots_results.rds")
+saveRDS(threatened_per_hotspot, "data/hotspots_results_new.rds")
 
 #### MAKING THE TABLES FOR THE TEXT ####
 # Table 2
