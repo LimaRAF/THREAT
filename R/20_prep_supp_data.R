@@ -194,5 +194,5 @@ for (i in seq_len(dim(full.info4)[2])) {
 }
 
 ##Saving
-writexl::write_xlsx(full.info4, "./text/Science/DataS1.xlsx",
+writexl::write_xlsx(full.info4, "./text/Science/DataS1_new.xlsx",
                     format_headers = FALSE)
