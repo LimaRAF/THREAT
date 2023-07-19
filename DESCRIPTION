@@ -1,0 +1,42 @@
+Package: THREAT
+Version: 0.0.1
+Title: The threat status of endemic Atlantic Forest trees
+Type: Package
+Authors@R: c(person("Renato A.", "Ferreira de Lima", role = c("aut", "cre"),
+                     email = "raflima@usp.br", 
+	                   comment = c(ORCID = "0000-0002-1048-0138")),
+              person("Gilles", "Dauby", role = "ctb", 
+                     email = "gildauby@gmail.com"))
+Author: 
+  Renato A. F. de Lima [aut, cre]
+  Gilles Dauby [ctb]
+Description: Codes and data for the conservation assessment of the Atlantic 
+  Forest trees following the Criteria A, B, C and D of the International Union 
+  for Conservation of Nature (IUCN, see <http://www.iucnredlist.org>).
+Maintainer: Renato A. F. de Lima <raflima@usp.br>
+Depends: R (>= 3.5.0)
+License: GPL (>= 3) + file LICENSE
+Encoding: UTF-8
+LazyData: true
+LazyDataCompression: xz
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.2
+VignetteBuilder: knitr
+Imports: 
+    ConR,
+    plantR,
+    raster,
+    sf,
+    sp,
+    foreach,
+    doSNOW,
+    snow
+Suggests:
+    devtools,
+    graphics,
+    grDevices, 
+    rmarkdown,
+    stats,
+    testthat (>= 3.0.0),
+    utils
+Config/testthat/edition: 3
