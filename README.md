@@ -187,6 +187,8 @@ taxonomically validated records) - function `ConR::EOO.sensitivity()`.
 
 ##### Details on step 5
 
+(To be finished)
+
 ### Organization and content
 
 This repository is structured as follows:
@@ -263,3 +265,8 @@ the methodological approach stored in this repository.
 > F. de Siqueira, plantR: An R package and workflow for managing species
 > records from biological collections. Methods Ecol. Evol. 14(2),
 > 332-339 (2023).
+
+> M. C. Rivers, S. P. Bachman, T. R. Meagher, E. Nic Lughadha, N. A.
+> Brummitt, Subpopulations, locations and fragmentation: applying IUCN
+> red list criteria to herbarium specimen data. Biodivers. Conserv. 19,
+> 2071–2085 (2010).
