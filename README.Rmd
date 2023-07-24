@@ -57,12 +57,13 @@ multiple IUCN criteria contains five main steps (Figure 1).
 The main steps of the workflow are:
 
   1. **Definitions**: the basic definitions that will determine which species 
-will be included in the assessments.    
-  2. **Species information**: the most important information that must be 
-compiled, estimated or imputed to obtain the population metrics. 
+will be included in the assessments;
+  2. **Species information**: the essential information that must be 
+compiled, estimated or imputed to obtain the population metrics;
   3. **Population metrics**: the population metrics defined by the IUCN as 
-indicators of the threat of a species or taxon.
-  4. **IUCN criteria assessment**: The conservation assessment itself.
+indicators of the threat of a species or taxon;
+  4. **IUCN criteria assessment**: The conservation assessment itself to assign
+one of the IUCN Red List Categories;
   5. **Summary and export**: summary of the overall results of the assessment 
 and the export of the information necessary for submission to the IUCN. 
   
@@ -70,7 +71,8 @@ and the export of the information necessary for submission to the IUCN.
 Note that the first two steps mostly involves the compilation of the necessary
 information from the study region and the group of organism included in the
 assessment. Although they are the first steps of the workflow, the codes in this
-this information was already compiled and is available within the `data` folder.
+this information was already compiled, estimated or imputed and that it is
+available in the `data` folder.
 
 <br />
 
@@ -97,18 +99,18 @@ reviewing the assessments before submission.
 
 ##### Details on step 2
 
-In Step 2, species occurrence records are the input data used to obtain the
-species' geographic range and other spatial population metrics that are required
-to assess the IUCN criterion B (see function `ConR::criterion_B()`). On the
-other hand, the input data required to assess the IUCN criterion A (i.e.
-population size decline) is a vector of population sizes per year (see function
-`ConR::criterion_A()`). That is, the workflow currently does not provide the
-codes to obtain population sizes from abundances, which can be done using very
+Species occurrence records are the input data used to obtain the species'
+geographic range and other spatial population metrics that are required to
+assess the IUCN criterion B (see function `ConR::criterion_B()`). On the other
+hand, the input data required to assess the IUCN criterion A (i.e. population
+size decline) is a vector of population sizes per year (see function
+`ConR::criterion_A()`). That is, the workflow assumes that population sizes were
+already obtained from species abundance data, which can be done using very
 different approaches depending on the group of study and the nature of evidence
-(i.e. observed, estimated, inferred or suspected). What the workflow provides
-is a tool to estimate species-specific population size reduction at a specific
-point in time, which is needed for the assessments using criteria A and C
-(see section 'Details on step 3').
+(i.e. observed, estimated, inferred or suspected). What the workflow provides is
+a tool to estimate species-specific population size reduction at a specific
+point in time, which is needed for the assessments using criteria A and C (see
+section 'Details on step 3').
 
 Species occurrence data should be submitted to a data cleaning and validation
 process to make sure that only the data with a minimum quality will be used in
@@ -118,28 +120,14 @@ validate the locality, geographical coordinates, taxonomic nomenclature and
 species identifications. It also includes tools for the retrieval and removal of
 specimen duplicates across biological collections.
 
-Different species information will probably be missing for some or many species,
-depending on the available knowledge of the target region. Some of this
-information, however, is essential to the assessment of one or more IUCN
-criteria. They include the Generation Length (GL), the Proportion of Mature
-Individuals (p) in the population and the Average Dispersal Distance (DD) of the
-species. Thus, this information needs to be estimated or imputed making use of
-the best data currently available. In THREAT, GL and p were generalized for
-groups of species defined based on their potential maximum height as an adult
-and on their ecological groups. The choice of which values were assigned to each
-group was based on the empirical evidence currently available in the literature.
-For estimating DD, we implemented the function `ConR::subpop.radius()` that
-applies the circular buffer method (Rivers et al., 2010) for obtaining
-species-specific proxies of DD.
-
-
 <br />
 
 ##### Details on step 3
 
-Different population metrics are necessary for applying the IUCN criteria A,
-B, C and D. A new version 2.0 of the `ConR` package (Dauby et al. 2017, Dauby & 
-Lima 2022) was developed to calculate most of these metrics. 
+Different population metrics are necessary for applying the IUCN criteria A, B,
+C and D (criterion E is currently not considered in this workflow). A new
+version 2.0 of the `ConR` package (Dauby et al. 2017, Dauby & Lima 2022) was
+developed to include new functions to calculate most of these metrics.
 
 For criterion A, the `ConR` package provides a function for fitting
 statistical models to the population size vector to obtain the reductions at
@@ -154,12 +142,13 @@ For criterion B, the `ConR` package provides functions for calculating the
 Extent of Occurrence (EOO - `ConR::EOO.computing()`), Area of Occupancy (AOO -
 `ConR::AOO.computing()`), Number of Subpopulations (`ConR::subpop.comp()`) and
 Number of Locations (`ConR:::locations.comp`). Although omitted from the THREAT
-workflow, the detection of fluctuations in population sizes is also an
-important aspect of the IUCN for some groups of organisms. In addition, the
-package provides a function `ConR::AOH.estimation()` to calculate the amount and
-the change in available habitat within the species EOO. This is still not used
-as a metric in the assessments but it can be used as a measure of continuing
-decline, one of the conditions necessary for assessing criterion B.
+workflow, the detection of fluctuations in population sizes is also an important
+aspect of the IUCN for some groups of organisms. In addition, the package
+provides a function `ConR::AOH.estimation()` to calculate the amount and the
+change in available habitat within the species EOO. This is still not used as a
+population metric within the IUCN Red List Categories and Criteria but it can be
+used as a measure or proxy of species presenting continuing decline, one of the
+conditions necessary for assessing criterion B.
 
 <br />
 
@@ -168,13 +157,14 @@ decline, one of the conditions necessary for assessing criterion B.
 This step corresponds to the assignment of one of the IUCN Red List Categories
 (i.e. EX, EW, CR, EN, VU, NT, LC, DD) by comparing the population metrics
 obtained in the previous step against the IUCN quantitative thresholds and
-conditions. It can also include possible tags, such as the 'Possibly Extinct'
-tag for Critically Endangered species.
+conditions. It can also include the assignment of tags, such as the 'Possibly
+Extinct' tag for Critically Endangered species or species known only for their
+types or very old records (e.g. over 50 years old).
 
 In the case of multiple IUCN criteria, there is also the need for having a
-consensus category from the result of each of the criteria. In the case of
-regional assessments, this step may also include down-listings or up-listings 
-which should be duly noted.
+consensus IUCN Red List Category after combining the results of the application
+each of criterion. In the case of regional assessments, this step may also
+include down-listings or up-listings which should be duly noted.
 
 As mentioned above, specific functions were developed to assess the IUCN
 criteria A, B, C and D and to generate consensus categories among these criteria
@@ -182,7 +172,9 @@ and they are available in the new version 2.0 of the `ConR` package (Dauby et
 al. 2017, Dauby & Lima 2022). This new version also provides functions to assess
 the sensitivity of species Extent of Occurrence from the inclusion of different
 types of records (e.g. not taxonomically validated records) - function
-`ConR::EOO.sensitivity()`.
+`ConR::EOO.sensitivity()`. This may be handy for selecting occurrence
+records to be added to the assessments based on their individual influence on 
+the species EOO.
 
 <br />
 
@@ -190,14 +182,78 @@ types of records (e.g. not taxonomically validated records) - function
 
 (To be finished)
 
+Red List Index
+Confrontation with the most up-to-date version of the IUCN Red List.
+Maps
 
-### Organization and content
+
+<br />
+
+
+##### Missing information, uncertainties and solutions
+
+For most assessments, species information will be missing for some or many
+species. Of course, this will depend of the group of organism and the available
+knowledge of the target region. Some of this information, however, is essential
+to the assessment of one or more IUCN criteria. Therefore, solutions based on
+the best information currently available must be designed, so that assessments
+are made using as many IUCN criteria and species as possible. These solutions
+include the estimation of missing information or their proxies from the data or
+the imputation of information using the best data currently available for the
+species or closely-related taxa. As mentioned above, they also introduce
+uncertainties in the assessments that should evaluated and presented.
+
+For the assessment of criteria A, C and D, essential information include the
+Generation Length (GL) of the species and the Proportion of Mature Individuals
+(p) in their population. In THREAT, the solution adopted for missing GL and p
+was the imputation of values based on generalisation for groups of species
+defined based on their potential maximum height as an adult and on their
+ecological groups. The choice of which values were assigned to each group was
+based on the empirical evidence currently available in the literature. 
+
+Still related to the criteria A and C, it is expected that impact of harvest 
+trends (e.g. timber species) and of changes in habitat quality will have an 
+impact on the change of population sizes. 
+
+For the assessment of criteria B
+and the Average Dispersal Distance (DD) of the species.  For
+estimating DD, we implemented the function `ConR::subpop.radius()` that applies
+the circular buffer method (Rivers et al., 2010) for obtaining species-specific
+proxies of DD.
+
+
+
+<br />
+
+
+**Table 1**. The THREAT workflow. 
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- "
+|Data Limitations/Uncertainties |Criteria |Metric impacted |Solution |
+|:----------------|:--------|:---------------|:--------|
+| Generation Length                | A and C | Pop. size decline | Group-specific imputation | 
+| Proportion of Mature Individuals | C and D | Pop. size | Group-specific Imputation |
+| Impact of harvest trends         | A and C | Pop. size decline | Group-specific imputation |
+| Impact of habitat quality changes | A and C | Pop. size decline | Group-specific imputation |
+| Average Dispersal Distance        | B1/B2 | Subpops./Fragmentation | Estimation from data |
+| Species identification of records | B1/B2 | EOO and AOO | Add extra records, if needed |
+| Geographical coordinates of records | B1/B2   | EOO and AOO | Use only valid records |
+| Scale of threat events  | B1/B2 | Number of locations | Set a fixed value |
+| Subpopulation limits    | C2a(i)| Size of subpopulations | Subcriteria applied in few cases|
+| Future threats          | D2 | - | Subcriteria not applied |
+"
+cat(tabl) # output the table in a format good for HTML/PDF/docx conversion
+```
+
+<br />
+
+### Organization and content of the repository
 
 This repository is structured as follows:
 
 - [`R/`](https://github.com/LimaRAF/THREAT/tree/master/R/):
 contains the R scripts to run each step of the workflow and some accessory
-functions developed especially for it.
+functions developed especially for it. The scripts are numbered in the order that they should be executed.
 
 - [`data/`](https://github.com/LimaRAF/THREAT/tree/master/data):
 contains raw, accessory or derived/edited data needed for running the codes,

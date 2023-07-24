@@ -111,21 +111,6 @@ geographical coordinates, taxonomic nomenclature and species
 identifications. It also includes tools for the retrieval and removal of
 specimen duplicates across biological collections.
 
-Different species information will probably be missing for some or many
-species, depending on the available knowledge of the target region. Some
-of this information, however, is essential to the assessment of one or
-more IUCN criteria. They include the Generation Length (GL), the
-Proportion of Mature Individuals (p) in the population and the Average
-Dispersal Distance (DD) of the species. Thus, this information needs to
-be estimated or imputed making use of the best data currently available.
-In THREAT, GL and p were generalized for groups of species defined based
-on their potential maximum height as an adult and on their ecological
-groups. The choice of which values were assigned to each group was based
-on the empirical evidence currently available in the literature. For
-estimating DD, we implemented the function `ConR::subpop.radius()` that
-applies the circular buffer method (Rivers et al., 2010) for obtaining
-species-specific proxies of DD.
-
 <br />
 
 ##### Details on step 3
@@ -186,6 +171,59 @@ taxonomically validated records) - function `ConR::EOO.sensitivity()`.
 ##### Details on step 5
 
 (To be finished)
+
+<br />
+
+##### Missing information, uncertainties and solutions
+
+For most assessments, species information will be missing for some or
+many species. Of course, this will depend of the group of organism and
+the available knowledge of the target region. Some of this information,
+however, is essential to the assessment of one or more IUCN criteria.
+Therefore, solutions based on the best information currently available
+must be designed, so that assessments are made using as many IUCN
+criteria and species as possible. These solutions include the estimation
+of missing information or their proxies from the data or the imputation
+of information using the best data currently available for the species
+or closely-related taxa. As mentioned above, they also introduce
+uncertainties in the assessments that should evaluated and presented.
+
+For the assessment of criteria A, C and D, essential information include
+the Generation Length (GL) of the species and the Proportion of Mature
+Individuals (p) in their population. In THREAT, the solution adopted for
+missing GL and p was the imputation of values based on generalisation
+for groups of species defined based on their potential maximum height as
+an adult and on their ecological groups. The choice of which values were
+assigned to each group was based on the empirical evidence currently
+available in the literature.
+
+Still related to the criteria A and C, it is expected that impact of
+harvest trends (e.g. timber species) and of changes in habitat quality
+will have an impact on the change of population sizes.
+
+For the assessment of criteria B and the Average Dispersal Distance (DD)
+of the species. For estimating DD, we implemented the function
+`ConR::subpop.radius()` that applies the circular buffer method (Rivers
+et al., 2010) for obtaining species-specific proxies of DD.
+
+<br />
+
+**Table 1**. The THREAT workflow.
+
+| Data Limitations/Uncertainties      | Criteria | Metric impacted        | Solution                         |
+|:------------------------------------|:---------|:-----------------------|:---------------------------------|
+| Generation Length                   | A and C  | Pop. size decline      | Group-specific imputation        |
+| Proportion of Mature Individuals    | C and D  | Pop. size              | Group-specific Imputation        |
+| Impact of harvest trends            | A and C  | Pop. size decline      | Group-specific imputation        |
+| Impact of habitat quality changes   | A and C  | Pop. size decline      | Group-specific imputation        |
+| Average Dispersal Distance          | B1/B2    | Subpops./Fragmentation | Estimation from data             |
+| Species identification of records   | B1/B2    | EOO and AOO            | Add extra records, if needed     |
+| Geographical coordinates of records | B1/B2    | EOO and AOO            | Use only valid records           |
+| Scale of threat events              | B1/B2    | Number of locations    | Set a fixed value                |
+| Subpopulation limits                | C2a(i)   | Size of subpopulations | Subcriteria applied in few cases |
+| Future threats                      | D2       | \-                     | Subcriteria not applied          |
+
+<br />
 
 ### Organization and content
 
