@@ -54,6 +54,8 @@ These steps are:
     assessment and the export of the information necessary for
     submission to the IUCN Red List.
 
+<br />
+
 ![Figure 1.](figures/THREAT_workflow.png) **Figure 1**. The THREAT
 workflow.
 
