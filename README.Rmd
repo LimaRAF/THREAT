@@ -18,32 +18,29 @@ knitr::opts_chunk$set(collapse  = TRUE,
 
 This repository stores the data, scripts and functions of the project ‘The
 threat status of endemic Atlantic Forest trees’ (THREAT), which aims at
-supporting the conservation of the Atlantic Forest tree species. Among other
-ways, this support is provided by the development of a workflow (and the related
-codes and software) for synthesizing the information necessary for obtaining
-comprehensive species conservation assessments based on multiple IUCN criteria
-(A, B, C and D). The main result of this workflow is IUCN Red List assessments
-per se.
+supporting the conservation of the Atlantic Forest tree flora. This support is
+provided by the development of a workflow (and the related codes and software)
+for synthesizing the information necessary for obtaining species conservation
+assessments based on multiple IUCN criteria (A, B, C and D).
 
 The THREAT workflow was developed in close association with the IUCN Red List
 Authority for Brazilian Plants (CNCFlora - http://cncflora.jbrj.gov.br) and has
 been validated by the Global Tree Assessment staff
-(www.bgci.org/our-work/networks/gta), to ensure a workflow that follows the
+(www.bgci.org/our-work/networks/gta) to ensure a workflow that follows the
 IUCN Red List Categories and Criteria and thus conservation assessments that can
 be more easily incorporated into the IUCN Red List of Threatened Species
 (www.iucnredlist.org).
 
 The workflow includes the evaluation of possible biases and uncertainties
-related to the quality of the data and the inference of species information
-necessary to perform the conservation assessments following the IUCN guidelines.
-Moreover, the workflow produces the files required to enter the assessments in
-the IUCN Species Information Service (SIS) system (SIS Connect -
-https://connect.iucnredlist.org), a more technical but crucial step of the
-incorporation of the assessments into the IUCN Red List.
+related to the quality of the data and the imputation of missing species
+information necessary to perform the conservation assessments following the IUCN
+guidelines (IUCN 2019). Moreover, the workflow includes the production of the
+files required to enter the assessments in the IUCN Species Information Service
+(SIS) system (SIS Connect - https://connect.iucnredlist.org).
 
 The codes presented here were produced specifically for the Atlantic Forest tree
-species. It needs to be adapted before its use for other groups of organisms
-or different regions worldwide.
+species. They need to be adapted before their use for other groups of organisms
+or regions.
 
 ### Description of the workflow
 
@@ -60,40 +57,40 @@ The main steps of the workflow are:
 will be included in the assessments;
   2. **Species information**: the essential information that must be 
 compiled, estimated or imputed to obtain the population metrics;
-  3. **Population metrics**: the population metrics defined by the IUCN as 
-indicators of the threat of a species or taxon;
-  4. **IUCN criteria assessment**: The conservation assessment itself to assign
-one of the IUCN Red List Categories;
+  3. **Population metrics**: the estimation of the population metrics defined by
+the IUCN as indicators of the threat of a species or taxon;
+  4. **IUCN criteria assessment**: The conservation assessment itself, which 
+results in the assignment of one of the IUCN Red List Categories;
   5. **Summary and export**: summary of the overall results of the assessment 
-and the export of the information necessary for submission to the IUCN. 
+and the export of the information necessary for submission to the IUCN Red List. 
   
   
-Note that the first two steps mostly involves the compilation of the necessary
-information from the study region and the group of organism included in the
-assessment. Although they are the first steps of the workflow, the codes in this
-this information was already compiled, estimated or imputed and that it is
-available in the `data` folder.
+Note that the first two steps mostly involves the compilation of key information
+from the study region and the group of organism included in the assessment.
+Although they are the first steps of the workflow, the codes in this this
+repository assues that this information was already compiled, estimated or
+imputed and that it is available in the `data` folder.
 
 <br />
 
 ##### Details on step 1
 
-Step 1 will define which assessments will be global (for all populations of the
-species) or regional (for populations of the species). For instance, THREAT
-assessments are regional (i.e. Atlantic Forest), so for species that are
-non-endemic and endemic to the Atlantic Forest the assessments are regional and
-global, respectively. This is why it is important to know beforehand the
-endemism level (e.g. endemic, non-endemic, vagrant) of all species with respect
+Step 1 will define which species will have global (for all populations of the
+species) or regional assessments (for populations of the species). For instance,
+THREAT project has a regional scope (i.e. Atlantic Forest), so for species that
+are non-endemic and endemic to the Atlantic Forest the assessments are regional
+and global, respectively. This is why it is important to know beforehand the
+endemism level of all species (e.g. endemic, non-endemic, vagrant) with respect
 to the target region (see Lima et al. 2020 for the example of the Atlantic
-Forest trees). In addition, depending on the group of organisms, long
+Forest tree species). In addition, depending on the group of organisms, long
 time series of habitat cover will be necessary to obtain the population size
 reductions based on habitat loss. This is often the case for tree species.
 
 Identifying and contacting local IUCN Red List Authorities as early as possible
 is a key step to make sure that methods are aligned with IUCN guidelines and
-their own redlisting workflows. They are responsible for submitting the
-assessments to the IUCN Red List and they can facilitate the process of
-reviewing the assessments before submission.
+their own redlisting workflows and priorities. They are responsible for
+submitting the assessments to the IUCN Red List and they can facilitate the
+process of reviewing the assessments before submission.
 
 <br />
 
@@ -101,18 +98,17 @@ reviewing the assessments before submission.
 
 Species occurrence records are the input data used to obtain the species'
 geographic range and other spatial population metrics that are required to
-assess the IUCN criterion B (see function `ConR::criterion_B()`). On the other
-hand, the input data required to assess the IUCN criterion A (i.e. population
-size decline) is a vector of population sizes per year (see function
-`ConR::criterion_A()`). That is, the workflow assumes that population sizes were
-already obtained from species abundance data, which can be done using very
+assess the IUCN criterion B. On the other hand, the input data required to
+assess the IUCN criterion A (i.e. population size decline) is a vector of
+population sizes per year. Therefore, the workflow assumes that population sizes
+were already obtained from species abundance data, which can be done using very
 different approaches depending on the group of study and the nature of evidence
 (i.e. observed, estimated, inferred or suspected). What the workflow provides is
 a tool to estimate species-specific population size reduction at a specific
 point in time, which is needed for the assessments using criteria A and C (see
 section 'Details on step 3').
 
-Species occurrence data should be submitted to a data cleaning and validation
+Species occurrence records should be submitted to a data cleaning and validation
 process to make sure that only the data with a minimum quality will be used in
 the assessments. The `plantR` package (Lima et al. 2022) provides different
 tools to standardize the notation associated with species records and to
@@ -133,10 +129,10 @@ For criterion A, the `ConR` package provides a function for fitting
 statistical models to the population size vector to obtain the reductions at
 a specific point in time (`ConR::pop.decline.fit()`), based on linear, 
 exponential, quadratic, logistic and other trends of population decline 
-through time. The time interval of population decline needed for the assessments
-of criterion A or C (10 years or one-, two- or three-generation lengths - see
-IUCN 2019) often do not correspond exactly to the observed population sizes for
-most species.
+through time. This is important because the time interval of population decline
+needed for the assessments of criterion A or C (10 years or one-, two- or
+three-generation lengths - see IUCN 2019) often do not correspond exactly to the
+observed population sizes for most species.
 
 For criterion B, the `ConR` package provides functions for calculating the
 Extent of Occurrence (EOO - `ConR::EOO.computing()`), Area of Occupancy (AOO -
@@ -157,71 +153,145 @@ conditions necessary for assessing criterion B.
 This step corresponds to the assignment of one of the IUCN Red List Categories
 (i.e. EX, EW, CR, EN, VU, NT, LC, DD) by comparing the population metrics
 obtained in the previous step against the IUCN quantitative thresholds and
-conditions. It can also include the assignment of tags, such as the 'Possibly
-Extinct' tag for Critically Endangered species or species known only for their
-types or very old records (e.g. over 50 years old).
+conditions. As mentioned above, specific functions were developed to assess the
+IUCN criteria A, B, C and D, which are freely available in the new version 2.0
+of the `ConR` R package (Dauby et al. 2017, Dauby & Lima 2022 - see functions
+`ConR::criterion_A()`, `ConR::criterion_B()`, `ConR::criterion_C()` and
+`ConR::criterion_D()`). An specific function was also develop to tell apart NT
+from LC categories (see function `ConR::near.threatened()`).
 
-In the case of multiple IUCN criteria, there is also the need for having a
-consensus IUCN Red List Category after combining the results of the application
-each of criterion. In the case of regional assessments, this step may also
-include down-listings or up-listings which should be duly noted.
+In the case of multiple IUCN criteria, there is also the need to generate a
+consensus IUCN Red List Category among the results of each IUCN Criteria (see
+function `ConR:::cat_mult_criteria()`).
 
-As mentioned above, specific functions were developed to assess the IUCN
-criteria A, B, C and D and to generate consensus categories among these criteria
-and they are available in the new version 2.0 of the `ConR` package (Dauby et
-al. 2017, Dauby & Lima 2022). This new version also provides functions to assess
-the sensitivity of species Extent of Occurrence from the inclusion of different
-types of records (e.g. not taxonomically validated records) - function
-`ConR::EOO.sensitivity()`. This may be handy for selecting occurrence
-records to be added to the assessments based on their individual influence on 
-the species EOO.
+This step of the workflow also includes the assignment of tags, such as the
+'Possibly Extinct' tag for Critically Endangered species or tags for species
+known only for their types or very old records (e.g. over 50 years old). In the
+case of regional assessments, this step may also include down-listings or
+up-listings which should be duly noted (see IUCN 2012).
+
+The new version 2.0 of `ConR` also provides functions to assess the sensitivity
+of species Extent of Occurrence from the inclusion of different types of records
+(e.g. not taxonomically validated records) - function `ConR::EOO.sensitivity()`.
+This may be handy for selecting occurrence records to be added to the
+assessments based on their individual influence on the size of the species EOO.
+
+Also, the impact of the estimation or imputation of missing species information
+in the assessments that should evaluated and presented. See the section `Missing
+information, uncertainties and solutions` below for which information may
+include uncertainties in the assessments.
 
 <br />
 
 ##### Details on step 5
 
-(To be finished)
+Many different summaries and analyses can be done to present the results of the
+assessments. Besides a general description of the results (e.g. proportion of
+species per IUCN Red List Category), it is important to report the Red List
+Index (RLI) for the area and group of organism. The index gives a general
+picture of the conservation status for a given set of species and it can be used
+for comparison with other regions and/or groups. In this workflow the RLI and
+its confidence limits using the R package 'red' (Cardoso 2017).
 
-Red List Index
-Confrontation with the most up-to-date version of the IUCN Red List.
-Maps
+The RLI can be computed for different IUCN criteria, subsets of the species
+list, or cells along a grid, so that spatial patterns of threat can be
+evaluated using maps. These maps can also be generated based on the proportion
+of threatened species records instead of the RLI and they can help to visualize
+the regions with the highest occurrence of threatened species.
 
+Another important evaluation is the confrontation of the new assessments with
+previously published ones, which can be obtained from the most up-to-date
+version of the IUCN Red List (www.iucnredlist.org) or any other
+national/regional Red Lists. This is useful to know how many assessments are
+new and how many species have or have not changed in their IUCN Red List
+Category.
+
+Finally, it is important to organize and export all the species information,
+population metrics, and assessment results into the format required for
+submission to the IUCN Red List. This a more technical step of the workflow but
+it greatly helps the incorporation of the assessments into the IUCN Red List,
+particularly when assessing thousands of species. Submission can only be done by
+the responsible IUCN Red List Authority and it is performed within the IUCN
+Species Information Service (SIS) system (SIS Connect -
+https://connect.iucnredlist.org). For plant species assessments, the system
+requires 14 files that must be formatted and filled according to the IUCN
+classification schemes (e.g. Growth Forms, Habitat, USes, etc) and look-up
+tables (https://www.iucnredlist.org/assessment/sis). Currently, the codes to
+generate the SIS Connect files are very specific to the THREAT project and most
+of the pre-filled texts are in Portuguese. Thus, as mentioned earlier, codes need
+to be adapted for assessments conducted in different areas, groups of organism,
+and/or languages.
 
 <br />
 
 
 ##### Missing information, uncertainties and solutions
 
-For most assessments, species information will be missing for some or many
-species. Of course, this will depend of the group of organism and the available
-knowledge of the target region. Some of this information, however, is essential
-to the assessment of one or more IUCN criteria. Therefore, solutions based on
-the best information currently available must be designed, so that assessments
-are made using as many IUCN criteria and species as possible. These solutions
-include the estimation of missing information or their proxies from the data or
-the imputation of information using the best data currently available for the
-species or closely-related taxa. As mentioned above, they also introduce
-uncertainties in the assessments that should evaluated and presented.
+Species information will be missing from the literature for some or many species
+in most cases. Of course, this will depend on the group of organism and the
+available knowledge of the target region. Some of this information, however, is
+essential to the assessment of one or more IUCN criteria. Therefore,
+biologically-informed solutions based on the best information available must be
+designed, so that assessments can be made using as many IUCN criteria and
+species as possible. These solutions include the estimation of missing
+information (or their proxies) from the data itself or the imputation of
+information using the best empirical evidence currently available for the
+species or closely-related taxa. 
 
-For the assessment of criteria A, C and D, essential information include the
-Generation Length (GL) of the species and the Proportion of Mature Individuals
-(p) in their population. In THREAT, the solution adopted for missing GL and p
-was the imputation of values based on generalisation for groups of species
-defined based on their potential maximum height as an adult and on their
+For the assessment of the IUCN criteria A, C, and D, essential information
+include the Generation Length (GL) of the species and the Proportion of Mature
+Individuals (p) in their population. In THREAT, the solution adopted for missing
+GL and p was the imputation of values based on generalization for groups of
+species defined based on their potential maximum height as an adult and on their
 ecological groups. The choice of which values were assigned to each group was
-based on the empirical evidence currently available in the literature. 
+based on the empirical evidence currently available in the literature.
 
-Still related to the criteria A and C, it is expected that impact of harvest 
-trends (e.g. timber species) and of changes in habitat quality will have an 
-impact on the change of population sizes. 
+Still related to criteria A and C, it is expected that harvest trends (e.g.
+timber species) and changes in habitat quality will have an impact on the change
+in population sizes. For long-lived organisms, this information will probably be
+missing for most species. But it is advised to take them into account for
+calibrating the final results of the assessments.
 
-For the assessment of criteria B
-and the Average Dispersal Distance (DD) of the species.  For
-estimating DD, we implemented the function `ConR::subpop.radius()` that applies
-the circular buffer method (Rivers et al., 2010) for obtaining species-specific
-proxies of DD.
+For the assessment of criteria B, the Average Dispersal Distance (DD) is
+mandatory information for estimating the number of subpopulations and their
+fragmentation level. We implemented the function `ConR::subpop.radius()` that
+applies the circular buffer method (Rivers et al., 2010) for obtaining
+species-specific proxies of DD. But the pertinence of this solution may vary
+according to the group of organism being assessed (e.g. sessile vs. mobile
+organisms).
 
+Still related to criterion B, the quality of the geographical coordinates
+and the confidence in the species identifications can both impact the estimates
+of EOO and AOO. In THREAT, we only used geographically validated records for
+estimating these metrics, which is the standard procedure adopted by CNCFlora, 
+the local Red List Authority. Concerning the confidence in the species
+identifications, we preferably conducted assessments based only on
+identifications vetted by plant taxonomists. However, for species with fewer
+records (< 75), we added extra records with lower taxonomic confidence levels 
+based on their position with respect to the EOO of the species. We preferably added 
+records inside or close to the species EOO.
 
+The final information needed to apply criterion B is the spatial extent (i.e.
+scale) of the impacts of threat events that can impact all individuals of
+species populations present in the area. This information is used to define the
+number of locations where the species occur. Having specific values of this
+extent is difficult as for other species information. In THREAT, we set 10 km as
+this extent outside of protected areas, which was based on the administrative
+level (i.e. municipality) at which most common threat events (e.g. land-use
+changes, habitat degradation) are planned/executed in the Atlantic Forest.
+Occurrences inside protected areas were counted as a single location assuming
+that the main and common threat to the biodiversity inside them is the same,
+namely the downgrading or downsizing of the protected area.
+
+Other missing information may restrict the application of certain criteria or
+sub-criteria. The accurate delimitation of subpopulations is challenging, making
+it difficult to define what is the size of individual subpopulations and thus to
+apply the IUCN subcriterion C2a, even when having species abundances available.
+In THREAT, we decide to apply this subcriterion only in the specific cases of
+all individuals being concentrated in a single population (subcriterion C2aii).
+Concerning the IUCN criterion D, we did not have accurate and spatialized
+information on future threats. This is something that could be further developed
+in this workflow, but currently, we decided not to apply the subcriterion D2.
 
 <br />
 
@@ -236,8 +306,8 @@ tabl <- "
 | Impact of harvest trends         | A and C | Pop. size decline | Group-specific imputation |
 | Impact of habitat quality changes | A and C | Pop. size decline | Group-specific imputation |
 | Average Dispersal Distance        | B1/B2 | Subpops./Fragmentation | Estimation from data |
-| Species identification of records | B1/B2 | EOO and AOO | Add extra records, if needed |
 | Geographical coordinates of records | B1/B2   | EOO and AOO | Use only valid records |
+| Species identification of records | B1/B2 | EOO and AOO | Add extra records, if needed |
 | Scale of threat events  | B1/B2 | Number of locations | Set a fixed value |
 | Subpopulation limits    | C2a(i)| Size of subpopulations | Subcriteria applied in few cases|
 | Future threats          | D2 | - | Subcriteria not applied |
@@ -253,19 +323,19 @@ This repository is structured as follows:
 
 - [`R/`](https://github.com/LimaRAF/THREAT/tree/master/R/):
 contains the R scripts to run each step of the workflow and some accessory
-functions developed especially for it. The scripts are numbered in the order that they should be executed.
+functions developed especially for it. The scripts are numbered in the order
+that they should be executed.
 
 - [`data/`](https://github.com/LimaRAF/THREAT/tree/master/data):
-contains raw, accessory or derived/edited data needed for running the codes,
-from 
+contains raw, accessory or derived/edited data needed for running the codes. 
 
 - [`figures/`](https://github.com/LimaRAF/THREAT/tree/master/figures):
-contains all the figures created during the workflow
+contains all the figures created during the workflow.
  
 
 - [`SIS_sample_6_1/`](https://github.com/LimaRAF/Data_harmonization/tree/master/SIS_sample_6_1):
 contains sample examples of the IUCN SIS connect files used as a standard to
-build the IUCN-required SIS CONNECT CSV files
+build the IUCN-required CSV files
 
 
 
@@ -296,13 +366,15 @@ Council for Scientific and Technological Development - CNPq), and 2017TR1922
 ### Acknowledgements
 
 We thank the CNCFlora staff (Patricia da Rosa, Gustavo Martinelli, Eline
-Martins, Rafael Loyola, Pablo H.A. de Melo, Thaís L.B. da Cunha, Eduardo P.
-Fernandez, Marinez F. de Siqueira) for the advice on how to apply the IUCN Red
-List Categories and Criteria for the Atlantic Forest tree species. We also thank
-Malin Rivers and Emily Beech (BGCI) for reviewing the methodological approach
-stored in this repository.
+Martins, Rafael Loyola, Pablo H.A. de Melo, Thaís L.B. da Cunha) for the advice
+on how to apply the IUCN Red List Categories and Criteria for the Atlantic
+Forest tree species. We also thank Malin Rivers and Emily Beech (BGCI) for
+reviewing the methodological approach stored in this repository.
 
 ### References
+
+> P. Cardoso, red - an R package to facilitate species red list assessments
+according to the IUCN criteria. Biodivers. Data J. 5, e20530 (2017).
 
 > G. Dauby, T. Stévart, V. Droissart, A. Cosiaux, V. Deblauwe, M.
 Simo-Droissart, M. S. M. Sosef, P. P. Lowry, G. E. Schatz, R. E. Gereau, T. L.
@@ -312,6 +384,9 @@ conservation assessments using distribution data. Ecol. Evol. 7, 11292–11303
 
 >	G. Dauby, R. A. F. de Lima, ConR: Computation of Parameters Used in
 Preliminary Assessment of Conservation Status (R package version 2.0.0) (2022).
+
+> IUCN, Guidelines for application of IUCN Red List criteria at regional and
+national levels Version 4.0. (IUCN Species Survival Commission, 2012).
 
 > IUCN Standards and Petitions Committee, Guidelines for Using the IUCN Red List
 Categories and Criteria. Version 14. (Prepared by the Standards and Petitions
