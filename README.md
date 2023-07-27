@@ -36,12 +36,9 @@ groups of organisms or regions.
 ### Description of the workflow
 
 The THREAT workflow for obtaining species conservation assessments using
-multiple IUCN criteria contains five main steps (Figure 1).
-
-![Figure 1.](figures/THREAT_workflow.png) **Figure 1**. The THREAT
-workflow.
-
-<br /> The main steps of the workflow are:
+multiple IUCN criteria contains five main steps, which can be grouped
+into Pre-Assessment, Assessment and Post-assessment stages (Figure 1).
+These steps are:
 
 1.  **Definitions**: the basic definitions that will determine which
     species will be included in the assessments;
@@ -57,12 +54,23 @@ workflow.
     assessment and the export of the information necessary for
     submission to the IUCN Red List.
 
-Note that the first two steps mostly involves the compilation of key
+![Figure 1.](figures/THREAT_workflow.png) **Figure 1**. The THREAT
+workflow.
+
+<br />
+
+Note that the Pre-Assessment stage involves the compilation of key
 information from the study region and the group of organism included in
-the assessment. Although they are the first steps of the workflow, the
-codes in this this repository assues that this information was already
-compiled, estimated or imputed and that it is available in the `data`
-folder.
+the assessment. Although it represents the first steps of the workflow,
+the codes in this repository assume that this key information was
+already compiled, estimated, or imputed and that it is available in the
+`data` folder.
+
+Note as well that our Post-assessment stage does not include the
+submission of the assessments to the IUCN Red List and their review by
+the IUCN Red List units. This is beyond the scope of the workflow which
+is producing the conservation assessments and the associated files to
+facilitate the process of submission by the Red List Authority.
 
 <br />
 
@@ -183,7 +191,7 @@ individual influence on the size of the species EOO.
 
 Also, the impact of the estimation or imputation of missing species
 information in the assessments that should evaluated and presented. See
-the section `Missing information, uncertainties and solutions` below for
+the section ‘Missing information, uncertainties and solutions’ below for
 which information may include uncertainties in the assessments.
 
 <br />
