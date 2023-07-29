@@ -304,7 +304,7 @@ in this workflow, but currently, we decided not to apply the subcriterion D2.
 <br />
 
 
-**Table 1**. The THREAT workflow. 
+**Table 1**. Main data limitations, impacts and solutions adopted by the THREAT workflow. 
 ```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
 tabl <- "
 |Data Limitations/Uncertainties |Criteria |Metric impacted |Solution |

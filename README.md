@@ -320,7 +320,8 @@ apply the subcriterion D2.
 
 <br />
 
-**Table 1**. The THREAT workflow.
+**Table 1**. Main data limitations, impacts and solutions adopted by the
+THREAT workflow.
 
 | Data Limitations/Uncertainties      | Criteria | Metric impacted        | Solution                         |
 |:------------------------------------|:---------|:-----------------------|:---------------------------------|
