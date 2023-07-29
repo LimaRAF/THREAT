@@ -6,16 +6,9 @@
 rm(list=ls())
 
 #### LOADING PACKAGES ###
-#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
-#devtools::install_github("gdauby/ConR@devel") # new version on GitHub
-detach("package:ConR", unload=TRUE)
-remotes::install_github("gdauby/ConR", ref = "devel")
-# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
-#  repos = NULL, 
-#  type = "source")
-library("ConR")
-library("red")
-library("circlize")
+require(ConR)
+require(red)
+require(circlize)
 
 #### LOADING THREAT POPULATION SIZE DATA (TREECO) ###
 #Already with pop. sizes estimated for all necessary years
@@ -36,7 +29,8 @@ for(x in 1:length(res.means)) {
 
 #### LOADING THREAT HABITAT AND ECOLOGY DATA ####
 ## Includes species info on Generation Length and Proportion of matrue individuals
-hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
+hab <- readRDS("data/threat_habitats_preliminar1.rds")
+
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
 PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
@@ -51,7 +45,8 @@ table(mean.pop.sizes$species == PopData$species)
 rm(res.means)
 
 #### LOADING THREAT EXPLOITED SPECIES INFORMATION  ####
-explo <- read.csv("data/threat_exploited_timber_spp.csv", as.is = TRUE, encoding = "UTF-8")
+explo <- read.csv("data/threat_exploited_timber_spp.csv", as.is = TRUE, 
+                  encoding = "UTF-8")
 explo$commercial <- grepl("interesse comercial|construction", explo$obs) |
   grepl("International Timber Trade", explo$sources) |
   grepl("Especies nativas para fins produtivos", explo$sources)
@@ -62,8 +57,8 @@ table(mean.pop.sizes$species == PopData$species)
 PopData$timber <- !is.na(PopData$times.cites)
 PopData$timber <- ifelse(PopData$timber == FALSE, 0, 10)
 PopData$timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
-PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10
-PopData$timber[PopData$species %in% "Dicksonia sellowiana"] <- 10
+PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10 # non-timber, exploited species
+PopData$timber[PopData$species %in% "Dicksonia sellowiana"] <- 10 # non-timber, exploited species
 
 ## Taking into account exploitation over adult population
 PopData$p.est1 <- PopData$p.est - (PopData$p.est * PopData$timber/100) 
@@ -73,10 +68,21 @@ hab1 <- hab[match(PopData$species, hab$Name_submitted), ]
 table(hab1$Name_submitted == PopData$species)
 early.sucession <- hab1$ecol.group
 early.sucession[hab1$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
+## Taking into account habitat change in the population decline of early-successional species
 early.sucession[early.sucession %in% c("late_secondary", "climax", "unknown")] <- 1L
 early.sucession[early.sucession %in% c("early_secondary")] <- 0.9
 early.sucession[early.sucession %in% c("pioneer")] <- 0.8
 early.sucession <- as.numeric(early.sucession)
+## Taking into account non-forested habitats for "ruderal" non-tree species
+ruderal.shrub <- grepl("Antr", hab$vegetation.type.reflora) & 
+                  grepl("rbusto|trepadeira|rva", hab$life.form.reflora) &
+                    !grepl("climax|secondary", hab$ecol.group)
+early.sucession[ruderal.shrub]
+
+ruderal.other <- grepl("Antr", hab$vegetation.type.reflora) & 
+  !grepl("rbusto|trepadeira|rva", hab$life.form.reflora) &
+  !grepl("climax|late_secondary", hab$ecol.group)
+
 
 #########################################################################################################################################################
 #########################################################################################################################################################
@@ -101,7 +107,7 @@ for(i in 1:length(subpop.sizes)) {
 #Testing
 teste <- round(mean.pop.sizes[, which(names(mean.pop.sizes) == 2018)],0) == round(sapply(subpop.sizes, sum),0)
 table(teste)
-mean.pop.sizes[!teste, "2018"] <- sapply(subpop.sizes[!teste], sum)
+#mean.pop.sizes[!teste, "2018"] <- sapply(subpop.sizes[!teste], sum)
 
 ##Running the criterion C for the optimal parameters (GL and p)
 system.time(
@@ -112,7 +118,7 @@ critC <- criterion_C(x = mean.pop.sizes,
                      ignore.years = c(1718,1748,1778,1793,1808,1818,1823,1838),
                      recent.year = 2000,
                      subcriteria = c("C1","C2"),
-                     generation.time = PopData$GenerationLength.range,
+                     generation.time = PopData$GL,
                      prop.mature = PopData$p.est1, # p.est1 accounts for exploitation of commercial species 
                      subpop.size = subpop.sizes,
                      correction = early.sucession,
@@ -180,7 +186,7 @@ for(i in 1:length(ps)){
   # all_ranks <- cat_criterion_c(C1_df = C1, C2_df = NULL)
   all_ranks <- cat_criterion_c(C1_df = NULL, C2_df = C2)
   res[[i]] <- as.character(all_ranks$ranks_C)
-
+  
   C2$assess.pop.size <- df$assess.pop.size.low * ps[i]
   # all_ranks <- cat_criterion_c(C1_df = C1, C2_df = NULL)
   all_ranks <- cat_criterion_c(C1_df = NULL, C2_df = C2)

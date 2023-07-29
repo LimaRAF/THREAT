@@ -4,48 +4,57 @@
 ##################################################################
 ##################################################################
 rm(list=ls())
+gc()
 
 #### LOADING PACKAGES ####
-library(data.table)
-source("R/suggestions_for_ConR.r")
+require(data.table)
+require(plantR)
+source("R/other_functions.R")
 
-#### LOADING THREAT HERBARIUM DATA ###
-## Loading the paths to occurrence data 
-paths <- dir("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//occurrence_data",full.names=TRUE)
-paths <- paths[grepl('merged_outliers.csv',paths)]
-
-## Loading the different collections
-lista <- vector("list",length(paths))
-for (i in 1:length(paths)) {
-  path.csv <- paths[i]
-  #tmp = read.csv(path.csv,as.is=TRUE,na.strings=c(""," ","NA"))
-  tmp <- fread(path.csv, na.strings=c("","NA"))
-  lista[[i]] <- tmp
-}
-## Merging the different collections
-
-for (i in 1:length(lista)) {
-  lista.i <- lista[[i]]  
-  classes <- sapply(lista.i, class)
-  if (any(classes[[15]] != "character")) {
-    lista.i[ , dateIdentified := as.character(dateIdentified)]
-    lista[[i]] <- lista.i
-  } else { next }
-}
-oc.data <- rbindlist(lista) #merging data from all csvs
-rm(lista, lista.i, tmp, paths, path.csv, i, classes)
-gc()
+# #### LOADING THREAT HERBARIUM DATA ###
+# ## Loading the paths to occurrence data 
+# ## >200 csv files that make almost 4 GB in size, so the output of the codes below was saved in the data folder 
+# paths <- list.files("./data/data-raw/occurrence_data/", full.names = TRUE)
+# 
+# ## Loading the different collections
+# lista <- vector("list",length(paths))
+# for (i in 1:length(paths)) {
+#   path.csv <- paths[i]
+#   #tmp = read.csv(path.csv,as.is=TRUE,na.strings=c(""," ","NA"))
+#   tmp <- fread(path.csv, na.strings=c("","NA"))
+#   lista[[i]] <- tmp
+# }
+# # Altering the class of the date vector to characters
+# for (i in 1:length(lista)) {
+#   lista.i <- lista[[i]]  
+#   classes <- sapply(lista.i, class)
+#   if (any(classes[[15]] != "character")) {
+#     lista.i[ , dateIdentified := as.character(dateIdentified)]
+#     lista[[i]] <- lista.i
+#   } else { next }
+# }
+# ## Merging the different family records
+# oc.data <- rbindlist(lista) #merging data from all csvs
+# rm(lista, lista.i, tmp, paths, path.csv, i, classes)
+# saveRDS(oc.data, "./data/data-raw/edited_occurrence_data.rds")
+# gc()
 
 #################################H
 #### MANAGING OCCURRENCE DATA ####
 #################################H
 
+## Loading the combined/merged raw occurrence data (over 6 million initial records)
+oc.data <- readRDS("./data/data-raw/edited_occurrence_data.rds")
+gc()
+
 #### REMOVING SPECIES NOT IN THE ATLANTIC FOREST CHECKLIST ###
 ## Creating a vector with the names of specimens determined at species and infra-specific levels
-oc.data[,species.correct2 := sapply(strsplit(species.correct1," "), function(x) paste(x[1], x[2],sep=" ")),]
+oc.data[,species.correct2 := sapply(strsplit(species.correct1," "), 
+                                    function(x) paste(x[1], x[2],sep=" ")),]
 setkeyv(oc.data, "species.correct2") ## setting 'species.correct2' as key to the data.table (makes computations faster)
 
 #### SOME LAST MINUTE, NAMES TO BE REPLACED BEFORE FILTERING ###
+## Changes not taken into account in th occurrence data editing by Lima et al. (2020)
 oc.data[loc.correct %like% "brazil" & species.correct2 %in% "Ixora grandifolia", 
         species.correct2 := "Ixora muelleri"]
 oc.data[species.correct2 %like% "Zanthoxylum" & numTombo %in% c("jpb_54464","ase_6935","ase_29975","ase_30740","ase_35130"), 
@@ -59,40 +68,45 @@ oc.data[species.correct2 %in% "Solanum pseudocapsicum" &
           species.correct %in% "Solanum pseudoquina", species.correct2 := "Solanum pseudoquina"]
 
 #### CHECAR AQUI QUANDO FOR RODAR PELA ULTIMA VEZ ####
-#complete det. and col. year, and det Name for the dup.ID: f_72195f|g_439562|us_702351
 # add year col.year (1877) e det.year (2010) for ny_375712 
-oc.data[species.correct2 %in% "Pouteria stenophylla"]
-
+oc.data[species.correct2 %in% "Pouteria stenophylla" & numTombo %in% "ny_375712",
+        ano := "1877"]
+oc.data[species.correct2 %in% "Pouteria stenophylla" & numTombo %in% "ny_375712",
+        year := 1877]
+oc.data[species.correct2 %in% "Pouteria stenophylla" & numTombo %in% "ny_375712",
+        ano.det := "2010"]
+oc.data[species.correct2 %in% "Pouteria stenophylla" & numTombo %in% "ny_375712",
+        ano.det1 := "2010"]
+#complete det. and col. year, and det Name for the dup.ID: f_72195f|g_439562|us_702351
+oc.data[numTombo %in% c("f_72195f", "g_439562", "us_702351"), dup.ID := "f_72195f|g_439562|us_702351"]
+oc.data[dup.ID %in% "f_72195f|g_439562|us_702351", ano := "1823"]
+oc.data[dup.ID %in% "f_72195f|g_439562|us_702351", year := 1823]
+oc.data[dup.ID %in% "f_72195f|g_439562|us_702351", determinador.name1 := "Pennington, T.D."]
+oc.data[dup.ID %in% "f_72195f|g_439562|us_702351", ano.det1 := "1986"]
+gc()
 
 ## Filtering for the AF preliminary list of species names
 spp.af <- readRDS("data/threat_af_spp_list_preliminary.rds")
 # spp.af$species.correct2[!spp.af$species.correct2 %in% unique(oc.data$species.correct2)]
-#oc.data[, uniqueN(species.correct2)] # 21643 species
-oc.data <- oc.data[species.correct2 %in% spp.af$species.correct2,] # occurrences for species inside the AF
+# oc.data[, uniqueN(species.correct2)] # 21643 species; now 21793
+oc.data <- oc.data[species.correct2 %in% spp.af$species.correct2,] # only occurrences for species inside the AF
 oc.data[, uniqueN(species.correct2)] # before 5107 species; now 5081
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
-##List of new synonyms 
+##List of new synonyms (not taken into account by Lima et al. (2020))
 syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)
-syn.br <- syn.br[syn.br$ï..status %in% c("replace", "invert"), ]
+syn.br <- syn.br[syn.br$status %in% c("replace", "invert"), ]
 for (i in 1:dim(syn.br)[1]) {
   sp.i <- syn.br$original.search[i]
   rpl.i <- syn.br$search.str[i]
-  st.i <- syn.br$ï..status[i]
+  st.i <- syn.br$status[i]
   
   if (st.i == "replace") {
     oc.data[species.correct2 %in% sp.i, status := "ok"]
     oc.data[species.correct2 %in% sp.i, species.correct2 := rpl.i]
   }
-  
-  # if (st.i == "invert") {
-  #   oc.data[species.correct2 %in% sp.i & 
-  #             (scientificName %in% rpl.i | species.correct %in% rpl.i), status := "ok"]
-  #   oc.data[species.correct2 %in% sp.i & 
-  #             (scientificName %in% rpl.i | species.correct %in% rpl.i), species.correct2 := rpl.i]
-  # }
 }
-# oc.data[,uniqueN(species.correct2)] # Before 5068 species; now 4953
+#oc.data[,uniqueN(species.correct2)] # Before 5068 species; now 4953
 
 
 #### REMOVING DUPLICATES ###
@@ -110,7 +124,7 @@ oc.data[is.na(dup.ID1), dup.ID1 := numTombo, by = numTombo]
 oc.data <- unique(oc.data, by = "dup.ID1")
 #removing the extra column created for ranking
 #oc.data[,dup.ID1:=NULL] 
-toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 728,409 (23.65%) removed
+toto1 - dim(oc.data)[1]; 100*(toto1 - dim(oc.data)[1])/toto1 ## 728,411 (23.65%) removed
 # oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
@@ -131,7 +145,7 @@ oc.data <- oc.data[geo.check1 %like% "ok_county|ok_locality" |
                      (geo.check1 %like% "ok_state" & af.check2 == TRUE) |
                      (geo.check1 %like% "ok_state" & loc.correct %like% paises.adm1) |
                      (geo.check1 %like% "ok_country" & loc.correct %like% paises.adm0)]
-# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
+#oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 #### REMOVING MISSING COORDINATES ###
@@ -145,7 +159,7 @@ oc.data$latitude.work1[oc.data$longitude.work1 %in% "no_coord" | oc.data$latitud
 # oc.data <- oc.data[!is.na(latitude.work1) | !is.na(longitude.work1),]
 # range(as.double(oc.data$latitude.work1), na.rm = TRUE)
 # range(as.double(oc.data$longitude.work1), na.rm = TRUE)
-toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 955,428 (40.64% of the non-duplicated) removed
+toto2 - dim(oc.data)[1]; 100*(toto2 - dim(oc.data)[1])/toto2 ## 955,427 (40.64% of the non-duplicated) removed
 100*(toto2 - dim(oc.data)[1])/toto1 ## extra 31.02% in respect to all records
 #oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 #table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
@@ -166,10 +180,10 @@ toto3 - dim(oc.data)[1]; 100*(toto3 - dim(oc.data)[1])/toto2 ## 575,655 (24.48% 
 
 #### REMOVING SPATIAL OUTLIERS  ###
 ## GETTING SPECIES INFORMATION: TBC, geographical range and cultivation #### Getting species information and generating the vectors for the groups of species
-spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
+spp = read.csv("data/data-raw/DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 tmp = unique(oc.data[,species.correct2,])
 spp = spp[spp$SpeciesKTSA %in% tmp,]
-uso = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.csv", na= c(""," ",NA))
+uso = read.csv("data/data-raw/plant_uses.csv", na= c(""," ",NA))
 uso = uso[as.character(uso$Name_submitted) %in% tmp,]
 
 ## Preliminary editing of the list
@@ -189,7 +203,7 @@ cult= as.character(uso$Name_submitted[as.character(uso$group_renato) %in% "culti
 gc()
 toto4 = dim(oc.data)[1]
 oc.data <- oc.data[is.na(true.out) | true.out %in% FALSE] # removing 3142 true outliers
-# oc.data[,uniqueN(species.correct2)] # 5095 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 ## REMOVING PROBABLE OUTLIERS ##
@@ -201,22 +215,20 @@ tmp1 <- data.table(tmp[probable.out %in% TRUE])
 oc.data <- oc.data[!numTombo %in% tmp1$numTombo]
 toto4 - dim(oc.data)[1]; 100*(toto4 - dim(oc.data)[1])/toto3 ## 3181 (0.23% of remaining records) removed
 100*(toto4 - dim(oc.data)[1])/toto1 ## extra 0.1% in respect to all records
-# oc.data[,uniqueN(species.correct2)] # 5095 species
+# oc.data[,uniqueN(species.correct2)] # 5095 species; now 4953
 # table(is.na(oc.data$latitude.work1)) # TRUE: with missing coordinates (but confirmed in the AF) for some species
 
 ## SAVING THE DATA FOR EXTRACTING THE COUNTRY OF OCCURRENCE AND ALTITUDE
-tmp.data <- oc.data[,c("latitude.work1","longitude.work1","loc.correct","species.correct2"),]
+tmp.data <- oc.data[,c("latitude.work1", "longitude.work1", 
+                       "loc.correct","species.correct2"),]
 tmp.data[ , pais := gsub("_.*", "", loc.correct, perl = TRUE)]
 f <- function (x) { sapply(strsplit(x, "_", fixed = TRUE), function(x) x[2]) }
 tmp.data[ , estado := f(loc.correct)]
 tmp.data[ , loc.correct := paste(pais, estado, sep = "_")]
 tmp.data[ , c("pais", "estado") := NULL]
+dim(tmp.data) # 816677 records
 saveRDS(tmp.data, file = "data/threat_species_by_country.rds", compress = "gzip")
 rm(tmp.data)
-
-#3- remover non-core specimens for heavily cultivated native species (e.g. Araucaria angustifolia): rob.out.99 == FALSE
-## REMOVE OCCURRENCES OUTSIDE THE NEOTROPICS, EXCEPT FOR PANTROPICAL SPECIES?
-## REMOVE OCCURRENCE DATA FROM WELL-KNOW BOTANICAL GARDENS GROWING SOUTH AMERICA SPECIES?
 
 #### REMOVING NON-NEOTROPICAL OCCURRENCES ###
 gc()
@@ -249,12 +261,10 @@ toto5 - dim(oc.data)[1]; 100*(toto5 - dim(oc.data)[1])/toto4 ## 485 (0.11% of re
 
 #### GETTING SPECIES INFORMATION: TBC, geographical range and cultivation ### 
 # Getting species information and generating the vectors for the groups of species
-spp = read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
+spp = read.csv("data/data-raw//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 spp = spp[spp$SpeciesKTSA %in% oc.data$species.correct2,]
-# uso = read_excel("C://Users//renato//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.xlsx", na= c(""," ",NA))
-# uso = uso[uso$Name_submitted %in% oc.data$species.correct2,]
-# 
-# ## Preliminary editing of the list
+
+## Preliminary editing of the list
 spp$nomes = spp$species.reflora
 #replacing names not found in ReFlora by the TNRS/Hans taxonomy
 spp$nomes[is.na(spp$nomes)] = spp$Accepted_name[is.na(spp$nomes)]
@@ -262,7 +272,7 @@ spp$nomes[is.na(spp$nomes)] = spp$Accepted_name[is.na(spp$nomes)]
 spp$nomes[is.na(spp$nomes)] = spp$NewTaxon.TPL[is.na(spp$nomes)]
 
 ## Getting the list of species per group
-tbc = spp$nomes[spp$TBC %in% "TBC"]
+tbc = spp$nomes[spp$TBC %in% "TBC"] # taxa with low taxonomic complexity
 # cult= uso$Name_submitted[uso$group_renato == "cultivated"]
 
 #### SEPARATING DATA IDENTIFIED AND NOT IDENTIFIED BY TAXONOMISTS ###
@@ -278,7 +288,7 @@ oc.data[,tax.check2 := as.character(tax.check1),]
 #Validating all occurrences identified by other-families taxonomists
 tmp = data.table(oc.data[tax.check %in% "TRUE" & is.na(typeStatus),])
 tmp = table(tmp$determinador.name)
-#### CHECK HERE: what should be the best cut-off to set the most frequent taxonomists? Set to the 1 quartile? Leaving the 20 that was fixed before... ####
+#### CHECK HERE: what should be the best cut-off to set the most frequent taxonomists? Leaving the 20 that was fixed before... ####
 taxonomists = names(tmp[tmp >= 20]) # quantile(tmp, prob = seq(0.2,0.5,0.05)) 
 taxonomists = taxonomists[!taxonomists %in% c("Anonimo","Anonymous","Semdeterminador")]
 oc.data[determinador.name %in% taxonomists & tax.check2 %in% "FALSE", tax.check2 := "TRUE_OTHER",]
@@ -289,13 +299,13 @@ oc.data[species.correct1 %in% tbc & tax.check2 %in% c("FALSE","cannot_check"), t
 # table(is.na(oc.data$latitude.work1))
 
 #some last minute validation to avoid the removal of species from the checklist
+#Edits not previously taken into account by Lima et al. (2020)
 oc.data[species.correct2 %in% "Agonandra brasiliensis" & determinador.name1 %like% c("Hiepko|Heipko|Marquete|Groppo"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Aiouea bracteata" & determinador.name1 %like% c("Baitello|Lorea"), tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Quillaja lancifolia" & determinador.name1 %in% c("Luebert, F."), tax.check2 := "TRUE" ]
 oc.data[species.correct2 %like% "Handroanthus" & determinador.name1  %like% c("Santo, F.S.E.|Espirito Santo, F.S.|Santo, F.E.|Silva-Castro|ilva, M.M."), tax.check2 := "TRUE" ]
 oc.data[species.correct2 %in% "Pouteria stenophylla" & determinador.name1 %like% "Palazzo", tax.check2 := "TRUE"]
 oc.data[species.correct2 %in% "Pradosia glaziovii" & determinador.name1 %like% "Terra-Araujo", tax.check2 := "TRUE"]
-
 
 ## VALIDATING VOUCHER INFO FROM REFLORA
 vouchers <- readRDS("data/vouchers_reflora.rds")
@@ -324,14 +334,22 @@ for(i in 1:length(unique(vouchers$tax))) {
 }
 
 #### TRYING TO OBTAIN INFORMATION ON CONSERVATION UNITS FROM LOCALITY INFO ###
-locals <- oc.data$locality
 #Editing the localities
-unwanted_array = list('Š'='S', 'š'='s', 'Ž'='Z', 'ž'='z', 'À'='A', 'Á'='A', 'Â'='A', 'Ã'='A', 'Ä'='A', 'Å'='A', 'Æ'='A', 'Ç'='C', 'È'='E', 'É'='E',
-                      'Ê'='E', 'Ë'='E', 'Ì'='I', 'Í'='I', 'Î'='I', 'Ï'='I', 'Ñ'='N', 'Ò'='O', 'Ó'='O', 'Ô'='O', 'Õ'='O', 'Ö'='O', 'Ø'='O', 'Ù'='U',
-                      'Ú'='U', 'Û'='U', 'Ü'='U', 'Ý'='Y', 'Þ'='B', 'ß'='S', 'à'='a', 'á'='a', 'â'='a', 'ã'='a', 'ä'='a', 'å'='a', 'æ'='a', 'ç'='c',
-                      'è'='e', 'é'='e', 'ê'='e', 'ë'='e', 'ì'='i', 'í'='i', 'î'='i', 'ï'='i', 'ð'='o', 'ñ'='n', 'ò'='o', 'ó'='o', 'ô'='o', 'õ'='o',
-                      'ö'='o', 'ø'='o', 'ü'='u', 'ù'='u', 'ú'='u', 'û'='u', 'ý'='y', 'ý'='y', 'þ'='b', 'ÿ'='y' )
-locals <- chartr(paste(names(unwanted_array), collapse=''), paste(unwanted_array, collapse=''), locals)
+locals <- oc.data$locality
+# unwanted_array = list('Š'='S', 'š'='s', 'Ž'='Z', 'ž'='z', 'À'='A', 'Á'='A', 'Â'='A', 'Ã'='A', 'Ä'='A', 'Å'='A', 'Æ'='A', 
+#                       'Ç'='C', 'È'='E', 'É'='E', 'Ê'='E', 'Ë'='E', 
+#                       'Ì'='I', 'Í'='I', 'Î'='I', 'Ï'='I', 
+#                       'Ñ'='N', 'Ò'='O', 'Ó'='O', 'Ô'='O', 'Õ'='O', 'Ö'='O', 'Ø'='O', 
+#                       'Ù'='U', 'Ú'='U', 'Û'='U', 'Ü'='U', 'Ý'='Y', 
+#                       'Þ'='B', 'ß'='S', 
+#                       'à'='a', 'á'='a', 'â'='a', 'ã'='a', 'ä'='a', 'å'='a', 'æ'='a', 
+#                       'ç'='c', 'è'='e', 'é'='e', 'ê'='e', 'ë'='e', 
+#                       'ì'='i', 'í'='i', 'î'='i', 'ï'='i', 'ð'='o', 
+#                       'ñ'='n', 'ò'='o', 'ó'='o', 'ô'='o', 'õ'='o',
+#                       'ö'='o', 'ø'='o', 'ü'='u', 'ù'='u', 'ú'='u', 
+#                       'û'='u', 'ý'='y', 'ý'='y', 'þ'='b', 'ÿ'='y' )
+# locals <- chartr(paste(names(unwanted_array), collapse=''), paste(unwanted_array, collapse=''), locals)
+locals <- plantR:::rmLatin(locals)
 locals <- gsub('\\.\\.',".", locals, perl = TRUE)
 locals <- gsub(' - | -|- ',"-", locals, perl = TRUE)
 locals <- gsub('^-- ',"", locals, perl = TRUE)
@@ -344,6 +362,9 @@ locals <- gsub('^-','', locals, perl = TRUE)
 locals <- gsub('-$','', locals, perl = TRUE)
 locals <- stringr::str_squish(locals)
 oc.data$locality1 <- locals
+
+## Generating the file with the conservation unit information
+## Some manual editing was performed here, so we are using the edited version loaded below
 # locals <- table(locals)
 # tmp <- data.frame(locality = names(locals), records = as.double(locals))
 # tmp <- tmp[order(tmp$records, decreasing = TRUE),]
@@ -354,11 +375,10 @@ oc.data$locality1 <- locals
 # tmp$US <- grepl(US, tmp$locality, ignore.case = TRUE) & !grepl("ntorno d|roximo ao|caminho d", tmp$locality, ignore.case = TRUE)
 # tmp$APA <- grepl("Area de Protecao Ambiental|APA |A\\.P\\.A\\.", tmp$locality) & !grepl("ntorno do|roximo ao|caminho do", tmp$locality, ignore.case = TRUE)
 # write.csv(tmp, "UCs.csv")
-ucs <- read.csv("UCs.csv", as.is = TRUE)
+ucs <- readRDS("data/UCs.rds")
 oc.data <- dplyr::left_join(oc.data, ucs, by= "locality1")
 
 #### SAVING THE ESSENTIAL DATA FOR THE ASSESSMENTS ###
-
 ## Filtering only the necessary columns
 oc.data1 <- oc.data[,c("latitude.work1","longitude.work1","species.correct2","family.correct1",
                        "coletor.name","coletor.number","ano","numTombo","dup.ID1",
@@ -367,11 +387,13 @@ oc.data1 <- oc.data[,c("latitude.work1","longitude.work1","species.correct2","fa
 saveRDS(oc.data1, file = "data/threat_occ_data.rds", compress = "gzip")
 
 #### OBTAINING THE NAME AND NUMBER OF OCCURRENCES (TOTAL AND SPATIALLY-UNIQUE) PER SPECIES ###
-resultado <- oc.data[!duplicated(oc.data$species.correct2), c("family.correct1", "species.correct2")]
+resultado <- oc.data[!duplicated(oc.data$species.correct2), 
+                     c("family.correct1", "species.correct2")]
 #table(resultado$species.correct2 == names(table(oc.data$species.correct2)))
 resultado$total.occs <- as.double(table(oc.data$species.correct2))
 tmp <- merge(resultado, 
-             data.frame(species.correct2 = names(extra.neotrop.spp), extra.neotrop.occurs = as.double(extra.neotrop.spp)), 
+             data.frame(species.correct2 = names(extra.neotrop.spp), 
+                        extra.neotrop.occurs = as.double(extra.neotrop.spp)), 
              by = "species.correct2", all.x = TRUE, sort = FALSE)
 tmp <- tmp[order(tmp$species.correct2),]
 #table(resultado$species.correct2 == tmp$species.correct2)
@@ -383,11 +405,11 @@ MyData <- MyData[!is.na(MyData$ddlat) | !is.na(MyData$ddlon),]
 tmp <- unique.coords(MyData)
 #table(resultado$species.correct2 == tmp$tax)
 resultado$non.dup.occs <- tmp$non.dup.occurs
-resultado$total.occs <- as.double(apply(resultado[,c("total.occs","non.neotrop.occs")], 1, sum, na.rm = TRUE))
-
+resultado$total.occs <- 
+  as.double(apply(resultado[,c("total.occs","non.neotrop.occs")], 
+                  1, sum, na.rm = TRUE))
 
 ## SAVING THE FINAL LIST OF SPECIES ##
 taxon_id <- paste0("sp", 1:dim(resultado)[1])
 resultado <- cbind.data.frame(internal_taxon_id = taxon_id, resultado, stringsAsFactors = FALSE)
 saveRDS(resultado, "data/herbarium_spp_data.rds")
-

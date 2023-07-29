@@ -1,15 +1,21 @@
+## R/RStudios files
 .Rproj.user
 *.Rproj
 .Rproj
 .Rhistory
 .RData
 .Ruserdata
+
+## Other extensions
 *.docx
 *.xlsx
 *.pdf 
-HMSC/
 *.xls
 *.tif
+text/
+text/main_text.docx
+
+## Files too large for GitHub
 data/threat_occ_data.rds
 data/threat_occ_data_new.rds
 data/spp.convex.hull.polys_sf.rds
@@ -18,7 +24,7 @@ data/StrictUCsNeotrop_simplified.rds
 data/StrictUCsNeotrop_simplified_clipped.rds
 data/threat_inventory_data.rds
 data/spp.convex.hull.polys_sf_cropped.rds
-text/
-text/main_text.docx
 figures/old_figures/
 figures/old_figures
+data/data-raw
+data/data-raw/
