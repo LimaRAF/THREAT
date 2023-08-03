@@ -9,49 +9,50 @@ require(wdpar)
 require(lwgeom)
 require(sf)
 
-#### DOWNLOADING, CLIPPING AND SIMPLIFYING WDPA FOR THE NEOTROPICS ####
-# Downloading
-raw_pa_data <- wdpa_fetch("global", 
-                          download_dir = file.path(here::here(), 
-                                                   "data", "data-raw"))
-# Loading
-raw_pa_data <- wdpa_read(file.path(here::here(), 
-                                   "data", "data-raw", "WDPA_Jul2023_Public.zip"))
-
-# Removing non-neotropical PAs
-neotrop.countries <- data.frame(PARENT_ISO3 = raw_pa_data$PARENT_ISO3)
-neotrop.countries$PARENT <- 
-  countrycode::countrycode(neotrop.countries$PARENT_ISO3, "iso3c", "country.name")
-tmp <- list.files("E://ownCloud//W_GIS//Am_Lat_ADM_GADM_v3.6", pattern = ".rds")
-tmp <- as.character(unlist(sapply(tmp, function(x) strsplit(x, "_")[[1]][2])))
-neotrop.countries$neotrop.check <- neotrop.countries$PARENT_ISO3 %in% tmp
-neotrop.countries$neotrop.check[neotrop.countries$neotrop.check %in% FALSE & 
-                                  grepl("US-FL", raw_pa_data$SUB_LOC)] <- TRUE
-raw_pa_data <- raw_pa_data[neotrop.countries$neotrop.check,]
-
-#Removing Marine-only PAs
-tmp <- raw_pa_data[, "MARINE", drop = TRUE]
-tmp <- !tmp %in% "2" 
-raw_pa_data <- raw_pa_data[tmp,]
-
-#Removing PAs not currently implemented
-tmp <- raw_pa_data[, "STATUS", drop = TRUE]
-tmp <- tmp %in% c("Designated", "Established", "Inscribed") 
-raw_pa_data <- raw_pa_data[tmp,]
-
-#Filtering only PA of strict protecion (IUCN categories I, II and III)
-tmp <- raw_pa_data[, c("DESIG", "DESIG_ENG", "IUCN_CAT"), drop = TRUE]
-tmp$string <- paste(tmp$DESIG,tmp$DESIG_ENG, sep="_")
-#write.csv(tmp[!duplicated(tmp1),], "PA_designation.csv", row.names = FALSE)
-tmp1 <- read.csv("data/PA_designation.csv", as.is = TRUE, na.string = c(NA,""," "))
-tmp1$string <- paste(tmp1$DESIG,tmp1$DESIG_ENG, sep="_")
-tmp2 <- dplyr::left_join(tmp, tmp1, by= "string")
-tmp3 <- tmp2$IUCN_CAT_THREAT %in% c("Ia", "Ib", "II", "III")
-raw_pa_data <- raw_pa_data[tmp3,]
-
-## Filtering uncecessary columns
-raw_pa_data1 <- raw_pa_data[, c(1,4,7,8,13,17:21,26,27, 29)]
-# saveRDS(raw_pa_data1, "data/data-raw/StrictUCsNeotrop.rds")
+# #### DOWNLOADING, CLIPPING AND SIMPLIFYING WDPA FOR THE NEOTROPICS ####
+## Files too big; loading the final shapefile down below
+# # Downloading
+# raw_pa_data <- wdpa_fetch("global", 
+#                           download_dir = file.path(here::here(), 
+#                                                    "data", "data-raw"))
+# # Loading
+# raw_pa_data <- wdpa_read(file.path(here::here(), 
+#                                    "data", "data-raw", "WDPA_Jul2023_Public.zip"))
+# 
+# # Removing non-neotropical PAs
+# neotrop.countries <- data.frame(PARENT_ISO3 = raw_pa_data$PARENT_ISO3)
+# neotrop.countries$PARENT <- 
+#   countrycode::countrycode(neotrop.countries$PARENT_ISO3, "iso3c", "country.name")
+# tmp <- list.files("E://ownCloud//W_GIS//Am_Lat_ADM_GADM_v3.6", pattern = ".rds")
+# tmp <- as.character(unlist(sapply(tmp, function(x) strsplit(x, "_")[[1]][2])))
+# neotrop.countries$neotrop.check <- neotrop.countries$PARENT_ISO3 %in% tmp
+# neotrop.countries$neotrop.check[neotrop.countries$neotrop.check %in% FALSE & 
+#                                   grepl("US-FL", raw_pa_data$SUB_LOC)] <- TRUE
+# raw_pa_data <- raw_pa_data[neotrop.countries$neotrop.check,]
+# 
+# #Removing Marine-only PAs
+# tmp <- raw_pa_data[, "MARINE", drop = TRUE]
+# tmp <- !tmp %in% "2" 
+# raw_pa_data <- raw_pa_data[tmp,]
+# 
+# #Removing PAs not currently implemented
+# tmp <- raw_pa_data[, "STATUS", drop = TRUE]
+# tmp <- tmp %in% c("Designated", "Established", "Inscribed") 
+# raw_pa_data <- raw_pa_data[tmp,]
+# 
+# #Filtering only PA of strict protecion (IUCN categories I, II and III)
+# tmp <- raw_pa_data[, c("DESIG", "DESIG_ENG", "IUCN_CAT"), drop = TRUE]
+# tmp$string <- paste(tmp$DESIG,tmp$DESIG_ENG, sep="_")
+# #write.csv(tmp[!duplicated(tmp1),], "PA_designation.csv", row.names = FALSE)
+# tmp1 <- read.csv("data/PA_designation.csv", as.is = TRUE, na.string = c(NA,""," "))
+# tmp1$string <- paste(tmp1$DESIG,tmp1$DESIG_ENG, sep="_")
+# tmp2 <- dplyr::left_join(tmp, tmp1, by= "string")
+# tmp3 <- tmp2$IUCN_CAT_THREAT %in% c("Ia", "Ib", "II", "III")
+# raw_pa_data <- raw_pa_data[tmp3,]
+# 
+# ## Filtering uncecessary columns
+# raw_pa_data1 <- raw_pa_data[, c(1,4,7,8,13,17:21,26,27, 29)]
+# saveRDS(raw_pa_data1, "data/data-raw/StrictUCsNeotrop_new.rds")
 
 # Cleaning the database -------------------------------------------------------
 raw_pa_data1 <- readRDS("data/data-raw/StrictUCsNeotrop.rds")

@@ -21,7 +21,7 @@ tax <- tax[!duplicated(species.correct2), ]
 #Dataset/Checklist. doi:10.15468/1mtkaw
 path = here::here()
 file = "dwca-lista_especies_flora_brasil-v393.285.zip"
-path.dwc <- file.path(path, "data", file)
+path.dwc <- file.path(path, "data", "data-raw", file)
 finch::dwca_cache$delete_all()
 fbo <- finch::dwca_read(path.dwc, read=TRUE, encoding="UTF-8")$data
 
@@ -35,7 +35,7 @@ taxon1 <- taxon[taxon$species.correct2 %in% tax$species.correct2 &
                   taxon$taxonRank %in% "ESPECIE",]
 # Getting the best names for homonyms
 dups <- (duplicated(taxon1$species.correct2) |  
-  duplicated(taxon1$species.correct2, fromLast = TRUE))
+           duplicated(taxon1$species.correct2, fromLast = TRUE))
 dup.spp <- unique(taxon1$species.correct2[dups])
 taxon1$remove <- TRUE
 for (i in 1:length(dup.spp)) {
@@ -105,7 +105,7 @@ dist$phytogeographicDomain <- gsub('\\",\\"', '|', dist$phytogeographicDomain)
 dist$phytogeographicDomain <- gsub('\\{\\}', NA_character_, dist$phytogeographicDomain)
 
 dist1 <- aggregate(cbind(locationID, establishmentMeans, endemism, phytogeographicDomain) ~ id, data = dist, 
-                      function(x) paste(unique(x), collapse = "|")) 
+                   function(x) paste(unique(x), collapse = "|")) 
 names(dist1) <- c("id", "occurrence", "establishment", "endemism", "phytogeographicDomain")
 taxon1 <- dplyr::left_join(taxon1, dist1, by = "id", suffix = c("", ".y"))
 
@@ -123,13 +123,13 @@ citation <- mapply(function(x, y) { gsub(paste0(",",x), ".", y, fixed = TRUE) },
                    refs$date, refs$bibliographicCitation)
 ids <- grepl("[0-9]$", refs$bibliographicCitation) & !grepl("\\D", refs$date)
 citation[ids] <- mapply(function(x, y) { gsub(paste0(x, "$"), ".", y, perl = TRUE) },
-                   refs$date[ids], citation[ids])
+                        refs$date[ids], citation[ids])
 citation <- gsub("\\.\\.$", ".", citation)
 #Validating dates
 refs$date <- gsub("\\.$", "", refs$date)
 refs$date <- gsub("\\)$|^\\(", "", refs$date)
 good_dates <- (as.double(refs$date) >1000 & as.double(refs$date) <= 2021) |
-                refs$date %in% "[no date]" | refs$date %in% "no prelo"
+  refs$date %in% "[no date]" | refs$date %in% "no prelo"
 good_dates[is.na(good_dates)] <- FALSE
 bad_dates <- sapply(strsplit(refs$date[!good_dates], "-|, |\\/| \\[", perl = TRUE),
                     function(x) any((as.double(x) >1000 & as.double(x) <= 2021)))
@@ -408,4 +408,5 @@ saveRDS(all.vouchers, "data/vouchers_reflora.rds")
 # 
 # ##Saving
 # saveRDS(vouchers, "data/vouchers_reflora_old.rds")
+rm(list = ls())
 

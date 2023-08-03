@@ -9,7 +9,8 @@ gc()
 #### LOADING PACKAGES ####
 require(data.table)
 require(plantR)
-source("R/other_functions.R")
+require(countrycode)
+source("R/99_functions.R")
 
 # #### LOADING THREAT HERBARIUM DATA ###
 # ## Loading the paths to occurrence data 
@@ -237,6 +238,7 @@ toto5 = dim(oc.data)[1]
 non.neotrop <- table(oc.data[neotrop.check == FALSE | is.na(neotrop.check), unique(country)])
 non.neotrop <- data.frame(code = names(non.neotrop), n.occ = as.double(non.neotrop), county = names(non.neotrop),
                           stringsAsFactors = FALSE)
+non.neotrop$county[non.neotrop$county %in% "Fran\xe7a"] <- "FR"
 non.neotrop$county[nchar(non.neotrop$county) == 2] <- 
   countrycode::countrycode(non.neotrop$county[nchar(non.neotrop$county) == 2], "iso2c", "country.name")
 non.neotrop <- non.neotrop[!non.neotrop$code %in% c("Brazil","Brasil","BRASIL","BR","BB","BO","BS","BZ",
@@ -349,6 +351,7 @@ locals <- oc.data$locality
 #                       'ö'='o', 'ø'='o', 'ü'='u', 'ù'='u', 'ú'='u', 
 #                       'û'='u', 'ý'='y', 'ý'='y', 'þ'='b', 'ÿ'='y' )
 # locals <- chartr(paste(names(unwanted_array), collapse=''), paste(unwanted_array, collapse=''), locals)
+Encoding(locals) <- "latin1"
 locals <- plantR:::rmLatin(locals)
 locals <- gsub('\\.\\.',".", locals, perl = TRUE)
 locals <- gsub(' - | -|- ',"-", locals, perl = TRUE)
@@ -413,3 +416,4 @@ resultado$total.occs <-
 taxon_id <- paste0("sp", 1:dim(resultado)[1])
 resultado <- cbind.data.frame(internal_taxon_id = taxon_id, resultado, stringsAsFactors = FALSE)
 saveRDS(resultado, "data/herbarium_spp_data.rds")
+rm(list = ls())

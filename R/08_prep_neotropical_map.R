@@ -6,7 +6,7 @@
 rm(list=ls())
 
 #### LOADING PACKAGES ####
-library(rgeos)
+require(rgeos)
 
 #### SIMPLIFIED NEOTROPICAL COUNTOUR ####
 #Loading the files
@@ -44,10 +44,10 @@ length(neotrop.simp4)
 
 
 #Inspecting more closely...
-plot(neotrop.simp1, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=1)
-plot(neotrop.simp2, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=2)
-plot(neotrop.simp3, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=3)
-plot(neotrop.simp4, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=4)
+# plot(neotrop.simp1, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=1)
+# plot(neotrop.simp2, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=2)
+# plot(neotrop.simp3, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=3)
+# plot(neotrop.simp4, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=4)
 
 #Saving
 # saveRDS(neotrop.simp, file = "data//Contour_Neotrop_simplified_very_large.rds")
@@ -55,4 +55,4 @@ plot(neotrop.simp4, xlim=c(-45.5,-43), ylim=c(-23.5,-23), border=4)
 # saveRDS(neotrop.simp2, file = "data//Contour_Neotrop_simplified_tol_005.rds")
 # saveRDS(neotrop.simp3, file = "data//Contour_Neotrop_simplified_tol_01.rds")
 saveRDS(neotrop.simp4, file = "data//Contour_Neotrop_simplified_tol_005_no_small.rds") # We are currently using this one
-
+rm(list = ls())

@@ -2,16 +2,13 @@
 #### EFFECT OF TAXONOMIC CONFIDENCE OVER THE EOO ESTIMATE ####
 ##############################################################
 rm(list=ls())
-
-# detach("package:ConR", unload=TRUE)
-# devtools::install_github("gdauby/ConR", ref = "master", force = TRUE)
-# library("ConR")
+gc()
 require(rgeos)
 require(sf)
 require(fields)
 require(dplyr)
 require(data.table)
-source("./R/other_functions.R")
+source("R/99_functions.R")
 
 ## Reading herbarium data
 oc.data <- readRDS("data/threat_occ_data.rds")
@@ -105,16 +102,16 @@ resultado$tax.conf[is.na(resultado$tax.conf) & is.na(tmp)] <- "class6"
 resultado$tax.conf[!is.na(tmp) & tmp %in% 0] <- "class6"
 
 ##Inspecting
-table(resultado$tax.conf, useNA = "always")
-par(mfrow=c(2,2), mar=c(3,3,2,1))
-boxplot(index ~ resultado$tax.conf,
-        varwidth = TRUE, notch = TRUE, main = "index x classes")
-boxplot(resultado$Occs.level.5 / resultado$Occs.level.1 ~ resultado$tax.conf,
-        varwidth = TRUE, notch = TRUE, main = "prop. true x classes")
-boxplot(jitter(tmp0) ~ resultado$tax.conf,
-        varwidth = TRUE, notch = TRUE, main = "prop. true_other x classes")
-boxplot(log(resultado$EOO.increase.1+1) ~ resultado$tax.conf,
-        varwidth = TRUE, notch = TRUE, main = "EOO increase x classes")
+# table(resultado$tax.conf, useNA = "always")
+# par(mfrow=c(2,2), mar=c(3,3,2,1))
+# boxplot(index ~ resultado$tax.conf,
+#         varwidth = TRUE, notch = TRUE, main = "index x classes")
+# boxplot(resultado$Occs.level.5 / resultado$Occs.level.1 ~ resultado$tax.conf,
+#         varwidth = TRUE, notch = TRUE, main = "prop. true x classes")
+# boxplot(jitter(tmp0) ~ resultado$tax.conf,
+#         varwidth = TRUE, notch = TRUE, main = "prop. true_other x classes")
+# boxplot(log(resultado$EOO.increase.1+1) ~ resultado$tax.conf,
+#         varwidth = TRUE, notch = TRUE, main = "EOO increase x classes")
 
 ## Which species we can include all TRUE_TBC automatically:
 oc.data <- readRDS("data/threat_occ_data_new.rds")
@@ -188,3 +185,4 @@ oc.data[tax.check.final %in% c("TRUE_OTHER","TRUE_TBC"), tax.check.final := "med
 oc.data[tax.check.final %in% c("FALSE"), tax.check.final := "low"]
 oc.data[tax.check.final %in% c("TRUE"), tax.check.final := "high"]
 saveRDS(oc.data,"data/threat_occ_data_final.rds", compress = "gzip")
+rm(list = ls())

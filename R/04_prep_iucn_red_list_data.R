@@ -57,7 +57,7 @@ gc()
 
 
 #### LOADING THE FILES  ####
-path <- "redlist_species_data_27cbaeb0-4d95-4128-a993-a11673f1e581" # folder containing all files from version 2022-2
+path <- "data/data-raw/redlist_species_data_27cbaeb0-4d95-4128-a993-a11673f1e581" # folder containing all files from version 2022-2
 files <- list.files(path, pattern = "csv", full.names = TRUE)
 files <- files[!grepl("dois.csv", files)]
 
@@ -95,7 +95,7 @@ for (i in seq_along(all.files)) {
     } 
   }  
 }
-  
+
 
 #### MERGING THE AVAILABLE INFO IN LESS FILES ####
 # _clean.rds : previous assessments info filtered for THREAT species
@@ -116,7 +116,7 @@ iucn_assess <- iucn_assess[, !grepl("\\.y$", names(iucn_assess))]
 iucn_assess <- iucn_assess[, !grepl("\\.x\\.x$", names(iucn_assess))]
 names(iucn_assess) <- gsub("\\.x$", "", names(iucn_assess)) 
 iucn_assess <- iucn_assess[, !duplicated(names(iucn_assess))]
-saveRDS(iucn_assess, "IUCN_2022_v2_assessments_THREAT.rds")
+saveRDS(iucn_assess, "data/IUCN_2022_v2_assessments_THREAT.rds")
 
 
 ## For the construction of the SIS Connect Files
@@ -136,27 +136,25 @@ for (i in seq_along(sis.files)) {
   
   if (is.null(iucn_sis)) iucn_sis <- tmp.i else iucn_sis <- dplyr::bind_rows(iucn_sis, tmp.i) 
 }
-saveRDS(iucn_sis, "IUCN_2022_v2_sis_connect_THREAT.rds")
+saveRDS(iucn_sis, "data/IUCN_2022_v2_sis_connect_THREAT.rds")
 
-
-#### SOME PRELIMINARY EXPLORATION FOR PREVIOUS SPECIES  ####
-iucn_assess <- readRDS("IUCN_2022_v2_assessments_THREAT.rds")
-iucn_sis <- readRDS("IUCN_2022_v2_sis_connect_THREAT.rds")
-
-
-## Generation length
-100*table(iucn_assess$GenerationLength.range, useNA = "always")/dim(iucn_assess)[1]
-iucn_gl <- iucn_assess[!is.na(iucn_assess$GenerationLength.range),
-                       c("scientificName","redlistCategory","redlistCriteria","yearPublished","GenerationLength.range")]
-100*dim(iucn_gl)[1]/dim(iucn_assess)[1]
-iucn_gl$mean <- sapply(strsplit(iucn_gl$GenerationLength.range, "-"), function(x) mean(as.double(x)))
-iucn_gl.myrcia <- iucn_gl[order(as.double(iucn_gl$mean)),][grepl("Myrcia", iucn_gl[order(as.double(iucn_gl$mean)),"scientificName"]),]
-table(iucn_gl.myrcia$GenerationLength.range)
-
-
-hab1 <- read.csv("data/threat_habitats_preliminar1.csv")
-hab1.myrcia <- hab1[hab1$Name_submitted %in% iucn_gl.myrcia$scientificName,]
-hab1.myrcia <- hab1.myrcia[match(iucn_gl.myrcia$scientificName, hab1.myrcia$Name_submitted),]
-plot(jitter(iucn_gl.myrcia$mean), jitter(hab1.myrcia$GL), 
-     xlim=c(10,80), ylim = c(10,80), xlab = "GL IUCN", ylab = "GL THREAT",
-     main = "GL for Myrcia spp"); abline(0,1)
+# #### SOME PRELIMINARY EXPLORATION FOR PREVIOUS SPECIES  ####
+# iucn_assess <- readRDS("data/IUCN_2022_v2_assessments_THREAT.rds")
+# iucn_sis <- readRDS("data/IUCN_2022_v2_sis_connect_THREAT.rds")
+# 
+# ## Generation length
+# 100*table(iucn_assess$GenerationLength.range, useNA = "always")/dim(iucn_assess)[1]
+# iucn_gl <- iucn_assess[!is.na(iucn_assess$GenerationLength.range),
+#                        c("scientificName","redlistCategory","redlistCriteria","yearPublished","GenerationLength.range")]
+# 100*dim(iucn_gl)[1]/dim(iucn_assess)[1]
+# iucn_gl$mean <- sapply(strsplit(iucn_gl$GenerationLength.range, "-"), function(x) mean(as.double(x)))
+# iucn_gl.myrcia <- iucn_gl[order(as.double(iucn_gl$mean)),][grepl("Myrcia", iucn_gl[order(as.double(iucn_gl$mean)),"scientificName"]),]
+# table(iucn_gl.myrcia$GenerationLength.range)
+# 
+# 
+# hab1 <- readRDS("data/threat_habitats_preliminar1.rds")
+# hab1.myrcia <- hab1[hab1$Name_submitted %in% iucn_gl.myrcia$scientificName,]
+# hab1.myrcia <- hab1.myrcia[match(iucn_gl.myrcia$scientificName, hab1.myrcia$Name_submitted),]
+# plot(jitter(iucn_gl.myrcia$mean), jitter(hab1.myrcia$GL), 
+#      xlim=c(10,80), ylim = c(10,80), xlab = "GL IUCN", ylab = "GL THREAT",
+#      main = "GL for Myrcia spp"); abline(0,1)

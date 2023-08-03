@@ -7,6 +7,7 @@ rm(list=ls())
 require(taxize)
 require(flora)
 require(redlistr)
+source("R/99_functions.R")
 
 ##############################
 #### THREAT FULL TAXONOMY ####
@@ -226,11 +227,204 @@ full.tax$TaxonomicReference3[full.tax$source %in% "GBIF (www.gbif.org)"] <-
 saveRDS(full.tax, "data/threat_full.taxonomy.rds")
 
 
+#############################H
+#### HABITATS AND ECOLOGY ####
+#############################H
+
+## Getting Flora do BRasil information ##
+tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 2, 3)]
+
+fbo.info <- readRDS("data/threat_fbo_tax_info.rds")
+toto <- dplyr::left_join(tax, fbo.info, by = "species.correct2")
+hab <- toto[, c(names(tax), "life.form","habitat","vegetation.type","establishment")]
+
+#### OBTAINING AND GENERALISING SPECIES INFORMATION ####
+## List of species
+hab$genus <- sapply(strsplit(hab$species.correct2," "), function(x) x[1])
+hab$taxon.rank <- "species"
+hab <- hab[,c("internal_taxon_id","species.correct2","family.correct1","genus",
+              "species.correct2","taxon.rank","life.form","habitat","vegetation.type")]
+names(hab) <- c("internal_taxon_id", "Name_submitted","family","genus",
+                "species.correct","taxon.rank","life.form.reflora","habitat.reflora",
+                "vegetation.type.reflora")
+hab$ordem.spp = 1:dim(hab)[1]
+
+## South American tree species list
+trees.sa = read.csv("data/data-raw/DomainsKnownTreesNeotropics.csv",as.is=TRUE,na.string=c(""," ",NA))
+## Reading trait data per taxonomic level ##
+traits.treeco <- readRDS("data/data-raw/traits_treeco.rds")
+trait.spp <- traits.treeco$species
+syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)
+syn.br <- syn.br[syn.br$status %in% c("replace"), ]
+for (i in 1:dim(syn.br)[1]) {
+  sp.i <- syn.br$original.search[i]
+  rpl.i <- syn.br$search.str[i]
+  st.i <- syn.br$status[i]
+  
+  if (st.i == "replace") {
+    trait.spp$TAX[trait.spp$TAX %in% sp.i] <- rpl.i
+  }
+}
+trait.spp <- trait.spp[!duplicated(trait.spp$TAX),]
+trait.gen <- traits.treeco$genus
+trait.fam <- traits.treeco$family
+rm(traits.treeco)
+traits1 <- trait_data_prep(hab, trees.sa, trait.spp, trait.gen, trait.fam)$data_frame
+table(hab$species.correct == tax$species.correct2)
+traits1$wsg_gcm3 <- as.double(traits1$wsg_gcm3)
+traits1$SeedMass_g <- as.double(traits1$SeedMass_g)
+
+## Getting the final table
+aux <- merge(hab[,c("family","species.correct")], trees.sa[,c(1:20,74:75,138:140,144:146,170:177)], 
+             by.x = "species.correct", by.y = "SpeciesKTSA", all.x = TRUE)
+aux <- aux[order(aux$species.correct),]
+table(hab$Name_submitted == aux$species.correct)
+
+# Establishment in respect to the AF
+hab$establishment <- traits1$establishment.AF
+hab$establishment[is.na(hab$establishment)] <- 
+  traits1$establishment.BR[is.na(hab$establishment)]
+hab$establishment[hab$establishment %in% "native" & 
+                    grepl("not in B",aux$establishment.BR) & !is.na(aux$Distribution.VCS)] <- 
+  "AF native but not in Brazil"
+
+## Flagging species according to their habit
+hab$habito <- traits1$habito
+hab$habito[hab$habito %in% c("1","1?")] = "tree"  
+hab$habito[hab$habito %in% c("0.5","0.5?")] = "shrub"  
+hab$habito[hab$habito %in% c("0")] = "non_tree"  
+table(hab$habito, useNA = "always")
+
+## Flagging species according to their growth form
+#1 Tree - size unknown Tree (any size); 2 Tree - large Large tree (>15 m); 3 Tree - small Small tree (1-15 m)
+#4 Shrub - size unknown; 5 Shrub (>1m); 6 Shrub - small (<1m)
+#16 Succulent - form unknown; 18 Succulent - shrub (generally <1 m); 19 Succulent - tree (generally >1 m); #20 Fern
+hab$life.form <- traits1$life.form
+hab$life.form[hab$life.form %in% "palm" & !is.na(aux$Growth.habits)] <- 
+  aux$Growth.habits[hab$life.form %in% "palm" & !is.na(aux$Growth.habits)]
+hab$life.form[hab$life.form %in% "succulent_tree" & !is.na(aux$Growth.habits) 
+              & grepl("Succulent", aux$Growth.habits)] <- 
+  aux$Growth.habits[hab$life.form %in% "succulent_tree" & !is.na(aux$Growth.habits) 
+                    & grepl("Succulent", aux$Growth.habits)]
+hab$life.form[hab$life.form %in% "succulent_tree"] <- "Succulent tree"
+hab$life.form[hab$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & 
+                grepl("^Tree$", aux$Growth.habits)] <- "Woody tree (Tree)"
+hab$life.form[hab$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & 
+                grepl("^Shrub or treelet$", aux$Growth.habits)] <- "Woody tree (Shrub or treelet)"
+hab$life.form[hab$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & 
+                grepl("^Tree or shrub$", aux$Growth.habits)] <- "Woody tree (Tree or shrub)"
+hab$life.form[hab$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & 
+                grepl("^Hemiepiphytic", aux$Growth.habits)] <- "Woody tree (Hemiepiphytic)"
+hab$life.form[hab$life.form %in% "woody_tree" & !is.na(aux$Growth.habits) & 
+                grepl("^Lianescent", aux$Growth.habits)] <- "Woody tree (Lianescent)"
+hab$life.form[hab$life.form %in% "woody_vines_and_subshrubs"] <- "Woody tree (Lianescent)"
+hab$life.form[hab$life.form %in% "palm"] <- "Palm or palmoid"
+hab$life.form[hab$life.form %in% "palmoids"] <- "Palm or palmoid"
+hab$life.form[hab$life.form %in% "tree_fern"] <- "Tree fern"
+hab$life.form[hab$life.form %in% "woody_bamboo"] <- "Woody bamboo"
+hab$life.form[hab$life.form %in% "woody_tree" & 
+                hab$habito %in% "shrub"] <- "Woody tree (Shrub or treelet)"
+hab$life.form[hab$life.form %in% "woody_tree" & 
+                hab$habito %in% "tree"] <- "Woody tree (Tree)"
+hab$life.form[hab$life.form %in% "woody_tree" & 
+                hab$life.form.reflora %in% "Árvore"] <- "Woody tree (Tree)"
+hab$life.form[hab$life.form %in% "woody_tree" & 
+                hab$life.form.reflora %in% c("Arbusto|Subarbusto", "Subarbusto")] <- "Woody tree (Shrub or treelet)"
+hab[hab$species.correct %in% "Mimosa setosa",c("habito","life.form")] <- 
+  c("shrub", "Woody tree (Shrub or treelet)")
+table(hab$life.form, useNA = "always")
+
+## Flagging species according to their mean maximum size
+# There are different sources of potential heigt and 2 ways of summaring these info (mean and max quantile)
+# We were using at the beggining max quantile plus Ary's info for missing species
+# Now, to avoid the effect of outliers (mostly due to misidentifications), we are using the mean between both (didn't changed much)
+# Anyways, initial classifications are fine tunned using the available info of growth from from the BFO
+# hab$MaxHeight <- round(traits1$MaxHeight_m, 1)
+# hab$MaxHeight <- round(traits1$MeanMaxHeight_m, 1)
+hab$MaxHeight <- round(apply(traits1[,c("MeanMaxHeight_m","MaxHeight_m")], 1, mean, na.rm = T), 1)
+hab$MaxHeight[is.na(hab$MaxHeight)] <- 
+  as.double(aux$Potential.height[is.na(hab$MaxHeight)])
+
+#some final generalizations
+small.shrubs = c("Athenaea","Capsicum","Piper","Eumachia","Chiococca","Stachytarpheta","Schweiggeria")
+hab$MaxHeight[grepl(paste(small.shrubs,collapse="|"),hab$Name_submitted) & is.na(hab$MaxHeight)] = 3
+taller.shrubs = c("Erythroxylum","Chamaecrista","Faramea","Palicourea","Psychotria","Conchocarpus","Strychnos","Cybianthus","Chomelia")
+hab$MaxHeight[grepl(paste(taller.shrubs,collapse="|"),hab$Name_submitted) & is.na(hab$MaxHeight)] = 4
+table(is.na(hab$MaxHeight), useNA = "always")
+# hab[hab$habito %in% "shrub" & !is.na(hab$MaxHeight) & hab$MaxHeight >15,]
+# hab[hab$habito %in% "tree" & !is.na(hab$MaxHeight) & hab$MaxHeight <5,]
+
+## Classifying species into the growth form classifications
+# based on available info on growth form and potential adult height
+hab$GF <- findInterval(hab$MaxHeight, c(0,5,15))
+hab$GF[hab$GF %in% 1 & !is.na(aux$Potential.height) & aux$Potential.height >8] <- 2
+hab$GF[hab$GF %in% 2 & hab$life.form %in% "Woody tree (Shrub or treelet)" & !is.na(aux$Potential.height) & aux$Potential.height <5] <- 1
+hab$GF[hab$GF %in% 2 & hab$habito %in% "shrub"  & !is.na(aux$Potential.height) & aux$Potential.height <5] <- 1
+hab$GF[hab$GF %in% 3 & hab$life.form %in% "Woody tree (Shrub or treelet)" & !is.na(aux$Potential.height) & aux$Potential.height <5] <- 2
+hab$GF[hab$GF %in% 3 & hab$habito %in% "shrub"] <- 2
+hab$GF[is.na(hab$GF) & hab$habito %in% "shrub" & hab$life.form  %in% "Woody tree (Shrub or treelet)" & 
+         hab$life.form.reflora %in% c("Arbusto","Arbusto|Subarbusto","Arbusto|Erva|Subarbusto","Erva|Subarbusto","Subarbusto")] <- 1
+hab$GF[is.na(hab$GF) & hab$life.form.reflora %in% c("Arbusto","Subarbusto") & hab$life.form  %in% "Woody tree (Shrub or treelet)"] <- 1
+hab$GF[is.na(hab$GF) & hab$life.form  %in% "Woody tree (Tree)" & 
+         hab$life.form.reflora %in% c("Arbusto", "Arbusto|Árvore|Liana/volúvel/trepadeira")] <- 2
+hab$GF[is.na(hab$GF) & hab$life.form  %in% "Woody tree (Shrub or treelet)" & 
+         grepl("Árvore", hab$life.form.reflora)] <- 2
+hab$GF[is.na(hab$GF) & hab$life.form  %in% "Woody tree (Shrub or treelet)" & 
+         grepl("Arbusto", hab$life.form.reflora)] <- 1
+hab$GF[is.na(hab$GF) & hab$life.form  %in% c("Woody tree (Shrub or treelet)", "Palm or palmoid", "Woody tree (Lianescent)") & 
+         hab$habito %in% "shrub"] <- 1
+hab$GF[is.na(hab$GF) & hab$life.form  %in% "Tree fern" & 
+         hab$habito %in% "tree"] <- 2
+hab$GF[is.na(hab$GF) & (hab$life.form  %in% "Woody tree (Tree)" | 
+                          grepl("Árvore", hab$life.form.reflora))] <- 4
+hab$GF <- stringr::str_replace_all(hab$GF, c("1" = "large_shrub", 
+                                             "2" = "small_tree", 
+                                             "3" = "large_tree", 
+                                             "4" = "tree_unknown"))
+# hab$GF[is.na(hab$GF)] <- "unknown"
+table(hab$GF, useNA = "always")
+
+## Wood density
+hab$wsg <- traits1$wsg_gcm3
+#Some generalizations for missing data
+hab$wsg[hab$family %in% "Berberidaceae"] = 0.593 # value from DRYAD for Berberis jobii
+hab$wsg[hab$family %in% "Gentianaceae"] = 0.5 # value from Brown, S. for Anthocleista grandiflora
+hab$wsg[hab$family %in% "Onagraceae"] = 0.59 # value from IFMG for Ludwigia elegans
+hab$wsg[hab$family %in% "Schoepfiaceae"] = 0.757 # value from Magnago for Schoepfia brasiliensis
+hab$wsg[hab$family %in% "Trigoniaceae"] = 0.6967 # value from Magnago for Trigoniodendron_spiritusanctense
+hab$wsg[hab$genus %in% "Acanthocladus"] = 0.70 # value from Magnago for Acanthocladus pulcherrimus
+hab$wsg[hab$family %in% "Polygalaceae"] = 0.66 # family average for different references
+hab[is.na(hab$wsg),]
+
+## Flagging species according to their ecological group
+hab$ecol.group <- traits1$ecological.group
+hab$ecol.group[hab$ecol.group %in% 1.5] <- 1
+hab$ecol.group[hab$ecol.group %in% 2.5] <- 3
+hab$ecol.group[hab$ecol.group %in% 3.5] <- 4
+hab$ecol.group[is.na(hab$ecol.group) & !hab$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae","Anacardiaceae","Sapindaceae","Lauraceae","Moraceae","Myrtaceae","Symplocaceae") & 
+                 !is.na(hab$wsg) & hab$wsg < 0.4 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g < 0.1] <- 1
+hab$ecol.group[is.na(hab$ecol.group) & !hab$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                 !is.na(hab$wsg) & hab$wsg < 0.55 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g < 0.25] <- 2
+hab$ecol.group[is.na(hab$ecol.group) & !hab$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                 !is.na(hab$wsg) & hab$wsg > 0.85 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g > 1] <- 4
+hab$ecol.group[is.na(hab$ecol.group) & !hab$family.correct1 %in% c("Arecaceae","Cyatheaceae","Poaceae","Cactaceae") & 
+                 !is.na(hab$wsg) & hab$wsg > 0.7 & !is.na(traits1$SeedMass_g) & traits1$SeedMass_g > 0.75] <- 3
+hab$ecol.group <- stringr::str_replace_all(hab$ecol.group, c("1" = "pioneer", "2" = "early_secondary", "3" = "late_secondary", "4" = "climax"))
+hab$ecol.group[is.na(hab$ecol.group)] <- "unknown"
+table(hab$ecol.group, useNA = "always")
+
+## Including other traits that may be important
+table(hab$Name_submitted == traits1$Name_submitted)
+hab$SeedMass_g <- traits1$SeedMass_g
+hab$dispersal.syndrome <- traits1$dispersal.syndrome
+
+## Saving preliminar habitat data
+saveRDS(hab, "data/threat_habitats_preliminar.rds")
+
+
 #################################################H
 #### GENERATION LENGHT AND MATURE INDIVIDUALS ####
 #################################################H
-rm(list = ls())
-
 ## Reading the preliminary habitat data
 hab <- readRDS("data/threat_habitats_preliminar.rds")
 
@@ -245,13 +439,13 @@ combo[,2] <- gsub('[0-9:]\\.',"", combo[,2])
 #Generation lengths
 combo$GL <- c(
   # 10, 20, 25, 35, 25, # for shrubs; first values
-  7.5, 15, 25, 35, 25, # for shrubs; new values
+  7, 15, 25, 35, 20, # for shrubs; new values
   # 20, 40, 50, 65, 45, # for small trees; first values
   15, 30, 50, 65, 40, # for small trees; new values
   # 30, 50, 65, 80, 60, # for large trees; first values
-  25, 40, 65, 80, 55, # for large trees; new values
+  20, 40, 65, 80, 55, # for large trees; new values
   # 25, 45, 50, 60, 50) # for trees unknown; first values
-  20, 35, 55, 60, 50) # for trees unknown; new values
+  18, 35, 55, 60, 45) # for trees unknown; new values
 #Diameter at onset of maturity
 combo$DBH <- c(5, 5, 5, 5, 5, # for shrubs
                #6, 7, 8, 9, 7.5, # for small trees
@@ -282,4 +476,5 @@ p.est <- read.csv("data/prop_mature.csv", as.is = TRUE)
 hab1 <- dplyr::left_join(hab1, p.est[,c("species.correct","N","dbh.crit","p")], 
                          by= "species.correct") 
 ## Saving preliminar habitat data
-saveRDS(hab1, "data/threat_habitats_preliminar1.rds")
+saveRDS(hab1, "data/threat_habitats.rds")
+rm(list=ls())

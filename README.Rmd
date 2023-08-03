@@ -330,12 +330,12 @@ cat(tabl) # output the table in a format good for HTML/PDF/docx conversion
 This repository is structured as follows:
 
 - [`R/`](https://github.com/LimaRAF/THREAT/tree/master/R/):
-contains the R scripts to run each step of the workflow and some accessory
-functions developed especially for it. The scripts are numbered in the order
+contains the R scripts to execute the workflow and the accessory
+functions necessary to run each script. Scripts are numbered in the order
 that they should be executed.
 
 - [`data/`](https://github.com/LimaRAF/THREAT/tree/master/data):
-contains raw, accessory or derived/edited data needed for running the codes. 
+contains raw, accessory or derived data needed for running the codes. 
 
 - [`figures/`](https://github.com/LimaRAF/THREAT/tree/master/figures):
 contains all the figures created during the workflow.
