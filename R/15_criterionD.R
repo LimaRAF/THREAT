@@ -2,17 +2,23 @@
 #### ASSESSING VERY SMALL POPULATIONS - CRITERIA D ####
 #######################################################
 rm(list=ls())
+gc()
 
 #### LOADING PACKAGES ###
-#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
-#devtools::install_github("gdauby/ConR@devel") # new version on GitHub
-# detach("package:ConR", unload=TRUE)
-# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
-#  repos = NULL, 
-#  type = "source")
-library("ConR")
-library("red")
-library("circlize")
+require(ConR)
+require(red)
+require(circlize)
+require(bbmle)
+require(car)
+require(r2glmm)
+require(piecewiseSEM)
+require(lmerTest)
+require(ggplot2)
+require(jtools)
+require(ggstance)
+require(broom)
+require(broom.mixed)
+require(merTools)
 
 #### LOADING THREAT POPULATION SIZE DATA (TREECO) ###
 #Already with pop. sizes estimated for all necessary years
@@ -34,8 +40,8 @@ for(x in 1:length(res.means)) {
 }
 
 #### LOADING THREAT HABITAT AND ECOLOGY DATA ####
-## Includes species info on Generation Length and Proportion of matrue individuals
-hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
+## Includes species info on Generation Length and Proportion of mature individuals
+hab <- readRDS("data/threat_habitats.rds")
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
 PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
@@ -61,19 +67,28 @@ table(mean.pop.sizes$species == PopData$species)
 PopData$timber <- !is.na(PopData$times.cites)
 PopData$timber <- ifelse(PopData$timber == FALSE, 0, 10)
 PopData$timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
-PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10
-PopData$timber[PopData$species %in% "Dicksonia sellowiana"] <- 10
+PopData$timber[PopData$species %in% "Euterpe edulis"] <- 10 # non-timber heavily exploited species
+PopData$timber[PopData$species %in% "Dicksonia sellowiana"] <- 10 # non-timber heavily exploited species
 PopData$timber <- as.numeric(PopData$timber)
 
 #### GETTING THREAT ECOLOGICAL GROUP INFORMATION  ####
 hab1 <- hab[match(PopData$species, hab$Name_submitted), ]
 table(hab1$Name_submitted == PopData$species)
+
+
+## Taking into account habitat change in the population decline of early-successional species
 early.sucession <- hab1$ecol.group
-early.sucession[hab1$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
 early.sucession[early.sucession %in% c("late_secondary", "climax", "unknown")] <- 1L
 early.sucession[early.sucession %in% c("early_secondary")] <- 0.9
 early.sucession[early.sucession %in% c("pioneer")] <- 0.8
 early.sucession <- as.numeric(early.sucession)
+
+## Taking into account non-forested habitats for "ruderal" small-statured pioneers
+ruderals <- grepl("Antr", hab1$vegetation.type.reflora) & 
+  hab1$GF %in% c("large_shrub", "small_tree") &
+  hab1$ecol.group %in% "pioneer"
+early.sucession[ruderals] <- 0.5
+
 
 #########################################################################################################################################################H
 #########################################################################################################################################################H
@@ -114,9 +129,6 @@ df <- data.frame(species = mean.pop.sizes$species,
 df$p1 <- df$p - (df$p * df$exploitation/100) 
 df1 <- merge(df, spp1, by.x = "species", by.y = "species.correct2",
              all.x = TRUE, sort = FALSE)
-
-
-## Should we apply the corrections to early-successional species here as well?
 
 ### ASSESSMENTS ###
 #Optimal params
@@ -214,8 +226,8 @@ legend("bottomright", c("Group-specific", "Fixed values"),
 dev.off()
 
 
-#########################################################################################################################################################H
-#########################################################################################################################################################H
+##############################################################################H
+##############################################################################H
 #### COMPARING POP SIZE AND SPECIES DISTRIBUTION ####
 #####################################################
 
@@ -225,17 +237,17 @@ df1$mature.pop.size.exploited <- df1$pop.size * df1$p1
 df1 <- merge(df1, PopData[,c("species","life.form","dispersal.syndrome","SeedMass_g","habito")],
              by = "species", all.x = TRUE, sort= FALSE)
 #Taxonomic information
-taxonomy <- read.csv("data/sis_connect/taxonomy_threat.csv", as.is = TRUE)
-taxonomy$species <- paste(taxonomy$genus, taxonomy$species)
+taxonomy <- readRDS("data/threat_full.taxonomy.rds")
+taxonomy$species <- taxonomy$species.correct2
 df1 <- merge(df1, taxonomy[,c("species","classname","ordername")],
              by = "species", all.x = TRUE, sort= FALSE)
-df1$taxonomy <- df1$classname
-df1$taxonomy[df1$taxonomy %in% "Magnoliopsida"] <-
-  df1$ordername[df1$taxonomy %in% "Magnoliopsida"]
+df1$taxonomy <- df1$ordername
 df1$taxonomy[grepl("palm",df1$life.form)] <- "Palms"
 df1$taxonomy[grepl("ucculent",df1$life.form)] <- "Cactus"
+df1$taxonomy[grepl("Cyatheales|Polypodiales",df1$taxonomy)] <- "Ferns"
+
 #Species endemism
-end <- readRDS("data/sis_connect/endemism_threat.rds")
+end <- readRDS("data/threat_endemism.rds")
 end$endemic[end$endemic %in% "not in the AF"] <- "occasional"
 end$endemic[end$endemic %in% "not_endemic"] <- "widespread_sparse"
 end <- end[!duplicated(end$species),]
@@ -245,38 +257,40 @@ df1 <- merge(df1, end[,c("species","endemism.level.1","endemism.level.2","endemi
 ## Exploring patterns
 par(mfrow = c(2,2))
 par(mar=c(4,4,0.75,0.5), mgp=c(2.5,0.25,0),tcl=-0.2,las=1)
-plot(log(mature.pop.size) ~ log(treeco.occs), data = df1, col = (df1$endemic %in% "endemic")+1) # as expected, since one was generated from the other
-abline(lm(log(mature.pop.size) ~ log(treeco.occs), data = df1), lwd=2,col=2)
+plot(log(mature.pop.size) ~ log(treeco.occs), data = df1[!is.na(df1$treeco.occs),], col = (df1$endemic[!is.na(df1$treeco.occs)] %in% "endemic")+1) # as expected, since one was generated from the other
+abline(lm(log(mature.pop.size) ~ log(treeco.occs), data = df1[!is.na(df1$treeco.occs),]), lwd=2,col=2)
 plot(log(mature.pop.size) ~ log(non.dup.occs), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1), lwd=2,col=2)
-plot(log(mature.pop.size) ~ EOO.level.1, data = df1, col = (df1$endemic %in% "endemic")+1)
-abline(lm(log(mature.pop.size) ~ EOO.level.1, data = df1), lwd=2,col=2)
+plot(log(mature.pop.size) ~ EOO.level.1, data = df1[!is.na(df1$EOO.level.1),], col = (df1$endemic[!is.na(df1$EOO.level.1)] %in% "endemic")+1)
+abline(lm(log(mature.pop.size) ~ EOO.level.1, data = df1[!is.na(df1$EOO.level.1),]), lwd=2,col=2)
 plot(log(mature.pop.size) ~ log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
 abline(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1), lwd=2,col=2)
 
 #Number of occurences, non-duplicated occurrences, n.localities, EOO or AOO? AOO!
-pairs(log(mature.pop.size) ~ EOO.level.1 + log(AOO.level.1), data = df1, col = (df1$endemic %in% "endemic")+1)
-bbmle::AICtab(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1),
-              lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1),
-              lm(log(mature.pop.size) ~ log(total.occs), data = df1),
-              lm(log(mature.pop.size) ~ log(Loc.level1), data = df1),
-              lm(log(mature.pop.size) ~ log(EOO.level.1), data = df1),
-              lm(log(mature.pop.size) ~ log(AOO.level.1) + log(EOO.level.1), data = df1),
-              lm(log(mature.pop.size) ~ log(AOO.level.1) * log(EOO.level.1), data = df1),
-              lm(log(mature.pop.size) ~ log(Loc.level1) * log(EOO.level.1), data = df1),
-              lm(log(mature.pop.size) ~ log(non.dup.occs) * log(EOO.level.1), data = df1))
+pairs(log(mature.pop.size) ~ EOO.level.1 + log(AOO.level.1), 
+      data = df1, col = (df1$endemic %in% "endemic")+1)
+rm.ids <- !is.na(df1$EOO.level.1)
+bbmle::AICtab(lm(log(mature.pop.size) ~ log(AOO.level.1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(non.dup.occs), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(total.occs), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(Loc.level1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(EOO.level.1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(AOO.level.1) + log(EOO.level.1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(AOO.level.1) * log(EOO.level.1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(Loc.level1) * log(EOO.level.1), data = df1[rm.ids,]),
+              lm(log(mature.pop.size) ~ log(non.dup.occs) * log(EOO.level.1), data = df1[rm.ids,]))
 
 df2 <- na.omit(df1[,c("mature.pop.size","EOO.level.1","AOO.level.1","taxonomy","habito","endemic")])
 mod <- lm(log(mature.pop.size) ~ log(EOO.level.1) * 
             log(AOO.level.1), data = df2)
-options(na.action = "na.fail")
-dd <- MuMIn::dredge(mod, rank = "AIC")
-subset(dd, delta < 4)
-options(na.action = "na.omit")
+# options(na.action = "na.fail")
+#dd <- MuMIn::dredge(mod, rank = "AIC")
+# subset(dd, delta < 4)
+# options(na.action = "na.omit")
 car::Anova(mod)
 car::avPlots(mod)
-car::vif(mod) ## vif very high for the interaction
-car::vif(lm(log(mature.pop.size) ~ log(EOO.level.1) + log(AOO.level.1), data = df1)) #ok
+# car::vif(mod) ## vif very high for the interaction
+# car::vif(lm(log(mature.pop.size) ~ log(EOO.level.1) + log(AOO.level.1), data = df1)) #ok
 
 ## Taking into account unequal variance and random effects
 
@@ -318,7 +332,7 @@ mod.mix3 <- nlme::lme(PopSize ~ EOO + #Gen. Least Squares
 mod.mix4 <- nlme::lme(PopSize ~ EOO + #Gen. Least Squares 
                         AOO + habito, random = list(~1|taxonomy, ~1|endemic), data = df2, weights = nlme::varFixed(~AOO))
 mod.mix5 <- nlme::lme(PopSize ~ EOO + #Gen. Least Squares 
-                        AOO + habito, random = (~AOO|endemic), data = df2, weights = nlme::varFixed(~AOO))
+                         AOO + habito, random = (~AOO|endemic), data = df2, weights = nlme::varFixed(~AOO))
 mod.gls.fix2 <- nlme::gls(PopSize ~ AOO + endemic +
                             habito, data = df2, weights = nlme::varPower())
 mod.gls.fix3 <- nlme::gls(PopSize ~ AOO * endemic +
@@ -354,11 +368,7 @@ piecewiseSEM::rsquared(mod.mix7)$Conditional
 lmerTest::ranova(mod.mix7)
 
 ## Inspectingthe results of the regression using jtools
-require(ggplot2)
-require(jtools)
-require(ggstance)
-require(broom)
-require(broom.mixed)
+
 #Tidy summary
 jtools::summ(mod.mix7, confint = TRUE, vifs = TRUE,
              scale= FALSE, digits = 2, data = df2)
@@ -429,11 +439,10 @@ df3 <- merge(df3, hab[,c("Name_submitted","life.form","dispersal.syndrome","Seed
              by.x = "species", by.y = "Name_submitted", all.x = TRUE, sort= FALSE)
 df3 <- merge(df3, end[,c("species","endemic")],
              by = "species", all.x = TRUE, sort= FALSE)
-df3$taxonomy <- df3$classname
-df3$taxonomy[df3$taxonomy %in% "Magnoliopsida"] <-
-  df3$ordername[df3$taxonomy %in% "Magnoliopsida"]
+df3$taxonomy <- df3$ordername
 df3$taxonomy[grepl("palm",df3$life.form)] <- "Palms"
 df3$taxonomy[grepl("ucculent",df3$life.form)] <- "Cactus"
+df3$taxonomy[grepl("Cyatheales|Polypodiales",df3$taxonomy)] <- "Ferns"
 
 ##Getting the predictions
 new.dat <- na.omit(df3[,c("species","EOO.level.1","AOO.level.1","habito","endemic","taxonomy")])
@@ -508,8 +517,8 @@ plot(pg[[1]][[1]][df2$habito %in% "tree",1:2],
 points(pg[[1]][[1]][df2$habito %in% "shrub",1:2],  
        col = adjustcolor("blue", alpha.f = 0.4), pch = 15)
 lines(pg[[1]][[2]][,1:2], col=1, lwd = 2)
-lines(pg[[1]][[3]][,c(1,3)], col=1, lwd = 1, lty = 3)
-lines(pg[[1]][[3]][,c(1,4)], col=1, lwd = 1, lty = 3)
+lines(pg[[1]][[3]][,c(3,2)], col=1, lwd = 1, lty = 3)
+lines(pg[[1]][[3]][,c(3,1)], col=1, lwd = 1, lty = 3)
 #abline(v=log(4), lty=3) 
 abline(h=log(1000), lty=3) 
 legend("topleft", c("Trees", "Shrubs"), 
@@ -529,8 +538,8 @@ plot(pg[[1]][[1]][df2$habito %in% "tree",1:2],
 points(pg[[1]][[1]][df2$habito %in% "shrub",1:2],  
        col = adjustcolor("blue", alpha.f = 0.4), pch = 15)
 lines(pg[[1]][[2]][,1:2], col=1, lwd = 2)
-lines(pg[[1]][[3]][,c(1,3)], col=1, lwd = 1, lty = 3)
-lines(pg[[1]][[3]][,c(1,4)], col=1, lwd = 1, lty = 3)
+lines(pg[[1]][[3]][,c(3,2)], col=1, lwd = 1, lty = 3)
+lines(pg[[1]][[3]][,c(3,1)], col=1, lwd = 1, lty = 3)
 abline(h=log(1000), lty=3) 
 #abline(v=log(4), lty=3)
 legend("bottomleft", c("Trees", "Shrubs"), 

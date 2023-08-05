@@ -477,4 +477,320 @@ hab1 <- dplyr::left_join(hab1, p.est[,c("species.correct","N","dbh.crit","p")],
                          by= "species.correct") 
 ## Saving preliminar habitat data
 saveRDS(hab1, "data/threat_habitats.rds")
+
+
+########################H
+#### ENDEMISM LEVELS ####
+########################H
+
+## Reading species endemism levels in respect to the AF (from the SOM of Lima et al. 2020 Biological Conservation 252: 108825)
+af.list <- read.csv("data/AppendixC_af_checklist.csv", as.is=TRUE)
+end <- read.csv("data/AppendixF_endemism_levels.csv", as.is=TRUE)
+
+## Reading probable occurrences of tree species in the AF (from the same source as above)
+end.prob <- read.csv("data/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
+
+## Species endemism levels in respect to the AF from 
+end1 <- end[,c(1,2,7,9,11)]
+
+## Getting species statuses from the AF checklist
+af.list$scientific.name <- gsub("M\xfcll", "Müll", af.list$scientific.name, fixed = TRUE)
+af.list1 <- plantR::fixSpecies(af.list, tax.name = "scientific.name")
+fix.spp <- af.list1[!af.list1$scientificNameStatus %in% "name_w_authors", "scientificName.new"]
+af.list1$scientificName.new[!af.list1$scientificNameStatus %in% "name_w_authors"] <-
+  as.character(sapply(strsplit(fix.spp, " "), function(x) paste(x[1], x[2])))
+names(af.list1)[9] <- "species"
+end1 <- dplyr::left_join(end1, 
+                         af.list1[ ,c("family", "species", "status")])
+
+## Replacing the synonym
+syn.br <- read.csv("data/new_synonyms_floraBR.csv", 
+                   na.strings = c(""," ",NA), as.is = TRUE)
+syn.br <- syn.br[syn.br$status %in% c("replace", "invert"), ]
+for (i in 1:dim(syn.br)[1]) {
+  
+  sp.i <- syn.br$original.search[i]
+  rpl.i <- syn.br$search.str[i]
+  st.i <- syn.br$status[i]
+  
+  if (st.i == "replace") {
+    end1$species[end1$species %in% sp.i] <- rpl.i
+  }
+}
+
+##Getting mean endemism for new synonyms
+tmp <- aggregate(cbind(endemism.level..validated.taxonomy.only., 
+                       endemism.level..validated.and.probably.validated.taxonomy.) ~ 
+                   family + species, FUN = mean, data=end1)
+tmp1 <- aggregate(endemism.accepted.by.the.BF.2020 ~ family + species, 
+                  FUN = function(x) paste(unique(x), collapse = "|"), data=end1)
+tmp2 <- aggregate(status ~ family + species, 
+                  FUN = function(x) paste(unique(x), collapse = "|"), data=end1)
+tmp2$status[grepl("confirmed", tmp2$status)] <- "confirmed"
+tmp2$status[grepl("new to AF", tmp2$status)] <- "new to AF"
+tmp1 <- dplyr::left_join(tmp1, tmp2)
+end1 <- dplyr::left_join(tmp, tmp1)
+
+fbo <- readRDS("data/threat_fbo_tax_info.rds")[,c("species.correct2","phytogeographicDomain","endemism")]
+names(fbo)[1] <- "species"
+fbo$endemism <- stringr::str_to_title(fbo$endemism)
+fbo <- fbo[!is.na(duplicated(fbo$species)),]
+end1 <- dplyr::left_join(end1, fbo)
+end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
+                                        !grepl("Mata Atlântica", end1$phytogeographicDomain)] <- "Not in the AF"
+end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
+                                        end1$phytogeographicDomain %in% "Mata Atlântica" &
+                                        end1$endemism %in% "Endemic"] <- "Endemic"
+end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
+                                        grepl("Mata Atlântica", end1$phytogeographicDomain) &
+                                        !end1$phytogeographicDomain %in% "Mata Atlântica"] <- "Not endemic"
+end1$endemism.accepted.by.the.BF.2020[end1$species %in% "Myrcia glomerata"] <- "Not endemic"
+
+
+##Classification
+end1$endemic <- NA
+end1$endemic[end1$endemism.level..validated.taxonomy.only. >= 85 & end1$endemism.level..validated.and.probably.validated.taxonomy. >= 85 & 
+               !end1$endemism.accepted.by.the.BF.2020 %in% "Not in the AF"] <- "endemic"
+end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 50 & end1$endemism.level..validated.and.probably.validated.taxonomy. >= 50 &
+               end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "endemic"
+end1$endemic[end1$endemism.level..validated.taxonomy.only. < 15 & end1$endemism.level..validated.and.probably.validated.taxonomy. < 15 &
+               !end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "occasional"
+end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 50 & 
+               end1$endemism.level..validated.and.probably.validated.taxonomy. >= 50] <- "widespread_common"
+end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 15 & 
+               end1$endemism.level..validated.and.probably.validated.taxonomy. >= 15] <- "widespread_sparse"
+end1$endemic[is.na(end1$endemic) & 
+               end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_common"
+end1$endemic[is.na(end1$endemic) & 
+               !end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_sparse"
+table(end1$endemic, useNA = "always")
+
+#Probable occurrences
+#end.prob$species  <- sapply(end.prob$scientific.name, flora::remove.authors)
+end.prob$species  <- sapply(end.prob$scientific.name, function(x) paste(strsplit(x, " ")[[1]][1:2], collapse = " "))
+end.prob1 <- end.prob[end.prob$status %in% "no records found but cited in BF.2020",]
+end.prob1 <- end.prob1[!end.prob1$species %in% end1$species,]
+
+tmp <- flora::get.taxa(end.prob1$species)
+tmp1 <- flora::get_domains(tmp)
+tmp2 <- flora::get_endemism(tmp)
+end.prob1$domain <- tmp1$domain 
+end.prob1$end.br <- tmp2$endemism 
+end.prob1$endemic <- NA
+end.prob1$endemic[end.prob1$domain %in% "Mata Atlântica" & 
+                    end.prob1$end.br %in%  "Endemica"] <- "endemic"
+end.prob1$endemic[is.na(end.prob1$endemic) & grepl("Mata Atlântica", end.prob1$domain)] <- 
+  "not_endemic"
+end.prob1$endemic[is.na(end.prob1$endemic) & !grepl("Mata Atlântica", end.prob1$domain)] <- 
+  "not in the AF"
+table(end.prob1$endemic, useNA = "always")
+
+#Merging the two data.frames
+end2 <- end1[,c("family","species",
+                "endemism.level..validated.and.probably.validated.taxonomy.",
+                "endemism.level..validated.taxonomy.only.",
+                "endemic",
+                "status")]
+names(end2)[3:4] <- c("endemism.level.1","endemism.level.2") 
+
+end.prob1$endemism.level.1 <- NA
+end.prob1$endemism.level.2 <- NA
+end.prob2 <- end.prob1[,c("family","species",
+                          "endemism.level.1",
+                          "endemism.level.2",
+                          "endemic", "status")]
+end.final <- rbind.data.frame(end2, end.prob2,
+                              stringsAsFactors = FALSE)
+end.final <- end.final[order(end.final$species),]
+
+##Getting the endemism in Brazil (no CNCFlora 'jurisidction')
+fbo.info <- readRDS("data/threat_fbo_tax_info.rds")
+
+names(fbo.info)[which(names(fbo.info) == "species.correct2")] <- "species" 
+tmp0 <- dplyr::left_join(end.final, fbo.info, by = "species")
+tmp <- flora::get.taxa(end.final$species)
+tmp1 <- flora::get_endemism(tmp)
+tmp0$endemism[is.na(tmp0$endemism)] <- 
+  tmp1$endemism[is.na(tmp0$endemism)]
+table(tmp0$species == end.final$species)
+end.final$endemic.BR <- tmp0$endemism 
+end.final$endemic.BR[end.final$endemic.BR %in% "Endemica"] <- 
+  "endemic"
+end.final$endemic.BR[end.final$endemic.BR %in% "Não endemica"] <- 
+  "not_endemic"
+end.final$endemic.BR[end.final$endemic.BR %in% "not endemic"] <- 
+  "not_endemic"
+
+## Getting the endemism from other AF countries
+# end.final1 <- dplyr::left_join(end.final, 
+#                                all.crit[,c("species", "endemism.ARG")])
+
+## Saving
+saveRDS(end.final, "data/threat_endemism.rds")
+
+
+
+
+###################H
+#### CITES LIST ####
+###################H
+
+
+# ## Paralelizing to get all 166 CITES pages faster
+# cl <- snow::makeSOCKcluster(6)
+# doSNOW::registerDoSNOW(cl)
+# `%d%` <- foreach::`%dopar%`
+# x <- NULL
+# cites0 <- foreach::foreach(
+#   x = 1:166,
+#   #.combine = 'c',
+#   .options.snow = NULL
+# ) %d% {
+#   try(rcites::spp_taxonconcept(query_taxon = '', pages = x, 
+#                                token = "r5BFEg69iKmfx8OCqm3tIgtt"), TRUE)
+# }
+# snow::stopCluster(cl)
+# # for(i in 1:6) {
+# #   ele.i <- c(161:166)[i]
+# #   cites[[ele.i]] <- cites0[[i]]
+# # }
+# 
+# ## Binding all pages together
+# cites1 <- vector("list", 7)
+# names(cites1) <- c("all_id", "general", "higher_taxa", "accepted_names", 
+#                    "common_names", "synonyms", "cites_listings")
+# for(i in 1:7) {
+#   cites1.i <- lapply(cites, function(x) x[[i]])
+#   non.empty <- sapply(cites1.i, function(x) dim(x)[1] >0 ) 
+#   cites1[[i]] <- as.data.frame(dplyr::bind_rows(cites1.i[non.empty]))
+#   cat(i, "\n")
+# }
+# saveRDS(cites1, "data/cites_data.rds") # DONE IN 07/05/2021
+cites1 <- readRDS("data/cites_data.rds")
+
+# Getting the best names for homonyms
+tax.cites <- cites1$all_id
+dups <- (duplicated(tax.cites$full_name) |  
+           duplicated(tax.cites$full_name, fromLast = TRUE))
+dup.spp <- unique(tax.cites$full_name[dups])
+tax.cites$remove <- TRUE
+for (i in 1:length(dup.spp)) {
+  sp.i <- dup.spp[i]
+  check_ids <- tax.cites$full_name %in% sp.i
+  taxon1.i <- tax.cites[check_ids,]
+  tax.cites$remove[check_ids] <- 
+    ifelse(taxon1.i$active %in% TRUE, TRUE, FALSE)
+  check_ids1 <- tax.cites$full_name %in% sp.i & tax.cites$remove
+  taxon2.i <- tax.cites[check_ids1,]
+  if (length(unique(taxon2.i$name_status)) > 1) 
+    tax.cites$remove[check_ids1] <-
+    ifelse(taxon2.i$name_status %in% "A", TRUE, FALSE)
+}
+tax.cites <- tax.cites[tax.cites$remove,]
+
+
+## Crossing with THREAT species
+tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 2, 3)]
+
+tax$genus <- gsub(" .*", "", tax$species.correct2)
+tax <- as.data.frame(tax)
+#Species level
+ids_spp <- merge(tax, tax.cites, by.y = "full_name",
+                 by.x = "species.correct2", all.x = TRUE, sort = FALSE)
+ids_spp <- ids_spp[order(ids_spp$species.correct2),]
+
+#Genus level
+ids_gen <- merge(tax, tax.cites, by.y = "full_name",
+                 by.x = "genus", all.x = TRUE, sort = FALSE)
+ids_gen <- ids_gen[match(ids_spp$species.correct2, ids_gen$species.correct2),]
+table(ids_spp$species.correct2 == ids_gen$species.correct2)
+ids <- is.na(ids_spp$id) & !is.na(ids_gen$id)
+cols <- c("id", "rank", "name_status", "updated_at", "active", "author_year")
+ids_spp[ids,  cols] <- ids_gen[ids, cols]
+
+#family level
+ids_fam <- merge(tax, cites1$all_id, by.y = "full_name",
+                 by.x = "family.correct1", all.x = TRUE, sort = FALSE)
+ids_fam <- ids_fam[match(ids_spp$species.correct2, ids_fam$species.correct2),]
+table(ids_spp$species.correct2 == ids_fam$species.correct2)
+ids <- is.na(ids_spp$id) & !is.na(ids_fam$id)
+ids_spp[ids, cols] <- ids_fam[ids, cols]
+ids_spp <- ids_spp[ , -(which(names(ids_spp) == "remove"))]
+
+
+## Getting valid CITES IDs for synonyms
+syn.cites <- cites1$synonyms
+syn.cites1 <- syn.cites[syn.cites$id...2 %in% 
+                          ids_spp$id[ids_spp$name_status %in% "S"],]
+ids_spp$id[match(syn.cites1$id...2, ids_spp$id)] <- 
+  syn.cites1$id...1
+
+## General table
+gen.cites <- cites1$general
+cites_spp <- dplyr::left_join(ids_spp, 
+                              gen.cites[,c("id", "full_name", "cites_listing")],
+                              by = "id")
+## CITES annotations
+list.cites <- cites1$cites_listings
+all_cites_spp <- dplyr::left_join(cites_spp, list.cites, by = "id")
+all_cites_spp$hash_annotation[all_cites_spp$hash_annotation %in% c("NA", NA)] <- 
+  NA_character_
+all_cites_spp$code_annotation <- 
+  substr(all_cites_spp$hash_annotation, start = 1, stop = 3)
+all_cites_spp$code_annotation <- gsub("A$|L$", "", all_cites_spp$code_annotation, perl = TRUE)
+all_cites_spp$hash_annotation <- 
+  gsub("^#10|^#15|^#4|^#5|^#6", "", all_cites_spp$hash_annotation, perl = TRUE)
+# all_cites_spp$hash_annotation <- 
+#   stringr::str_squish(gsub("\\\n|\\\r", " ", all_cites_spp$hash_annotation))
+all_cites_spp$hash_annotation <- 
+  gsub("\\s+", " ", gsub("\\\n|\\\r", " ", all_cites_spp$hash_annotation, perl = TRUE), perl = TRUE)
+all_cites_spp$hash_annotation <- 
+  gsub("^ | $", "", all_cites_spp$hash_annotation, perl = TRUE)
+
+## EU legislation
+# taxon_ids <- unique(all_cites_spp$id[!is.na(all_cites_spp$id)])
+# # EU <- rcites::spp_eu_legislation(taxon_id = taxon_ids,  # website error....
+# #                            token = "izCSojTRrM62oMgkkyAAmgtt")
+# EU <- vector("list", length(taxon_ids))
+# names(EU) <- taxon_ids
+# for (i in 1:length(taxon_ids)) {
+#   EU[[i]] <- try(rcites::spp_eu_legislation(taxon_id = taxon_ids[i], 
+#                                  token = "izCSojTRrM62oMgkkyAAmgtt"), TRUE) 
+# }
+# rerun <- sapply(EU, class) %in% "try-error"
+# for (i in 1:length(taxon_ids[rerun])) {
+#   EU[rerun][[i]] <- try(rcites::spp_eu_legislation(taxon_id = taxon_ids[rerun][i], 
+#                                             token = "izCSojTRrM62oMgkkyAAmgtt"), TRUE) 
+# }
+# 
+# EU1 <- vector("list", 2)
+# names(EU1) <- c("eu_listings", "eu_decisions")
+# for(i in 1:2) {
+#   EU.i <- lapply(EU, function(x) x[[i]])
+#   non.empty <- sapply(EU.i, function(x) dim(x)[1] >0)
+#   non.empty[lengths(EU.i) <= 1] <- FALSE
+#   EU1[[i]] <- as.data.frame(dplyr::bind_rows(EU.i[unlist(non.empty)]))
+# }
+# # saveRDS(EU1, "data/EU_listings_data.rds") # DONE IN 10/05/2021
+EU1 <- readRDS("data/EU_listings_data.rds")
+
+# EU listings and decisions
+list.EU <- EU1$eu_listings
+names(list.EU)[4:5] <- paste0(names(list.EU)[4:5], ".EU")
+all_cites.EU_spp <- merge(all_cites_spp, list.EU[, c("taxon_concept_id","annex.EU","change_type.EU")],
+                          by.x = "id", by.y = "taxon_concept_id",
+                          all.x = TRUE, sort = FALSE)
+decis.EU <- EU1$eu_decisions
+decis.EU <- decis.EU[, -(which(names(decis.EU) %in% 
+                                 c("id","start_date","is_current",
+                                   "eu_decision_type.description","term.code","term.name")))]
+decis.EU1 <- aggregate(. ~ taxon_concept_id, data = na.omit(decis.EU), 
+                       function(x) paste(x, collapse = "|")) 
+all_cites.EU_spp1 <- merge(all_cites.EU_spp,  decis.EU1,
+                           by.x = "id", by.y = "taxon_concept_id",
+                           all.x = TRUE, sort = FALSE)
+## Saving 
+all_cites.EU_spp1 <- 
+  all_cites.EU_spp1[order(all_cites.EU_spp1$species.correct2),]
+saveRDS(all_cites.EU_spp1, "data/threat_cites_EU.rds")
 rm(list=ls())

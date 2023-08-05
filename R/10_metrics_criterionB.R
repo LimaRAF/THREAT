@@ -4,6 +4,7 @@
 ##########################################################
 ##########################################################
 rm(list=ls())
+gc()
 
 #### LOADING PACKAGES ###
 require(ConR)
@@ -16,10 +17,8 @@ require(parallel)
 require(doParallel)
 require(circlize)
 
-
-
 #### LOADING ACCESSORY FUNCTIONS ###
-source("./R/other_functions.R")
+source("./R/99_functions.R")
 
 #### LOADING THE NEOTROPICS MAP ###
 neotrop.simp <- readRDS("data/Contour_Neotrop_simplified_tol_005_no_small.rds")
@@ -54,8 +53,8 @@ system.time(
                             method = "convex.hull",
                             method.less.than3 = "not comp",
                             export_shp = TRUE,
-                            exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
-                            # exclude.area = FALSE, country_map = NULL, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
+                            # exclude.area = TRUE, country_map = neotrop.simp, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
+                            exclude.area = FALSE, country_map = NULL, # If 'exclude.area' is TRUE, the EEO is cropped using the shapefile defined in the argument country_map
                             write_shp = FALSE, # If TRUE, a directory named 'shapesIUCN' is created to receive all the shapefiles created for computing EOO
                             write_results=FALSE, file.name = "EOO.hull", # If TRUE, a csv fiel is created in the working directory
                             parallel = TRUE, NbeCores = 6) # run on parallel? How many cores?
@@ -95,8 +94,8 @@ plot(neotrop.simp, add=TRUE, border = "grey")
 
 #saving species EOO (convex hulls)
 shps_df_sf <- sf::st_as_sf(shps_df)
-saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_cropped.rds")
-#saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_uncropped.rds")
+#saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_cropped.rds")
+saveRDS(shps_df_sf, "data/spp.convex.hull.polys_sf_uncropped.rds")
 rm(EOO.hull, EOO, shps, shps_df, shps_df_sf); gc()
 
 ## Convex Hull method for each class of confidence level 
@@ -246,7 +245,7 @@ saveRDS(tmp1, "data/number.subpops.rds")
 
 ### FIGURE SV ###
 #Plotting the estimated radius against species mode of dispersal and seed mass
-hab <- read.csv("data/data-raw/threat_habitats.csv", as.is = TRUE)
+hab <- readRDS("data/threat_habitats.rds")
 tmp3 <- merge(radius1, radius, by="tax", all = TRUE, sort = FALSE)
 tmp3 <- tmp3[order(tmp3$tax),]
 tmp3 <- tmp3[!is.na(tmp3$radius.y),]
@@ -321,7 +320,7 @@ rm(tmp,tmp1,tmp2,radius,radius1,radius.new,radius.new1,SUB,SUB1,n.sub.pop,n.sub.
 
 ##Setting raster options
 raster::removeTmpFiles(0.5)
-raster::rasterOptions(tmpdir = "E://raster_TEMP//", 
+raster::rasterOptions(tmpdir = "D://raster_TEMP//", # save temp files in an external HD
               tmptime = 1.5, 
               #timer = TRUE,
               #tolerance = 0.5,
@@ -476,6 +475,92 @@ radius.new2$radius <- as.double(radius.new2$radius)
 ##Getting the AOO for each species
 AOO <- readRDS("data/AOO.rds")
 
+# Looping estimates of fragmentation for different fixed distances
+fator <- 1
+dist <- c(25, 50, 75, 100)
+for (w in 1:length(dist)) {
+  ##Creating the new objects for analysis
+  toto <- MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3),]
+  toto <- merge(toto, radius.new, by = "tax", all.x = TRUE, sort = FALSE)
+  toto <- merge(toto, AOO[,c("tax", "AOO.level.2")], by = "tax", all.x = TRUE, sort = FALSE)
+  toto <- toto[, c("ddlat","ddlon","tax","radius","AOO.level.2")]
+  names(toto)[5] <- "AOO"
+  
+  toto1 <- MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon), c(1:3),]
+  toto1 <- merge(toto1, radius.new1, by = "tax", all.x = TRUE, sort = FALSE)
+  toto1 <- merge(toto1, AOO[,c("tax", "AOO.level.1")], by = "tax", all.x = TRUE, sort = FALSE)
+  toto1 <- toto1[, c("ddlat","ddlon","tax","radius","AOO.level.1")]
+  names(toto1)[5] <- "AOO"
+  
+  toto2 <- MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & MyData$tax.check2, c(1:3),]
+  toto2 <- merge(toto2, radius.new2, by = "tax", all.x = TRUE, sort = FALSE)
+  toto2 <- merge(toto2, AOO[,c("tax", "AOO.level.3")], by = "tax", all.x = TRUE, sort = FALSE)
+  toto2 <- toto2[, c("ddlat","ddlon","tax","radius","AOO.level.3")]
+  names(toto2)[5] <- "AOO"
+  
+  dados <- list(toto, toto1, toto2)
+  rm(toto, toto1, toto2)
+  resultado <- vector("list", length(dados))
+  
+  dist.w <- dist[w]
+  cat(w, "\n")
+  
+  for(i in 1:length(dados)) {
+    #i=1
+    
+    ##Getting the list of species data
+    list_data <- my.coord.check(XY = dados[[i]],
+                                listing = TRUE)
+    
+    cl <- makeCluster(detectCores()-4)
+    clusterEvalQ(cl, library(sf))
+    clusterEvalQ(cl, library(raster))
+    clusterEvalQ(cl, library(ConR))
+    clusterEvalQ(cl, library(stars))
+    
+    clusterExport(cl, list("list_data", "fator", "dist.w"),
+                  envir=environment())
+    output <- parLapply(cl, 1:length(list_data), fun= function(x) {
+
+      source("./R/99_functions.R")
+      
+      res <- try(my.get.patches(
+        list_data[[x]],
+        cell_size = 2,
+        nbe_rep = 0,
+        AOO = as.double(unique(list_data[[x]]$AOO)),
+        Resol_sub_pop = as.double(unique(list_data[[x]]$radius)),
+        subpop_poly = NULL,
+        dist_isolated = dist.w,
+        proj_type = "cea",
+        export_shp = FALSE
+      ),TRUE)
+      
+      if(class(res) == "try-error") {
+        res <- NULL
+        res <- "ERRO"
+        names(res) <- unique(list_data[[x]]$tax)
+      }
+      return(res)
+    })
+    
+    stopImplicitCluster()
+    stopCluster(cl)
+    
+    output1 <- do.call("c", output)
+    df1 <- data.frame(tax = names(output1), frag = as.character(output1), stringsAsFactors = FALSE) 
+    resultado[[i]] <- df1
+  } 
+  resultados <- merge(resultado[[2]], resultado[[1]], by= "tax", all.x = TRUE, sort = FALSE)
+  resultados <- merge(resultados, resultado[[3]], by= "tax", all.x = TRUE, sort = FALSE)
+  names(resultados)[2:4] <- c("frag.level.1","frag.level.2","frag.level.3") 
+  resultados <- resultados[order(resultados$tax),]
+  
+  saveRDS(resultados, paste0("data/severe_frag_dist_", dist.w, "km.rds"))
+  rm(dados)
+}
+
+# Using the estimates radius for each species
 ##Creating the new objects for analysis
 toto <- MyData[!is.na(MyData$ddlat) & !is.na(MyData$ddlon) & grepl("high", MyData$tax.check.final), c(1:3),]
 toto <- merge(toto, radius.new, by = "tax", all.x = TRUE, sort = FALSE)
@@ -498,31 +583,25 @@ names(toto2)[5] <- "AOO"
 dados <- list(toto, toto1, toto2)
 rm(toto, toto1, toto2)
 resultado <- vector("list", length(dados))
-fator <- 1
-dist <- 100 # 25, 50, 75 and 100
 
 for(i in 1:length(dados)) {
-#i=1
-
+  #i=1
+  
   ##Getting the list of species data
   list_data <- my.coord.check(XY = dados[[i]],
-                                  listing = TRUE)
-
+                              listing = TRUE)
+  
   cl <- makeCluster(detectCores()-4)
   clusterEvalQ(cl, library(sf))
   clusterEvalQ(cl, library(raster))
   clusterEvalQ(cl, library(ConR))
   clusterEvalQ(cl, library(stars))
-
-  clusterExport(cl, list("list_data", "fator", "dist"),
+  
+  clusterExport(cl, list("list_data", "fator"),
                 envir=environment())
   output <- parLapply(cl, 1:length(list_data), fun= function(x) {
-  #output <- parLapply(cl, 1:5, fun= function(x) {
-  
-  # output <- vector("list", length(list_data)) 
-  # for(x in 1:length(list_data)) {
     
-    source("./R/other_functions.R")
+    source("./R/99_functions.R")
     
     res <- try(my.get.patches(
       list_data[[x]],
@@ -532,26 +611,21 @@ for(i in 1:length(dados)) {
       Resol_sub_pop = as.double(unique(list_data[[x]]$radius)),
       subpop_poly = NULL,
       dist_isolated = as.double(unique(list_data[[x]]$radius)) * fator,
-      #dist_isolated = dist,
       proj_type = "cea",
       export_shp = FALSE
     ),TRUE)
-      
-      if(class(res) == "try-error") {
-        res <- NULL
-        res <- "ERRO"
-        names(res) <- unique(list_data[[x]]$tax)
-      }
-  return(res)
+    
+    if(class(res) == "try-error") {
+      res <- NULL
+      res <- "ERRO"
+      names(res) <- unique(list_data[[x]]$tax)
+    }
+    return(res)
   })
-      
-  #   cat(x,"\n")
-  #   output[[x]] <-res 
-  # }    
-
+  
   stopImplicitCluster()
   stopCluster(cl)
-
+  
   output1 <- do.call("c", output)
   df1 <- data.frame(tax = names(output1), frag = as.character(output1), stringsAsFactors = FALSE) 
   resultado[[i]] <- df1
@@ -561,9 +635,9 @@ resultados <- merge(resultado[[2]], resultado[[1]], by= "tax", all.x = TRUE, sor
 resultados <- merge(resultados, resultado[[3]], by= "tax", all.x = TRUE, sort = FALSE)
 names(resultados)[2:4] <- c("frag.level.1","frag.level.2","frag.level.3") 
 resultados <- resultados[order(resultados$tax),]
-saveRDS(resultados, paste0("data/severe_frag_dist_",dist,"km.rds"))
-rm(dados)
+
 saveRDS(resultados, paste0("data/severe_frag_dist_radius.rds"))
+rm(dados)
 
 
 ##Assessing the impact of dist_isolated
@@ -658,312 +732,4 @@ critB_high <- critB_high[,c("tax","EOO","AOO","Nbe_subPop","Nbe_loc","Nbe_loc_PA
 saveRDS(critB_opt, "data/criteriaB_metrics_optim_confidence.rds")
 saveRDS(critB_low, "data/criteriaB_metrics_low_confidence.rds")
 saveRDS(critB_high, "data/criteriaB_metrics_high_confidence.rds")
-
-
-#########################################################################################################################################################
-#########################################################################################################################################################
-#############################
-#### APPLYING CRITERIA B ####
-#############################
-
-#Getting the estimates for criterion B
-critB_opt <- readRDS("data/criteriaB_metrics_optim_confidence.rds")
-critB_opt$tax <- as.character(critB_opt$tax)
-critB_low <- readRDS("data/criteriaB_metrics_low_confidence.rds")
-critB_low$tax <- as.character(critB_low$tax)
-critB_high <- readRDS("data/criteriaB_metrics_high_confidence.rds")
-critB_high$tax <- as.character(critB_high$tax)
-
-#Getting estimates of species continuing decline based on the index of abundance (Criterion C)
-critC <- readRDS("data/criterionC_all_prop_mature.rds")
-est.decline <- sapply(strsplit(critC$cont.decline,"\\|"), tail, 1)  
-est.decline <- gsub("\\(|\\)|[0-9]", "", est.decline)
-est.decline <- gsub(" -", "", est.decline)
-table(est.decline, critC$any.decline, useNA = "always")
-critC$declineC <- critC$any.decline
-critC$declineC[!critC$declineC %in% "Decreasing" & est.decline %in% "Decreasing"] <- "Decreasing" 
-critC$declineC[critC$declineC %in% "Increasing" | critC$declineC %in% "Stable"] <- "Not Decreasing" 
-
-#Getting estimates of species continuing decline based on habitat loss (Criterion B)
-eoo.decline <- readRDS("data/EOO_hab_loss_2000_2015.rds")
-eoo.decline$declineB <- eoo.decline$rel.loss
-eoo.decline$declineB[!is.na(eoo.decline$declineB) & eoo.decline$declineB >= 1] <- 1
-eoo.decline$declineB[!is.na(eoo.decline$declineB) & as.double(eoo.decline$declineB) < 1 & as.double(eoo.decline$declineB) >= 0] <- 0
-eoo.decline$declineB[is.nan(eoo.decline$declineB)] <- NA
-eoo.decline$declineB[eoo.decline$declineB %in% 1] <- "Decreasing"
-eoo.decline$declineB[eoo.decline$declineB %in% 0] <- "Not Decreasing"
-table(eoo.decline$declineB, useNA = "always")
-
-#Correcting the decrease for pioneer species
-hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
-tmp <- merge(eoo.decline, hab, by.x= "tax", by.y = "Name_submitted", all.x = TRUE, sort = FALSE)
-tmp <- tmp[order(tmp$tax),]
-table(tmp$tax == eoo.decline$tax)
-eoo.decline$net.loss <- eoo.decline$recover - eoo.decline$loss 
-hist(eoo.decline$net.loss, nclass=80)
-eoo.decline$declineB[eoo.decline$net.loss >=0.1 & tmp$ecol.group %in% "pioneer"] <- "Not Decreasing"
-table(eoo.decline$declineB, useNA = "always")
-
-#Merging any decline info with the criterion B metrics
-critB_opt <- merge(critB_opt, critC[,c("species","declineC")],
-                    by.x = "tax", by.y = "species", all.x = TRUE, sort = FALSE)
-critB_opt <- merge(critB_opt, eoo.decline[,c("tax","declineB")],
-                   by = "tax", all.x = TRUE, sort = FALSE)
-critB_opt <- critB_opt[order(critB_opt$tax),]
-
-critB_low <- merge(critB_low, critC[,c("species","declineC")],
-                   by.x = "tax", by.y = "species", all.x = TRUE, sort = FALSE)
-critB_low <- merge(critB_low, eoo.decline[,c("tax","declineB")],
-                   by = "tax", all.x = TRUE, sort = FALSE)
-critB_low <- critB_low[order(critB_low$tax),]
-
-critB_high <- merge(critB_high, critC[,c("species","declineC")],
-                   by.x = "tax", by.y = "species", all.x = TRUE, sort = FALSE)
-critB_high <- merge(critB_high, eoo.decline[,c("tax","declineB")],
-                   by = "tax", all.x = TRUE, sort = FALSE)
-critB_high <- critB_high[order(critB_high$tax),]
-
-#Comparing the decline from criterion C and B and correcting if necessary (priority for abudance decline over EOO decline) For assuming, that all other species (rarer) are decreasing as well
-hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
-tmp <- merge(critB_opt, hab, by.x= "tax", by.y = "Name_submitted", all.x = TRUE, sort = FALSE)
-table(critB_opt$tax == tmp$tax)
-critB_opt$declineB[critB_opt$declineB %in% "Not Decreasing" & critB_opt$declineC %in% "Decreasing" & !tmp$ecol.group %in% "pioneer"] <- "Decreasing"
-#table(critB_opt$declineB, critB_opt$declineC, useNA = "always")
-tmp <- merge(critB_low, hab, by.x= "tax", by.y = "Name_submitted", all.x = TRUE, sort = FALSE)
-table(critB_low$tax == tmp$tax)
-critB_low$declineB[critB_low$declineB %in% "Not Decreasing" & critB_low$declineC %in% "Decreasing" & !tmp$ecol.group %in% "pioneer"] <- "Decreasing"
-#table(critB_low$declineB, critB_low$declineC, useNA = "always")
-tmp <- merge(critB_high, hab, by.x= "tax", by.y = "Name_submitted", all.x = TRUE, sort = FALSE)
-table(critB_high$tax == tmp$tax)
-critB_high$declineB[critB_high$declineB %in% "Not Decreasing" & critB_high$declineC %in% "Decreasing" & !tmp$ecol.group %in% "pioneer"] <- "Decreasing"
-#table(critB_high$declineB, critB_high$declineC, useNA = "always")
-
-#Combining the info on number of localities and % in PAs
-critB_opt <- 
-  critB_opt %>% 
-  as_tibble() %>% 
-  mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
-  mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
-critB_low <- 
-  critB_low %>% 
-  as_tibble() %>% 
-  mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
-  mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
-critB_high <- 
-  critB_high %>% 
-  as_tibble() %>% 
-  mutate(nbe_loc_total = Nbe_loc + Nbe_loc_PA) %>% 
-  mutate(protected = Nbe_loc_PA/nbe_loc_total*100)
-
-#Creating the severely fragmented colum
-critB_opt$sever.frag <- 100 * critB_opt$Nbe_subPop/ (critB_opt$AOO / 4) > 50
-critB_low$sever.frag <- 100 * critB_low$Nbe_subPop/ (critB_low$AOO / 4) > 50
-critB_high$sever.frag <- 100 * critB_high$Nbe_subPop/ (critB_high$AOO / 4) > 50
-
-
-#### PERFORMING THE ASSESSMENTES OF CRITERION B ####
-results_Cb_opt <- cat_criterion_b(EOO = critB_opt$EOO,
-                              AOO = critB_opt$AOO,
-                              locations = critB_opt$nbe_loc_total,
-                              sever.frag = critB_opt$sever.frag,
-                              #protected = critB_opt$protected, 
-                              decline = critB_opt$declineB,
-                              protected.threshold = 100 
-)
-sum((100 * table(results_Cb_opt$ranks_B, useNA = "always")/dim(critB_opt)[1])[c(1,2,4)]) #17.25%; now 15.65%
-
-results_Cb_low <- cat_criterion_b(EOO = critB_low$EOO,
-                                   AOO = critB_low$AOO,
-                                   locations = critB_low$nbe_loc_total,
-                                   sever.frag = critB_low$sever.frag,
-                                   #protected = critB_low$protected, 
-                                   decline = critB_low$declineB,
-                                   protected.threshold = 100
-)
-sum((100 * table(results_Cb_low$ranks_B, useNA = "always")/dim(critB_low)[1])[c(1,2,4)]) #14.68%; now 13.57%
-
-results_Cb_high <- cat_criterion_b(EOO = critB_high$EOO,
-                                   AOO = critB_high$AOO,
-                                   locations = critB_high$nbe_loc_total,
-                                   sever.frag = critB_high$sever.frag,
-                                   #protected = critB_high$protected, 
-                                   decline = critB_high$declineB,
-                                   protected.threshold = 100 
-)
-sum((100 * table(results_Cb_high$ranks_B, useNA = "always")/dim(critB_high)[1])[c(1,2,4)]) #26.95%; now 24.99%
-
-
-#Saving the results
-results_Cb_opt <- do.call(cbind.data.frame, c(results_Cb_opt, stringsAsFactors = FALSE))
-critB_opt.all <- critB_opt[,c("tax","Nbe_occs","EOO","AOO","Nbe_subPop","nbe_loc_total","protected","declineB","sever.frag")]
-critB_opt.all[, c("category_B", "category_B_code","category_B1","category_B2")] <- NA_character_
-critB_opt.all[, c("category_B", "category_B_code","category_B1","category_B2")] <-
-  results_Cb_opt
-critB_opt.all[is.na(critB_opt.all$AOO),]
-
-results_Cb_low <- do.call(cbind.data.frame, c(results_Cb_low, stringsAsFactors = FALSE))
-critB_low.all <- critB_low[,c("tax","Nbe_occs","EOO","AOO","Nbe_subPop","nbe_loc_total","protected","declineB","sever.frag")]
-critB_low.all[, c("category_B", "category_B_code","category_B1","category_B2")] <- NA_character_
-critB_low.all[, c("category_B", "category_B_code","category_B1","category_B2")] <-
-  results_Cb_low
-critB_low.all[is.na(critB_low.all$AOO),]
-
-results_Cb_high <- do.call(cbind.data.frame, c(results_Cb_high, stringsAsFactors = FALSE))
-critB_high.all <- critB_high[,c("tax","Nbe_occs","EOO","AOO","Nbe_subPop","nbe_loc_total","protected","declineB","sever.frag")]
-critB_high.all[, c("category_B", "category_B_code","category_B1","category_B2")] <- NA_character_
-critB_high.all[, c("category_B", "category_B_code","category_B1","category_B2")] <-
-  results_Cb_high
-critB_high.all[is.na(critB_high.all$AOO),]
-
-#Saving
-saveRDS(as.data.frame(critB_opt.all), "data/criterionB_all_optim_tax_confidence.rds")
-saveRDS(as.data.frame(critB_low.all), "data/criterionB_all_low_tax_confidence.rds")
-saveRDS(as.data.frame(critB_high.all), "data/criterionB_all_high_tax_confidence.rds")
-
-
-
-#### FIGURE: OPTIMUM VS. HIGH CONFIDENCE LEVEL ####
-critB_opt.all <- readRDS("data/criterionB_all_optim_tax_confidence.rds")
-critB_high.all <- readRDS("data/criterionB_all_high_tax_confidence.rds")
-res <- readRDS("data/tax_conf_effect_on_RLI.rds")
-
-jpeg(filename = "figures/Figure_SU_new.jpg", width = 4000, height = 2000, units = "px", pointsize = 12,
-     res = 300, family = "sans", type="cairo", bg="white")
-par(mfrow=c(1,2))
-par(mar=c(1,1,1,1), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
-
-## OPTIMUM VS. HIGH
-mat <- as.matrix(table(paste0(critB_opt.all$category_B,"_opt"), 
-                       paste0(critB_high.all$category_B,"_hi")))
-mat <- mat[c(1,2,5,3), c(3,5,2,1)]
-colnames(mat) <- gsub(" ", "", colnames(mat))
-rownames(mat) <- gsub(" ", "", rownames(mat))
-
-#Defining the colors of tracks and links
-grid.col = c(CR_hi = "red", EN_hi = "darkorange", VU_hi = "gold", LCorNT_hi = "khaki",
-             CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
-col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
-col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
-col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
-#col_mat[mat < 5] = "#00000000"
-mat[mat < 15] = mat[mat < 15]*2
-mat[mat > 0 & mat < 5] = 10
-
-#plotting the diagram
-circos.clear()
-circos.par(start.degree = 90)
-visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
-#diag(visible) = FALSE
-lava::revdiag(visible) = FALSE
-chordDiagram(mat, big.gap = 15, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
-             grid.col = grid.col, col = col_mat,
-             self.link = 1, link.visible = visible,
-             #h=0.9,
-             #w=1,
-             #direction.type = "arrows", link.arr.length = 0.2, link.arr.width = 0.1, directional = -1,
-             link.lwd = 4
-             #h.ratio = 0.7
-             #reduce_to_mid_line = FALSE,
-             #w2=0.5,
-             #rou=0.2
-             #point1 = rep(0,16)
-)
-#Putting legends on
-sec.ind <- c("CR","EN","VU","LC or NT","LC or NT","VU","EN","CR")
-for(si in get.all.sector.index()) {
-  lab <- sec.ind[which(si == get.all.sector.index())]
-  xlim = get.cell.meta.data("xlim", sector.index = si, track.index = 1)
-  ylim = get.cell.meta.data("ylim", sector.index = si, track.index = 1)
-  if(si == "VU_hi") {
-    circos.text(mean(xlim), mean(ylim), labels = "VU", 
-                sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
-                facing = "bending", niceFacing = FALSE, col = "black")
-    
-  } else {
-    circos.text(mean(xlim), mean(ylim), labels = lab, 
-                sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
-                facing = "bending", niceFacing = TRUE, col = "black")
-  }  
-}
-legend("topleft","High confidence", bty="n", cex=1.2)
-legend("topright","Optim. confidence", bty="n", cex=1.2)
-legend("topleft",legend=expression(bold("A")),
-       bty="n",horiz=F,cex=1.5,x.intersp=-1,y.intersp=-0.3)
-
-## ANY VS. HIGH (very similar to opt vs. high: not plotting)
-# mat <- as.matrix(table(paste0(critB_low.all$category_B,"_lo"), paste0(critB_high.all$category_B,"_hi")))
-# mat <- mat[c(1,2,4,3), c(3,5,2,1)]
-# colnames(mat) <- gsub(" ", "", colnames(mat))
-# rownames(mat) <- gsub(" ", "", rownames(mat))
-# 
-# #Defining the colors of tracks and links
-# grid.col = c(CR_hi = "red", EN_hi = "darkorange", VU_hi = "gold", LCorNT_hi = "khaki",
-#              CR_lo = "red", EN_lo = "darkorange", VU_lo = "gold", LCorNT_lo = "khaki")
-# col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
-# col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
-# col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
-# #col_mat[mat < 5] = "#00000000"
-# mat[mat < 15] = mat[mat < 15]*2
-# mat[mat > 0 & mat < 5] = 10
-# 
-# #plotting the diagram
-# circos.clear()
-# circos.par(start.degree = 90)
-# visible = matrix(TRUE, nrow = nrow(mat), ncol = ncol(mat))
-# #diag(visible) = FALSE
-# lava::revdiag(visible) = FALSE
-# chordDiagram(mat, big.gap = 15, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
-#              grid.col = grid.col, col = col_mat,
-#              self.link = 1, link.visible = visible,
-#              #h=0.9,
-#              #w=1,
-#              #direction.type = "arrows", link.arr.length = 0.2, link.arr.width = 0.1, directional = -1,
-#              link.lwd = 4
-#              #h.ratio = 0.7
-#              #reduce_to_mid_line = FALSE,
-#              #w2=0.5,
-#              #rou=0.2
-#              #point1 = rep(0,16)
-# )
-# #Putting legends on
-# sec.ind <- c("CR","EN","VU","LC or NT","LC or NT","VU","EN","CR")
-# for(si in get.all.sector.index()) {
-#   lab <- sec.ind[which(si == get.all.sector.index())]
-#   xlim = get.cell.meta.data("xlim", sector.index = si, track.index = 1)
-#   ylim = get.cell.meta.data("ylim", sector.index = si, track.index = 1)
-#   if(si == "VU_hi") {
-#     circos.text(mean(xlim), mean(ylim), labels = "VU", 
-#                 sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
-#                 facing = "bending", niceFacing = FALSE, col = "black")
-#     
-#   } else {
-#     circos.text(mean(xlim), mean(ylim), labels = lab, 
-#                 sector.index = si, track.index = 1, cex = 1.1, #adj= 0.1,
-#                 facing = "bending", niceFacing = TRUE, col = "black")
-#   }  
-# }
-# legend("topleft","High confidence", bty="n", cex=1.2)
-# legend("topright","Any confidence", bty="n", cex=1.2)
-
-## Assessing the confidence level cutoff 
-par(mar=c(3,3.5,1.5,0.5))
-cut <- seq(0.05,0.95, by=0.05)
-ids <- cut < 0.85
-par(mar=c(3,3.5,0.75,0.5), mgp=c(2,0.25,0), tcl=-0.2, las=1)
-plot(res[,2][ids] ~ cut[ids], ylim = c(0.85, .92),
-     xlab = "Tax. confidence level", ylab = "Red List Index", 
-     xaxt = "n",# yaxt = "n", 
-     cex.lab = 1.2, pch=19)
-axis(1, at=cut, cex.axis = 1, labels = cut * 100)
-lines(res[,1][ids] ~ cut[ids] , lty = 2)
-lines(res[,3][ids] ~ cut[ids] , lty = 2)
-# abline(h = opt.rli[2])
-# abline(h = high.rli[2], col = 2)
-points(res[,5][ids] ~ cut[ids], col = "red", pch=19)
-lines(res[,4][ids] ~ cut[ids], col = "red", lty = 2)
-lines(res[,6][ids] ~ cut[ids], col = "red", lty = 2)
-# abline(v=c(0.6,0.75))
-legend("topleft", expression(bold(B)), bty="n", cex=1.3,
-       x.intersp=-0.7, y.intersp=0.1)
-dev.off()
-
+rm(list = ls())

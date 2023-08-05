@@ -3,6 +3,14 @@
 ##############################################################
 rm(list = ls())
 
+#### LOADING PACKAGES ####
+require(here)
+require(finch)
+require(stringr)
+require(stringi)
+require(dplyr)
+require(plantR)
+
 ## Loading the THREAT species list
 tax <- readRDS("data/threat_af_spp_list_preliminary.rds")
 syn.br <- read.csv("data/new_synonyms_floraBR.csv", na.strings = c(""," ",NA), as.is = TRUE)

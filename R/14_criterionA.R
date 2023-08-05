@@ -6,15 +6,9 @@
 rm(list=ls())
 
 #### LOADING PACKAGES ###
-#devtools::install_github("gdauby/ConR", ref = "master", force = TRUE) # old version
-#devtools::install_github("gdauby/ConR@devel") # new version on GitHub
-# detach("package:ConR", unload=TRUE)
-# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
-#  repos = NULL, 
-#  type = "source")
-library("ConR")
-library("red")
-library("circlize")
+require("ConR")
+require("red")
+require("circlize")
 
 
 #### LOADING THREAT POPULATION SIZE DATA (TREECO) ###
@@ -38,7 +32,7 @@ for(x in 1:length(res.means)) {
 
 #### LOADING THREAT HABITAT AND ECOLOGY DATA ####
 ## Includes species info on Generation Length and Proportion of matrue individuals
-hab <- read.csv("data/threat_habitats.csv", as.is = TRUE)
+hab <- readRDS("data/threat_habitats.rds")
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
 PopData <- PopData[!is.na(PopData$internal_taxon_id),]
 names(PopData)[1] <- "species"
@@ -64,21 +58,27 @@ table(mean.pop.sizes$species == PopData$species)
 timber <- !is.na(PopData$times.cites)
 timber <- ifelse(timber == FALSE, 0, 10)
 timber[!is.na(PopData$commercial) & PopData$commercial == FALSE] <- 5
-timber[PopData$species %in% "Euterpe edulis"] <- 10
-timber[PopData$species %in% "Dicksonia sellowiana"] <- 10
+timber[PopData$species %in% "Euterpe edulis"] <- 10 # non-timber heavily exploited species
+timber[PopData$species %in% "Dicksonia sellowiana"] <- 10 # non-timber heavily exploited species
 timber <- as.numeric(timber)
 
 #### GETTING THREAT ECOLOGICAL GROUP INFORMATION  ####
 hab1 <- hab[match(PopData$species, hab$Name_submitted), ]
 table(hab1$Name_submitted == PopData$species)
+
+## Taking into account habitat change in the population decline of early-successional species
 early.sucession <- hab1$ecol.group
-early.sucession[hab1$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
 early.sucession[early.sucession %in% c("late_secondary", "climax", "unknown")] <- 1L
 early.sucession[early.sucession %in% c("early_secondary")] <- 0.9
 early.sucession[early.sucession %in% c("pioneer")] <- 0.8
 early.sucession <- as.numeric(early.sucession)
 
-#cbind(hab1$Name_submitted, timber, early.sucession)[!timber %in% "0" & !early.sucession %in% "1", ]
+## Taking into account non-forested habitats for "ruderal" small-statured pioneers
+ruderals <- grepl("Antr", hab1$vegetation.type.reflora) & 
+  hab1$GF %in% c("large_shrub", "small_tree") &
+  hab1$ecol.group %in% "pioneer"
+early.sucession[ruderals] <- 0.5
+
 
 #########################################################################################################################################################
 #########################################################################################################################################################
@@ -89,18 +89,18 @@ early.sucession <- as.numeric(early.sucession)
 ## ASSESSMENTS USING SPECIES-SPECIFIC PROXIES OF GENERATION LENGTH ##
 critA <- criterion_A(mean.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A2"),
-                     generation.time = PopData$GenerationLength.range,
+                     generation.time = PopData$GL,
                      exploitation = timber,
                      correction = early.sucession)
 critA.low <- criterion_A(low.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A2"),
-                     generation.time = PopData$GenerationLength.range,
+                     generation.time = PopData$GL,
                      exploitation = timber,
                      correction = early.sucession)
 names(critA.low) <- paste(names(critA.low), ".low", sep= "")
 critA.high <- criterion_A(high.pop.sizes, assess.year = 2018,
                      project.years = NULL, subcriteria = c("A2"),
-                     generation.time = PopData$GenerationLength.range,
+                     generation.time = PopData$GL,
                      exploitation = timber,
                      correction = early.sucession)
 names(critA.high) <- paste(names(critA.high), ".high", sep= "")
@@ -137,62 +137,18 @@ all.GL <- cbind.data.frame(critA,
                            )
 
 #### REVER AQUI APÓS A INCLUSÃO DOS 15 ANOS DE GL ####
-all.GL <- all.GL[,c(1:11,
-                    12,14,16,18,20,22,24,26,28,30, #Reductions A12
-                    13,15,17,19,21,23,25,27,29,31 #A2
+all.GL <- all.GL[,c(1:12,
+                    13,15,17,19,21,23,25,27,29,31, #Reductions A12
+                    14,16,18,20,22,24,26,28,30,32 #A2
                     )] 
-for(i in 22:31) all.GL[,i] <- as.character(all.GL[,i])
-for(i in 22:31) all.GL[,i] <- gsub("LC or NT", "LC", all.GL[,i])
+for(i in 23:32) all.GL[,i] <- as.character(all.GL[,i])
+for(i in 23:32) all.GL[,i] <- gsub("LC or NT", "LC", all.GL[,i])
 
 ## Calculating the Red List Index for subcriterion A2
-rli.all <- apply(all.GL[,22:31], 2, red::rli, boot = TRUE, runs = 4999)
+rli.all <- apply(all.GL[,23:32], 2, red::rli, boot = TRUE, runs = 4999)
 rli.all.opt <- red::rli(gsub("LC or NT", "LC", as.character(all.GL[,"category_A"])), boot = TRUE, runs = 4999)
 rli.all.opt.low <- red::rli(gsub("LC or NT", "LC", as.character(all.GL[,"category_A.low"])), boot = TRUE, runs = 4999)
 rli.all.opt.high <- red::rli(gsub("LC or NT", "LC", as.character(all.GL[,"category_A.high"])), boot = TRUE, runs = 4999)
-
-###################
-#### FIGURE SX ####
-###################
-## See newer codes below
-
-# jpeg(filename = "figures/Figure_SX.jpg", width = 2500, height = 2000, units = "px", pointsize = 12,
-#      res = 300, family = "sans", type="cairo", bg="white")
-# gls = c(10,15,20,25,30,35,40,45,50,55)
-# # par(mfrow=c(1,2))
-# par(mar=c(3,3.5,0.75,0.5), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
-# #subcriterion A1
-# # plot(rli.all[2,grepl("A1\\.", colnames(rli.all))] ~ gls, #type = "b",
-# #      #xaxp = c(1890, 2018, 5), yaxp = c(60, 220, 6), 
-# #      xaxt = "n",# yaxt = "n", 
-# #      cex.lab = 1.2,
-# #      xlab = "Generation lenght (years)", ylab = "Red List Index", 
-# #      pch=19, ylim = c(0.39,1))
-# # axis(1, at=gls, cex.axis = 1)
-# # #axis(2, at=c(60,80,100,120,140,160,180,200,220), cex.axis = 1)
-# # arrows(x0=gls, y0 = rli.all[1,grepl("A1\\.", colnames(rli.all))], 
-# #        y1 = rli.all[3,grepl("A1\\.", colnames(rli.all))],
-# #        code = 3, angle = 90, length = 0.05)
-# # legend("topright", expression(bold(A)), bty="n", cex=1.3)
-# # abline(h=rli.all[2,1], lty = 2)
-# 
-# #subcriterion A2
-# plot(rli.all[2,] ~ gls, #type = "b",
-#      #xaxp = c(1890, 2018, 5), yaxp = c(60, 220, 6), 
-#      xaxt = "n", #yaxt = "n", 
-#      cex.lab = 1.2,
-#      xlab = "Generation lenght (years)", ylab = "Red List Index", 
-#      pch=19, ylim = c(0.39,1))
-# axis(1, at=gls, cex.axis = 1)
-# arrows(x0=gls, y0 = rli.all[1,], y1 = rli.all[3,],
-#        code = 3, angle = 90, length = 0.05)
-# # legend("topright", expression(bold(B)), bty="n", cex=1.3)
-# # abline(h=rli.all[2,11], lty = 2)
-# abline(h=rli.all.opt[2], lty = 2)
-# # abline(h=rli.all.opt[c(1,3)], lty = 3, col = "grey")
-# legend("topright", c("Group-specific", "Fixed values"),
-#        lty = c(2,0), pch=c(NA,19),
-#        bty = "n", lwd=2)
-# dev.off()
 
 
 #Where are the changes related to low generation lengths (25 years)
@@ -203,12 +159,12 @@ critA.gl25 <- criterion_A(mean.pop.sizes,
                      generation.time = 25,
                      exploitation = timber, correction = early.sucession)
 
-critA.gl25[critA$category_A %in% "CR" & critA.gl25$category_A %in% "EN",] # 66 cases, 21 for 35 ys; revision 154 cases
+critA.gl25[critA$category_A %in% "CR" & critA.gl25$category_A %in% "EN",] # 66 cases, 21 for 35 ys; revision 127 cases
 critA.gl25[critA$category_A %in% "CR" & critA.gl25$category_A %in% "VU",] # No cases; revision No cases
 critA.gl25[critA$category_A %in% "CR" & critA.gl25$category_A %in% "LC or NT",] # No cases; revision No cases
-critA.gl25[critA$category_A %in% "EN" & critA.gl25$category_A %in% "VU",] #383 cases, 109 for 35 ys; revision 390 cases 
+critA.gl25[critA$category_A %in% "EN" & critA.gl25$category_A %in% "VU",] #383 cases, 109 for 35 ys; revision 335 cases 
 critA.gl25[critA$category_A %in% "EN" & critA.gl25$category_A %in% "LC or NT",] #1 cases, 0 for 35 ys; revision No cases
-critA.gl25[critA$category_A %in% "VU" & critA.gl25$category_A %in% "LC or NT",] #393 cases, 96 for 35 ys; revision 112 casos
+critA.gl25[critA$category_A %in% "VU" & critA.gl25$category_A %in% "LC or NT",] #393 cases, 96 for 35 ys; revision 101 cases
 
 #Inspecting some classic examples
 critA[critA$species %in% "Araucaria angustifolia",]
@@ -228,12 +184,12 @@ critA.gl20 <- criterion_A(mean.pop.sizes,
                           generation.time = 20,
                           exploitation = timber, correction = early.sucession)
 
-critA.gl20[critA$category_A %in% "CR" & critA.gl20$category_A %in% "EN",] # revision 230 cases
+critA.gl20[critA$category_A %in% "CR" & critA.gl20$category_A %in% "EN",] # revision 202 cases
 critA.gl20[critA$category_A %in% "CR" & critA.gl20$category_A %in% "VU",] # revision No cases
 critA.gl20[critA$category_A %in% "CR" & critA.gl20$category_A %in% "LC or NT",] # revision No cases
-critA.gl20[critA$category_A %in% "EN" & critA.gl20$category_A %in% "VU",] #revision 755 cases 
-critA.gl20[critA$category_A %in% "EN" & critA.gl20$category_A %in% "LC or NT",] #revision 25 cases
-critA.gl20[critA$category_A %in% "VU" & critA.gl20$category_A %in% "LC or NT",] #revision 258 cases
+critA.gl20[critA$category_A %in% "EN" & critA.gl20$category_A %in% "VU",] #revision 661 cases 
+critA.gl20[critA$category_A %in% "EN" & critA.gl20$category_A %in% "LC or NT",] #revision 18 cases
+critA.gl20[critA$category_A %in% "VU" & critA.gl20$category_A %in% "LC or NT",] #revision 231 cases
 
 
 ## Renaming columns
@@ -257,7 +213,6 @@ saveRDS(all.GL, "data/criterionA_all_GLs.rds")
 
 
 #### CHORD DIAGRAMS ####
-require(circlize)
 
 # SUBCRITERIA A1
 # jpeg(filename = "figures/Figure_SW.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
@@ -383,7 +338,7 @@ legend("topright","Gen. lenght = 25 years", bty="n", cex=1.2)
 dev.off()
 
 
-# SUBCRITERIA A2 - comparison with 25 years
+# SUBCRITERIA A2 - comparison with 20 years
 jpeg(filename = "figures/Figure_SWb_20y.jpg", width = 2250, height = 2000, units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 
@@ -449,9 +404,8 @@ dev.off()
 #### NEW VERSION OF FIGURE SX USING RLI AND % OF THREAT PER CATS ####
 #####################################################################
 
-## See newer codes below
-
-jpeg(filename = "figures/Figure_SXab.jpg", width = 3750, height = 2000, units = "px", pointsize = 12,
+jpeg(filename = "figures/Figure_SXab.jpg", width = 3750, height = 2000, 
+     units = "px", pointsize = 12,
      res = 300, family = "sans", type="cairo", bg="white")
 gls = c(10,15,20,25,30,35,40,45,50,55)
 par(mfrow=c(1,2))
@@ -551,71 +505,3 @@ dev.off()
 # legend(10.485,101.75, bquote(bold('LC+NT')), bty="n", cex=1)
 # par(xpd = FALSE)
 # dev.off()
-
-
-###################
-#### AOO decline and criterion A2 for occurrence based dataset ####
-###################
-
-devtools::install_github("gdauby/ConR@devel")
-
-library(ConR)
-library(tidyverse)
-library(raster)
-
-hab.map <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_1992_2015_AF_1km.tif")
-hab.map2 <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_1995_2015_AF_1km.tif")
-hab.map3 <- stack("D:/MonDossierR/conr_add_scripts/ESA_Land_Cover_map_2000_2015_AF_1km.tif")
-
-esa_legend <- read_csv("./data/esa_legend.csv")
-hab.class <- esa_legend %>% 
-  filter(LegendTreeCoSimp == "ForestCover") %>% 
-  pull(NB_LAB) %>% 
-  as.character()
-
-#### LOADING THREAT OCCURRENCE DATA (HERBARIUM + TREECO) ###
-oc.data <- readRDS("data/threat_occ_data_final.rds")
-
-#Putting data in the ConR format
-MyData <- oc.data[, c("ddlat","ddlon",
-                      "tax","higher.tax.rank",
-                      "coly","vouchers",
-                      "detBy","dety",
-                      "tax.check2","tax.check.final","UC",
-                      "dist.eoo","tax.conf","source")]
-MyData$tax.check2 <- MyData$tax.check2 %in% "TRUE" # the super,hyper high confidence level
-rm(oc.data)
-
-MyData <- as_tibble(MyData)
-MyData <- 
-  MyData %>% 
-  filter(source == "herbaria",
-         !is.na(ddlat),
-         !is.na(ddlon))
-
-res <- AOO.decline(
-  XY = as.data.frame(MyData),
-  hab.map = stack(list(hab.map[[1]], hab.map2[[1]], hab.map3[[1]], hab.map[[2]])),
-  hab.class = hab.class,
-  all_individual_layers = TRUE, 
-)
-
-## provide full AOO, AOO considering each hab.map individuals and AOO for all hab.map taken together (AOO_treath)
-head(res$AOOs)
-
-
-
-### Number of species with null AOO already in 1992
-res$AOOs %>% 
-  as_tibble() %>% 
-  filter(hab.map.1 == 0)
-
-
-
-
-
-
-
-
-
-

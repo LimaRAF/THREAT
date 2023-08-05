@@ -4,14 +4,13 @@
 ##############################################################
 ##############################################################
 rm(list=ls())
+gc()
 
-## Loading packages ##
-# detach("package:ConR", unload=TRUE)
-# install.packages("C:/Users/renato/Documents/raflima/R_packages/ConR", # working version on Renato's local 
-#                  repos = NULL, 
-#                  type = "source")
-library("ConR")
+#### LOADING PACKAGES ####
+require(ConR)
 require(data.table)
+require(stringr)
+require(flora)
 
 #####################
 #### PRE-EDITING ####
@@ -222,6 +221,7 @@ all.crit <- cbind.data.frame(all.crit,
 all.crit$category[all.crit$category %in% c("", " ", NA)] <- "DD"
 
 rm(tmp, tmp.1, tmp.2, tmp0, tmp0.1, tmp1)
+
 ###############################################################################################################################################################################################H
 ###################################################
 #### Critically Endangered (Possibly Extinct)  ####
@@ -239,11 +239,10 @@ rm(MyData); gc()
 #########################################
 
 ## Getting endemism levels from Lima et al. (2020)
-endemism <- readRDS("data/sis_connect/endemism_threat.rds") # endemism levels from Lima et al. (2020)
+endemism <- readRDS("data/threat_endemism.rds")
 all.crit <- merge(all.crit, endemism, by = "species", all.x = TRUE)
 #Getting missing endemism status
-# SA.spp <- read.csv("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
-SA.spp <- read.csv("C://Users//renato//Desktop//DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
+SA.spp <- read.csv("data/data-raw/DomainsKnownTreesNeotropics.csv", as.is=T, na.string=c(NA,""," "))
 tmp <- all.crit[is.na(all.crit$endemic),]
 tmp1 <- merge(tmp[,c("species","endemic")] , 
               SA.spp[,c("SpeciesKTSA","geographical_distribution","domain.reflora","endemism.Reflora",
@@ -342,13 +341,14 @@ all.crit <- cbind.data.frame(all.crit,
 plot(all.crit$protected ~ all.crit$prop.EOO.in.StrictUCs)
 
 ## mean value of the Human Influence Index
-tmp <- readRDS("data/EOO_HII_cropped.rds")
-names(tmp)[4] <- "Median.HII"
-tmp1 <- merge(all.crit, tmp, by.x = "species", by.y = "tax", all.x = TRUE, sort = FALSE)
-tmp1 <- tmp1[order(tmp1$species),]
-table(all.crit$species == tmp1$species)
-all.crit <- cbind.data.frame(all.crit,
-                             tmp1[,c("Median.HII"), drop = FALSE], stringsAsFactors = FALSE)
+## NO LONGER BEING CALCULATED 
+# tmp <- readRDS("data/EOO_HII_cropped.rds")
+# names(tmp)[4] <- "Median.HII"
+# tmp1 <- merge(all.crit, tmp, by.x = "species", by.y = "tax", all.x = TRUE, sort = FALSE)
+# tmp1 <- tmp1[order(tmp1$species),]
+# table(all.crit$species == tmp1$species)
+# all.crit <- cbind.data.frame(all.crit,
+#                              tmp1[,c("Median.HII"), drop = FALSE], stringsAsFactors = FALSE)
 
 ## Forest cover
 tmp <- readRDS("data/EOO_hab_loss_2000_2015_cropped.rds")
@@ -359,6 +359,7 @@ tmp1 <- tmp1[order(tmp1$species),]
 table(all.crit$species == tmp1$species)
 all.crit <- cbind.data.frame(all.crit,
                              tmp1[,c("prop.EOO.forest"), drop = FALSE], stringsAsFactors = FALSE)
+
 
 #### CITES ####
 cites <- readRDS("data/threat_cites_EU.rds")
@@ -400,12 +401,8 @@ rm(cites, cites.syns, tmp,tmp1,tmp2,tmp3,tmp4,tmp5,tmp6)
 #### ADDING GL AND UNKNOWN ECOLOGICAL GROUP INFO ####
 ####################################################
 
-hab <- read.csv("data/threat_habitats.csv")
-hab$ecol.group[hab$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
-hab$ecol.group[hab$Name_submitted %in% "Tococa guianensis"] <- "early_secondary"
-tmp <- hab[,c("GenerationLength.range", "ecol.group", 
-              "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName",
-              "Name_submitted"), drop = FALSE]
+hab <- readRDS("data/threat_habitats.rds")
+tmp <- hab[,c("GL", "ecol.group",  "GF", "Name_submitted"), drop = FALSE]
 names(tmp) <- c("gen.length", "ecol.group", "growth.form", "Name_submitted")
 table(all.crit$species == tmp$Name_submitted)
 all.crit <- cbind.data.frame(all.crit,
@@ -420,11 +417,11 @@ all.crit <- cbind.data.frame(all.crit,
 ##############################
 
 ## Loading previous assessments from IUCN, Argentina and Paraguay
-prev.assess <- readRDS("IUCN_2022_v2_assessments_THREAT.rds")
+prev.assess <- readRDS("data/IUCN_2022_v2_assessments_THREAT.rds")
 # prev.assess <- readRDS("data/sis_connect/prev_assessments_threat.rds")
-prev.assess.PY <- read.csv("especies_ameacadas_Paraguay.csv", as.is = TRUE, na.strings = c("", " ", NA))
-prev.assess.AR <- read.csv("especies_ameacadas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
-end.AR <- read.csv("especies_endemicas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
+prev.assess.PY <- read.csv("data/especies_ameacadas_Paraguay.csv", as.is = TRUE, na.strings = c("", " ", NA))
+prev.assess.AR <- read.csv("data/especies_ameacadas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
+end.AR <- read.csv("data/especies_endemicas_Argentina.csv", as.is = TRUE, na.strings = c("", " ", NA))
 
 ## Merging IUCN with THREAT assessments
 prev.spp.name <- "scientificName"
