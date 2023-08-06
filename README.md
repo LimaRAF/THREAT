@@ -170,7 +170,7 @@ functions were developed to assess the IUCN criteria A, B, C and D,
 which are freely available in the new version 2.0 of the `ConR` R
 package (Dauby et al. 2017, Dauby & Lima 2022 - see functions
 `ConR::criterion_A()`, `ConR::criterion_B()`, `ConR::criterion_C()` and
-`ConR::criterion_D()`). An specific function was also develop to tell
+`ConR::criterion_D()`). A specific function was also developed to tell
 apart NT from LC categories (see function `ConR::near.threatened()`).
 
 In the case of multiple IUCN criteria, there is also the need to
@@ -192,7 +192,7 @@ occurrence records to be added to the assessments based on their
 individual influence on the size of the species EOO.
 
 Also, the impact of the estimation or imputation of missing species
-information in the assessments that should evaluated and presented. See
+information in the assessments should be evaluated and presented. See
 the section ‘Missing information, uncertainties and solutions’ below for
 which information may include uncertainties in the assessments.
 
@@ -225,8 +225,8 @@ their IUCN Red List Category.
 
 Finally, it is important to organize and export all the species
 information, population metrics, and assessment results into the format
-required for submission to the IUCN Red List. This a more technical step
-of the workflow but it greatly helps the incorporation of the
+required for submission to the IUCN Red List. This is a more technical
+step of the workflow but it greatly helps the incorporation of the
 assessments into the IUCN Red List, particularly when assessing
 thousands of species. Submission can only be done by the responsible
 IUCN Red List Authority and it is performed within the IUCN Species
@@ -297,7 +297,7 @@ The final information needed to apply criterion B is the spatial extent
 (i.e. scale) of the impacts of threat events that can impact all
 individuals of species populations present in the area. This information
 is used to define the number of locations where the species occur.
-Having specific values of this extent is difficult as for other species
+Having specific values of this extent is difficult as for other species’
 information. In THREAT, we set 10 km as this extent outside of protected
 areas, which was based on the administrative level (i.e. municipality)
 at which most common threat events (e.g. land-use changes, habitat
@@ -349,13 +349,27 @@ This repository is structured as follows:
 
 - [`data/`](https://github.com/LimaRAF/THREAT/tree/master/data):
   contains raw, accessory or derived data needed for running the codes.
+  The subfolders here include:
+
+  - [`data/sis_connect/`](https://github.com/LimaRAF/THREAT/tree/master/data/sis_connect)
+    contains the IUCN-required CSV files in the format to be submitted
+    to the IUCN SIS connect system
+  - [`data/SIS_sample_6_1/`](https://github.com/LimaRAF/THREAT/tree/master/data/SIS_sample_6_1)
+    contains sample examples of the IUCN SIS connect files used as a
+    standard to build the IUCN-required CSV files
+  - Three other sub-folders including the shapefiles necessary to run
+    the scripts
+  - A sub-folder not available in this repository names `data-raw` where
+    all the raw and very large files necessary to run the scripts are
+    stored (GitHub does not accept very large files). However, all the
+    derived data obtained from processing these raw and heavy files are
+    available in the `data` folder.
 
 - [`figures/`](https://github.com/LimaRAF/THREAT/tree/master/figures):
   contains all the figures created during the workflow.
 
-- [`SIS_sample_6_1/`](https://github.com/LimaRAF/Data_harmonization/tree/master/SIS_sample_6_1):
-  contains sample examples of the IUCN SIS connect files used as a
-  standard to build the IUCN-required CSV files
+- [`tables/`](https://github.com/LimaRAF/THREAT/tree/master/tables):
+  contains the tables created during the workflow.
 
 ### Authors and contributors
 
@@ -381,7 +395,7 @@ funded by grants 2013/08722-5 (São Paulo Research Foundation - FAPESP),
 Technological Development - CNPq), and 2017TR1922 (Santa Catarina
 Research Foundation - FAPESC).
 
-### Acknowledgements
+### Acknowledgments
 
 We thank the CNCFlora staff (Patricia da Rosa, Gustavo Martinelli, Eline
 Martins, Rafael Loyola, Pablo H.A. de Melo, Thaís L.B. da Cunha) for the
