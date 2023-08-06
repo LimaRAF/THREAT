@@ -1,0 +1,23 @@
+﻿order,code,description,treeco,extra.description
+1,1,Food - human,food,Food or beverages for human consumption 
+2,10,"Wearing apparel, accessories",,"Clothing footwear, belts, bags, trimmings, etc. There may be some overlap here with 'Fibre'."
+3,11,Other household goods,,"For instance containers, furnishings, etc. with primarily utilitarian functions, though potentially highly decorated."
+4,12,"Handicrafts, jewellery, etc.",,"Finished goods with primarily ornamental/decorative rather than utilitarian function e.g., elephant or hippo ivory, wild pearls, shells, feathers, etc."
+5,13,"Pets/display animals, horticulture",ornamental,"Includes animals used as pets and for display (e.g., in zoos, circuses), plants used for re-planting for ornamental puposes, including private gardens and public display (e.g., botanical gardens) e.g., mantella frogs, orchids, etc."
+6,14,Research,,"Include specimens used in or as the subject of any type of research (e.g., behavioural, medicine, propagation, disease resistance, etc.) e.g., Nicobar Crabeating Macaque (Macaca fascicularis ) use in medical trials."
+7,15,Sport hunting/specimen collecting,,"Includes collection and preservation of dead specimens for personal pleasure, not for research; collection of live specimens should be included under 'Pets, display animals, horticulture'."
+8,16,Establishing ex-situ production *,,"Individuals harvested from the wild in order to establish captive or cultivated populations, which will then be harvested for any of the other end uses. For instance snakes harvested from the wild to establish ranching or captive breeding facilities with the aim of harvesting the offspring for skins destined for the clothing industry. The asterisk (*) indicates that the other end use(s) also need to be recorded, not just this use."
+9,17,Other (free text),,The end use should be added to the text box that appears when entering the scale of use.
+10,18,Unknown,,
+11,2,Food - animal,fodder,Used as food for animals
+12,3,Medicine - human & veterinary,medicinal,"Human and veterinary (materials administered specifically to treat or prevent a specific illness or injury. Items administered as vitamins, tonics, etc. should be included under food)"
+13,4,Poisons,poison,"poisons, pesticides, herbicides, fish poisons, etc."
+14,5,Manufacturing chemicals,resins_gums,"Solvents, dyes, adhesives, resins, etc. (whether for domestic or commercial/industrial use)"
+15,6,Other chemicals,essential_oils,"For instance: incense, perfumes, cosmetics, etc."
+16,7,Fuels,fuel,"Used as fuel including wood and charcoal production from wood, grasses, etc."
+17,8,Fibre,fibres,"Fibre for weaving sewing, rope, paper, etc. There may be some overlap here with 'Wearing apparel, accessories'."
+18,9,Construction or structural materials,timber,For instance timber trees or bamboo for building; includes thatching material.
+19,1,Food - human,alcohol,
+20,9,Construction or structural materials,fences,
+21,1,Food - human,lipids,
+22,5,Manufacturing chemicals,rubber_latex,
