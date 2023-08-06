@@ -5,9 +5,21 @@
 #####################################################
 rm(list=ls())
 
-## Loading packages
+## Loading packages and functions ##
+require(ConR)
 require(data.table)
 require(sp)
+require(rgdal)
+require(rgeos)
+require(cleangeo)
+require(raster)
+require(sf)
+require(sp)
+require(iNEXT)
+require(red)
+source("R/99_functions.R")
+
+
 
 # -----------------------------------------------------------------------------
 ####################################
@@ -62,8 +74,8 @@ occs.sp = SpatialPointsDataFrame(coords = cbind(occs$Long, occs$Lat),
                                                 "Ordem")])
 
 ## Getting only the occurrences within the AF buffer
-path <- "D://ownCloud//W_GIS" # Renato's path
-af <- rgdal::readOGR(dsn=paste(path,"//AF_limites_milton",sep=""),layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
+af <- rgdal::readOGR(dsn="data/AF_limits/",
+                     layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
 af <- rgeos::gBuffer(af, byid=TRUE, width=0) #correcting possible overlapping polygons
 af <- cleangeo::clgeo_Clean(af) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
 af <- raster::aggregate(af, dissolve=TRUE)
@@ -185,10 +197,14 @@ grid.proj1 <- raster::crop(grid.proj, af.buf)
 
 #### Summary of the sampling effort per grid cell ####
 ## Getting the new (clipped) polygon centroids
-source("R//polygon_centroid.R")
 grid.proj2 <- centroid(grid.proj1)
 grid.center <- polygonCenter(grid.proj)
 grid.center1 <- polygonCenter(grid.proj1)
+
+
+#################################
+#### SUMMARIES PER GRID CELL ####
+#################################
 
 ## Getting the summaries per grid cell
 grid.result = cbind.data.frame(order = 1:length(grid.proj), 
@@ -472,108 +488,6 @@ grid.result <- merge(grid.result, all,
 grid.result <- grid.result[order(grid.result$order),]
 
 
-#### Final edits of the grid summary ####
-## NO NEED - EFFECT WERE ONLY MARGINAL ##
-
-# ## Is there an effect of cell area on N.total and RLI? Yes, for all variables!
-# toto = grid.result[grid.result$area_ha<500000,]
-# toto = grid.result[!is.na(grid.result$area_ha),]
-# par(mfrow=c(1,1))
-# plot(log(toto$N.total) ~ toto$area_ha)
-# abline(lm(log(toto$N.total) ~ toto$area_ha))
-# plot(log(toto$S.total) ~ toto$area_ha)
-# abline(lm(log(toto$S.total) ~ toto$area_ha))
-# plot(toto$RLI ~ toto$area_ha)
-# abline(lm(toto$RLI ~ toto$area_ha))
-# plot(log(toto$N.total) ~ toto$area_ha.clip)
-# abline(lm(log(toto$N.total) ~ toto$area_ha.clip))
-# plot(toto$RLI ~ toto$area_ha.clip)
-# abline(lm(toto$RLI ~ toto$area_ha.clip))
-# 
-# 
-# ### Defining the relationship between cell area and sampling intensity and correcting the diversity estimates ###
-# #function that perform the corrections
-# # dados = grid.result
-# # lim.area = 500000
-# # nome.N = "N.total"
-# # nome.est = "RLI"
-# 
-# correct.estimates = function(dados,lim.area,nome.N,nome.est,...) {
-#   # data for cells < lim.area
-#   toto = dados[dados$area_ha < lim.area,]
-#   N = log(toto[,nome.N])
-#   ids = !is.na(N) & !is.infinite(N)
-#   area = toto$area_ha[ids]
-#   N = N[ids]
-#   # fitting and comparing the models: N ~ area
-#   mod.N = lm(N ~ area)
-#   mod.N1 = lm(N ~ area + I(area^2))
-#   aic = bbmle::AICtab(mod.N,mod.N1,sort=FALSE)
-#   if(aic$dAIC[1]>log(8)) mod.final = mod.N1 else mod.final = mod.N
-#   par(mfrow=c(1,3), las=1,mar=c(4,4,1,0.5),mgp=c(2,0.5,0),tcl=-.3,...)
-#   plot(N ~ area)
-#   curve(predict(mod.final, newdata= data.frame(area= x)),add=TRUE, lwd=2, col=2)
-#   # calculating the corrected sampling effort per grid cell
-#   if (aic$dAIC[1] > log(8)) { 
-#     N.est = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*area + coef(mod.final)[3]*area^2),2)
-#     N.max = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*1000000 + coef(mod.final)[3]*1000000^2),2)
-#   } else {
-#     N.est = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*area),2)
-#     N.max = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*1000000),2)
-#   }
-#   prop = (N.max - N.est)/N.est
-#   decay = try(nls(prop ~ a*exp(b*area), start=list(a=-0.2,b=0.00001)),TRUE)
-#   if (class(decay) == "try-error") decay = try(nls(prop~a*exp(b*area),start=list(a=-0.1,b=0.000001)),TRUE)
-#   plot(prop ~ area);   curve(coef(decay)[1]*exp(coef(decay)[2]*x), lwd=2, col=2, add=T)
-#   prop[prop < 0.0] = coef(decay)[1] * exp(coef(decay)[2] * area[prop < 0.0]) * 0.5
-#   N.correct = toto[,nome.N][ids] + round(prop*toto[,nome.N][ids],0)
-#   
-#   # data for cells < 250000
-#   toto = dados[dados$area_ha > lim.area,]
-#   ids = !is.na(toto[,nome.N]) & !is.na(toto[,nome.est]) & !is.infinite(log(toto[,nome.N])) & !is.infinite(log(toto[,nome.est]))
-#   N1 = log(toto[,nome.N])[ids]
-#   est = toto[,nome.est][ids]
-#   w = toto$SampCover[ids]
-#   # fitting and comparing the models: N ~ area
-#   mod.est  = lm(est ~ N1, weights = w^3)
-#   mod.est1 = lm(est ~ N1 + I(N1^2), weights = w^3)
-#   aic = bbmle::AICtab(mod.est,mod.est1,sort=FALSE)
-#   if (aic$dAIC[1]>log(8)) mod.final1 = mod.est1 else mod.final1 = mod.est
-#   plot(est ~ N1)
-#   curve(predict(mod.final1, newdata= data.frame(N1= x)),add=TRUE, lwd=2, col=2)
-#   # calculating the corrected sampling effort per grid cell
-#   if (aic$dAIC[1]>log(8)) { 
-#     est.pred = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*N + coef(mod.final1)[3]*N^2),4)
-#     est.est = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*log(N.correct) + coef(mod.final1)[3]*log(N.correct)^2),4)
-#   } else {
-#     est.pred = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*N),4)
-#     est.est = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*log(N.correct)),4)
-#   }
-#   prop1 = (est.est - est.pred)/est.est
-#   decay = try(nls(prop1~a*exp(b*area),start=list(a=0.001,b=0.000001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=5,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=1,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=0.1,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=-0.2,b=-0.00001)),TRUE)
-#   # plot(prop1 ~ area);   curve(coef(decay)[1]*exp(coef(decay)[2]*x), lwd=2, col=2, add=T)
-#   # prop1[prop1<0.0] = coef(decay)[1]*exp(coef(decay)[2]*area[prop1<0.0])*0.1
-#   prop1[prop1>0.0] = coef(decay)[1]*exp(coef(decay)[2]*area[prop1>0.0])*0.1
-#   
-#   # plot(prop1 ~ area)
-#   est.correct = dados[,nome.est]
-#   est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])] = est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])] +
-#     prop1 * est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])]
-#   plot(est.correct ~ dados[,nome.est], xlab="estimate",ylab="corrected est.")
-#   legend("topleft", nome.est, cex=1.2, bty="n");abline(0,1,lty=2)
-#   par(mfrow=c(1,1))
-#   return(est.correct)
-# }
-# 
-# #generating the corrected estimates for each group
-# grid.result$Median.RLI.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI")
-# grid.result$Median.RLI.end.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI.end")
-
-
 #### SAME CALCULATION BUT ONLY FOR THE SPECIES CATEGORIZED AS CR ####
 cr_spp <- occs1$Category %in% "CR"
 ### Number of occurrences, number of species and sampling coverage per site ###
@@ -720,7 +634,6 @@ saveRDS(grid.result, "data/grid.results_adaptive_resol.rds")
 ########################
 #### HEXAGONAL GRID #### 
 ########################
-rm(list=ls())
 gc()
 
 ## LOADING THE DATA  ##
@@ -783,11 +696,10 @@ ext <- raster::extent(grid1) + c(-50000,50000,-50000,50000)
 tmp <- raster::crop(tmp, ext)
 
 #Second, lets remove points too far away from the AF grid
-path <- "D://ownCloud//W_GIS" # Renato's path
-am.lat <- rgdal::readOGR(dsn=paste(path,"//Am_Lat_ADM_ArcGis",sep=""),layer="LatinAmerica")
-#s.am <- readRDS(paste(path,"//Am_Lat_ADM_GADM_v3.6//gadm36_SouthAm_0_sp.rds",sep=""))
-brasil = readRDS(paste(path,"//Am_Lat_ADM_GADM_v3.6//gadm36_BRA_1_sp.rds",sep=""))
-af <- rgdal::readOGR(dsn=paste(path,"//AF_limites_milton",sep=""),layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
+am.lat <- rgdal::readOGR(dsn="data/Am_Lat_ADM", layer="LatinAmerica")
+brasil <- readRDS("data/Am_Lat_ADM/gadm36_BRA_1_sp.rds")
+
+af <- rgdal::readOGR(dsn="data/AF_limits/", layer="merge_limites_MA11428_TNC_ARG_BR_PAR")
 af <- rgeos::gBuffer(af, byid=TRUE, width=0) #correcting possible overlapping polygons
 af <- cleangeo::clgeo_Clean(af) # fixing possible problems with the new aggregated polygon (e.g. orphaned holes)
 af <- raster::aggregate(af, dissolve=TRUE)
@@ -828,7 +740,6 @@ occs.sp@data$cell.ID[match(tmp$ordem, occs.sp@data$ordem)] <- result$cell.ID
 occs.sp <- occs.sp[!occs.sp@data$cell.ID %in% "IDNA", ]
 
 #### SUMMARIES REPRESENTATIVENESS OF THE SAMPLING EFFORT PER GRID CELL FOR EACH SPECIES GROUP ####
-source("R//polygon_centroid.R")
 grid.center <- polygonCenter(grid1)
 
 ## Getting the summaries per grid cell
@@ -949,103 +860,5 @@ head(all)
 grid.result <- merge(grid.result, all, 
                      by= "ID", all.x = TRUE, sort = FALSE)
 grid.result <- grid.result[order(grid.result$order),]
-
-#########################################
-#### Final edits of the grid summary ####
-#########################################
-
-## Is there an effect of cell area on N.total, RLI and RLI.end? Yes, for all variables!
-toto = grid.result[grid.result$area_ha<21500,]
-par(mfrow=c(1,1))
-plot(log(toto$N.total) ~ toto$area_ha)
-abline(lm(log(toto$N.total) ~ toto$area_ha))
-plot(log(toto$S.total) ~ toto$area_ha)
-abline(lm(log(toto$S.total) ~ toto$area_ha))
-plot(toto$RLI ~ toto$area_ha)
-abline(lm(toto$RLI ~ toto$area_ha))
-
-### Defining the relationship between cell area and sampling intensity and correcting the diversity estimates ###
-#function that perform the corrections
-# dados = grid.result
-# lim.area = 215000
-# nome.N = "N.total"
-# nome.est = "Median.RLI"
-
-# correct.estimates = function(dados,lim.area,nome.N,nome.est,...) {
-#   # data for cells < 250000
-#   toto = dados[dados$area_ha<lim.area,]
-#   N = log(toto[,nome.N])
-#   ids = !is.na(N) & !is.infinite(N)
-#   area = toto$area_ha[ids]
-#   N = N[ids]
-#   # fitting and comparing the models: N ~ area
-#   mod.N = lm(N ~ area)
-#   mod.N1 = lm(N ~ area + I(area^2))
-#   aic = bbmle::AICtab(mod.N,mod.N1,sort=FALSE)
-#   if(aic$dAIC[1]>log(8)) mod.final = mod.N1 else mod.final = mod.N
-#   par(mfrow=c(1,3), las=1,mar=c(4,4,1,0.5),mgp=c(2,0.5,0),tcl=-.3,...)
-#   plot(N ~ area)
-#   curve(predict(mod.final, newdata= data.frame(area= x)),add=TRUE, lwd=2, col=2)
-#   # calculating the corrected sampling effort per grid cell
-#   if (aic$dAIC[1] > log(8)) { 
-#     N.est = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*area + coef(mod.final)[3]*area^2),2)
-#     N.max = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*216506 + coef(mod.final)[3]*216506^2),2)
-#   } else {
-#     N.est = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*area),2)
-#     N.max = round(exp(coef(mod.final)[1] + coef(mod.final)[2]*216506),2)
-#   }
-#   prop = (N.max - N.est)/N.est
-#   decay = try(nls(prop ~ a*exp(b*area), start=list(a=25,b=-0.0001)),TRUE)
-#   if (class(decay) == "try-error") decay = try(nls(prop~a*exp(b*area),start=list(a=10,b=-0.0001)),TRUE)
-#   #plot(prop ~ area);   curve(coef(decay)[1]*exp(coef(decay)[2]*x), lwd=2, col=2, add=T)
-#   prop[prop < 0.0] = coef(decay)[1] * exp(coef(decay)[2] * area[prop < 0.0]) * 0.5
-#   N.correct = toto[,nome.N][ids] + round(prop*toto[,nome.N][ids],0)
-#   
-#   # data for cells < 250000
-#   toto = dados[dados$area_ha > 170000,]
-#   ids = !is.na(toto[,nome.N]) & !is.na(toto[,nome.est]) & !is.infinite(log(toto[,nome.N])) & !is.infinite(log(toto[,nome.est]))
-#   N1 = log(toto[,nome.N])[ids]
-#   est = toto[,nome.est][ids]
-#   w = toto$SampCover[ids]
-#   # fitting and comparing the models: N ~ area
-#   mod.est  = lm(est ~ N1, weights = w^3)
-#   mod.est1 = lm(est ~ N1 + I(N1^2), weights = w^3)
-#   aic = bbmle::AICtab(mod.est,mod.est1,sort=FALSE)
-#   if (aic$dAIC[1]>log(8)) mod.final1 = mod.est1 else mod.final1 = mod.est
-#   plot(est ~ N1)
-#   curve(predict(mod.final1, newdata= data.frame(N1= x)),add=TRUE, lwd=2, col=2)
-#   # calculating the corrected sampling effort per grid cell
-#   if (aic$dAIC[1]>log(8)) { 
-#     est.pred = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*N + coef(mod.final1)[3]*N^2),4)
-#     est.est = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*log(N.correct) + coef(mod.final1)[3]*log(N.correct)^2),4)
-#   } else {
-#     est.pred = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*N),4)
-#     est.est = round(exp(coef(mod.final1)[1] + coef(mod.final1)[2]*log(N.correct)),4)
-#   }
-#   prop1 = (est.est - est.pred)/est.est
-#   decay = try(nls(prop1~a*exp(b*area),start=list(a=25,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=5,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=1,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=0.1,b=-0.0001)),TRUE)
-#   if(class(decay) == "try-error") decay = try(nls(prop1~a*exp(b*area),start=list(a=-0.2,b=-0.00001)),TRUE)
-#   # plot(prop1 ~ area);   curve(coef(decay)[1]*exp(coef(decay)[2]*x), lwd=2, col=2, add=T)
-#   # prop1[prop1<0.0] = coef(decay)[1]*exp(coef(decay)[2]*area[prop1<0.0])*0.1
-#   prop1[prop1>0.0] = coef(decay)[1]*exp(coef(decay)[2]*area[prop1>0.0])*0.1
-#   
-#   # plot(prop1 ~ area)
-#   est.correct = dados[,nome.est]
-#   est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])] = est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])] +
-#     prop1 * est.correct[dados$area_ha<lim.area & !is.na(dados[,nome.N])]
-#   plot(est.correct ~ dados[,nome.est], xlab="estimate",ylab="corrected est.")
-#   legend("topleft", nome.est, cex=1.2, bty="n");abline(0,1,lty=2)
-#   par(mfrow=c(1,1))
-#   return(est.correct)
-# }
-# 
-# #generating the corrected estimates for each group
-# grid.result$Median.RLI.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI")
-# grid.result$Median.RLI.end.correct = correct.estimates(grid.result,215000,"N.total","Median.RLI.end")
-
 ## Saving the grid results
 saveRDS(list(grid.result, samp.cov.cutoff), "data/grid.results_50km.rds")
-

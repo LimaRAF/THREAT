@@ -4,7 +4,7 @@
 rm(list = ls())
 
 # READING NECESSARY FILES ------------------------------------------------------
-source("./R/98_internal_functions.R")
+source("./R/99_functions.R")
 
 ## Reading the THREAT species list
 tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 2, 3)]
@@ -19,7 +19,7 @@ iucn2 <- readRDS("data/threat_iucn_taxonomy.rds")
 spp.info <- readRDS("data/threat_flora_info.rds")
 
 ## Reading THREAT species habitat data
-hab1 <- read.csv("data/threat_habitats_preliminar1.csv")
+hab1 <- readRDS("data/threat_habitats.rds")
 
 ## Reading THREAT from the Brazilian Flora Online (FBO)
 taxon2 <- readRDS("data/threat_fbo_tax_info.rds")
@@ -33,47 +33,24 @@ syn.br <- read.csv("data/new_synonyms_floraBR.csv",
 occs <- readRDS("data/threat_species_by_country.rds")
 
 ## Reading the global IUCN assessments (IUCN) 
-#Citation: IUCN 2020. IUCN Red List of Threatened Species. Version 2020-1 <www.iucnredlist.org>
-# iucn <- read.csv("IUCN_2020_assessments.csv", as.is = TRUE, na.string = c(NA,""," "))
-#Citation: IUCN 2021. IUCN Red List of Threatened Species. Version 2021-1 <www.iucnredlist.org>
-# iucn <- read.csv("IUCN_2021_v1_assessments.csv", as.is = TRUE, na.string = c(NA,""," "))
 #Citation: IUCN 2023. IUCN Red List of Threatened Species. Version 2022-2 <www.iucnredlist.org>
-iucn <- readRDS("IUCN_2022_v2_assessments_THREAT.rds")
-iucn.sis <- readRDS("IUCN_2022_v2_sis_connect_THREAT.rds")
+iucn <- readRDS("data/IUCN_2022_v2_assessments_THREAT.rds")
+iucn.sis <- readRDS("data/IUCN_2022_v2_sis_connect_THREAT.rds")
 
-## Reading species endemism levels in respect to the AF (from a)
-# af.list <- read.csv("C:/Users/renat/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixC_af_checklist.csv", as.is=TRUE)
-# end <- read.csv("C:/Users/renat/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixF_endemism_levels.csv", as.is=TRUE)
-af.list <- read.csv("./data/outside_data/AppendixC_af_checklist.csv", as.is=TRUE)
-end <- read.csv("./data/outside_data/AppendixF_endemism_levels.csv", as.is=TRUE)
+## Reading species endemism levels in respect to the AF
+end <- readRDS("data/threat_endemism.rds")
 
-## Reading probable occurrences of tree species in the AF (from a)
-# end.prob <- read.csv("C:/Users/renat/Documents/raflima/Pos Doc/Manuscritos/Artigo AF checklist/data analysis/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
-end.prob <- read.csv("./data/outside_data/AppendixD_probable_occurrences.csv", as.is=TRUE)[,1:5]
-
-## Reading the CITES/EU listings
-#LOADING BELOW, DIRECTLY WITH THE CODES
-# cites1 <- readRDS("data/threat_cites.rds")
-# EU1 <- readRDS("data/EU_listings_data.rds")
 
 ## Reading TreeCo species use database and associated functions
-# path = "C:/Users/renat/Documents/raflima/Pos Doc/Databases/TreeCo Database Management"
-# source(paste(path,"uses_data_prep.R",sep="/"))
-# usos <- read.csv("C://Users//renat//Documents//raflima//Pos Doc//Databases//Species Uses//plant_uses.csv", 
-#                  na.strings = c(""," ",NA), encoding = "UTF-8")
-
-source("./data/outside_data/uses_data_prep.R")
-usos <- read.csv("./data/outside_data/plant_uses.csv", 
+source("./data/data-raw/uses_data_prep.R")
+usos <- read.csv("./data/data-raw/plant_uses.csv", 
                  na.strings = c(""," ",NA), encoding = "UTF-8")
 
 ## Reading THREAT assessments
 all.crit <- readRDS("data/all.criteria.rds")
-all.crit <- all.crit[, -142]
 
-## CITES
+## Reading the CITES/EU listings
 cites <- readRDS("data/threat_cites_EU.rds")
-
-## CREATING COMBINED INFO FOR ALL SPECIES ##
 all.spp <- merge(all.crit, tax,
                  by.x = "species", by.y = "species.correct2", all.x = TRUE, sort = FALSE)
 all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appendix", "annotation")],
@@ -86,6 +63,22 @@ saveRDS(all.spp, "data/all_spp_crits_tax_cites.rds")
 
 ###############################################################################H
 ###############################################################################H
+
+# EOO SHAPEFILES ---------------------------------------------------------------
+
+shapes <- readRDS("data/spp.convex.hull.polys_sf_uncropped.rds")
+shapes <- sf::st_transform(shapes, crs = 3857)
+shapes <- sf::st_transform(shapes, crs = 4326)
+sf::sf_use_s2(FALSE)
+shp.area <- sf::st_area(shapes)
+small.area <- !as.double(shp.area) <= (2010*2010) # EOO smaller than the minimum AOO
+shapes1 <- shapes[small.area, ]
+writeLines(shapes1$tax, "data/sis_connect/spp_with_shapes.txt")
+toto <- full.tax[ , c("species.correct2", "internal_taxon_id")]
+names(shapes1)[1] <- "species.correct2"
+shapes2 <- dplyr::left_join(shapes1, toto)
+saveRDS(shapes2, "data/sis_connect/polygons_threat.rds", compress = TRUE)
+
 # TAXONOMY ---------------------------------------------------------------------
 ## Filtering and creating the final columns
 final.cols <- c("kingdom","phylum","classname","ordername","family","genus",
@@ -152,7 +145,8 @@ names(full.tax1)[names(full.tax1) %in% "species.correct2"] <- "species"
 names(full.tax1)[names(full.tax1) %in% "scientificNameAuthorship"] <- "taxonomicAuthority"
 full.tax1 <- full.tax1[order(full.tax1$species),]
 table(full.tax1$species == ncbi.taxonomy$species.correct2)
-full.tax1$classname <- ncbi.taxonomy$classname
+classes <- ncbi.taxonomy$classname[match(ncbi.taxonomy$species.correct2, full.tax1$species, nomatch = 0)]
+full.tax1$classname <- classes
 
 #Solving encoding problems
 full.tax1$taxonomicAuthority <- gsub("Ã¼","ü",full.tax1$taxonomicAuthority)
@@ -173,7 +167,7 @@ full.tax1$taxonomicAuthority[grepl("Ã",full.tax1$taxonomicAuthority)] <-
 saveRDS(full.tax1, "data/threat_final_taxonomy.rds")
 
 ## Sample of the SIS CONNECT taxonomy v6.1
-sample <- read.csv("SIS_sample_6_1/taxonomy.csv")
+sample <- read.csv("data/SIS_sample_6_1/taxonomy.csv")
 head(sample, 3)
 apply(sample, 2, unique)
 names(sample)
@@ -278,7 +272,7 @@ tutu1$language <- stringr::str_replace_all(tutu1$language,
 
 
 ## Sample of the SIS CONNECT taxonomy v6.1
-sample <- read.csv("SIS_sample_6_1/commonnames.csv")
+sample <- read.csv("data/SIS_sample_6_1/commonnames.csv")
 apply(sample, 2, unique)
 names(sample)
 head(sample, 3)
@@ -363,7 +357,7 @@ synonyms$speciesName <-
   stringr::str_trim(sapply(strsplit(synonyms$speciesName, " "), function(x) paste(x[1],x[2], sep=" ")))
 
 ## Sample of the SIS CONNECT taxonomy v6.1
-sample <- read.csv("SIS_sample_6_1/synonyms.csv")
+sample <- read.csv("data/SIS_sample_6_1/synonyms.csv")
 apply(sample, 2, unique)
 names(sample)
 head(sample, 3)
@@ -436,7 +430,7 @@ hab1$HabitatDocumentation.narrative <- NA
 # 4.7 Subtropical/Tropical High Altitude Grassland: included here as Campos Rupestres, but Jung et al. 2020 also classify them as 3.7
 
 ## Loading the table with the conversions
-hab_equiv <- read.csv("./SIS_sample_6_1/IUCN_habitat_classification_and_equivalencies.csv", as.is = TRUE)
+hab_equiv <- read.csv("data/SIS_sample_6_1/IUCN_habitat_classification_and_equivalencies.csv", as.is = TRUE)
 
 hab_equiv$vegetation.type.reflora <- 
   gsub("(", "\\(", hab_equiv$vegetation.type.reflora, fixed = TRUE)
@@ -446,30 +440,21 @@ hab_equiv$vegetation.type.reflora <-
   gsub("=", "\\=", hab_equiv$vegetation.type.reflora, fixed = TRUE)
 hab_equiv1 <- hab_equiv[!is.na(hab_equiv$vegetation.type.reflora), ] 
 
-hab1$vt <- hab1$vegetation.type.reflora
+## Any new info in FBO?
+unknown.vt <- hab1$species.correct[is.na(hab1$vegetation.type.reflora)]
+hab1$vegetation.type.reflora[is.na(hab1$vegetation.type.reflora)] <- 
+  flora::get.taxa(unknown.vt, vegetation.type = TRUE)$vegetation.type
 
+## Raplacing habitat types by the IUCN categories
+hab1$vt <- hab1$vegetation.type.reflora
 for (i in seq_along(hab_equiv1$vegetation.type.reflora)) {
   patt <- hab_equiv1$vegetation.type.reflora[i]
   rplc <- hab_equiv1$code[i]
   hab1$vt <- gsub(patt, rplc, hab1$vt, perl = TRUE)
 }
-# forests <- 'Floresta Ombrófila \\(\\= Floresta Pluvial\\)|Floresta Estacional Semidecidual|Floresta Ombrófila Mista|Floresta de Terra Firme|Floresta Ciliar ou Galeria|Floresta Estacional Perenifólia'
-# hab1$vt <- gsub(forests, "1.6", hab1$vt, perl = TRUE)
-# savanas <- 'Cerrado \\(lato sensu\\)|Caatinga \\(stricto sensu\\)|Campo Limpo|Savana Amazônica'
-# hab1$vt <- gsub(savanas, "2.1", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("Carrasco|Restinga|Campinarana", "3.5", hab1$vt)
-# hab1$vt <- gsub("Campo rupestre|Campo de Altitude|Campo de Altitude", "4.7", hab1$vt)
-# hab1$vt <- gsub("Floresta Estacional Decidual|Chaco", "1.5", hab1$vt)
-# hab1$vt <- gsub("Floresta de Várzea|Floresta de Igapó", "1.8", hab1$vt)
-# hab1$vt <- gsub("Vegetação Sobre Afloramentos Rochosos", "6", hab1$vt)
-# hab1$vt <- gsub("Área Antrópica", "14.5", hab1$vt)
-# hab1$vt <- gsub("Manguezal", "1.7", hab1$vt)
-# hab1$vt <- gsub("Campo de Várzea", "4.6", hab1$vt)
-# hab1$vt <- gsub("Palmeiral", "2.1", hab1$vt)
-# hab1$vt <- gsub("Vegetação Aquática", "4.6", hab1$vt)
 hab1$vt <- sapply(strsplit(hab1$vt,"\\|"), 
                   function(x) paste(sort(as.double(unique(x)), na.last = T), collapse = "|", sep=""))
-hab1$vt[hab1$vt %in% "NA"] <- "1.6"
+hab1$vt[hab1$vt %in% "NA"] <- "1.6" ### CHECK HERE: Should we assume forests in general or use Unknown (IUCN code 18)? ###
 names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsLookup"
 
 #GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName:	(e.g. Habitat description, e.g. Shrubland ->Shrubland - Temperate)
@@ -483,56 +468,6 @@ for (i in seq_along(hab_equiv$code)) {
   hab1$vt <- gsub(paste0("\\|", patt, "$"), paste0("|", rplc), hab1$vt, perl = TRUE)
   hab1$vt <- gsub(paste0("\\|", patt, "\\|"), paste0("|", rplc, "|"), hab1$vt, perl = TRUE)
 }
-
-# hab1$vt <- gsub("^1\\.5$", "Forest - Subtropical/Tropical Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^1\\.5\\|", "Forest - Subtropical/Tropical Dry|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.5$", "|Forest - Subtropical/Tropical Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.5\\|", "|Forest - Subtropical/Tropical Dry|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^1\\.6$", "Forest - Subtropical/Tropical Moist Lowland", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^1\\.6\\|", "Forest - Subtropical/Tropical Moist Lowland|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.6$", "|Forest - Subtropical/Tropical Moist Lowland", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.6\\|", "|Forest - Subtropical/Tropical Moist Lowland|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^1\\.7$", "Forest - Subtropical/Tropical Mangrove Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^1\\.7\\|", "Forest - Subtropical/Tropical Mangrove Vegetation Above High Tide Level|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.7$", "|Forest - Subtropical/Tropical Mangrove Vegetation Above High Tide Level", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.7\\|", "|Forest - Subtropical/Tropical Mangrove Vegetation Above High Tide Level|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^1\\.8$", "Forest - Subtropical/Tropical Swamp", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^1\\.8\\|", "Forest - Subtropical/Tropical Swamp|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.8$", "|Forest - Subtropical/Tropical Swamp", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|1\\.8\\|", "|Forest - Subtropical/Tropical Swamp|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^2\\.1$", "Savanna - Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^2\\.1\\|", "Savanna - Dry|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|2\\.1$", "|Savanna - Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|2\\.1\\|", "|Savanna - Dry|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^3\\.5$", "Shrubland - Subtropical/Tropical Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^3\\.5\\|", "Shrubland - Subtropical/Tropical Dry|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|3\\.5$", "|Shrubland - Subtropical/Tropical Dry", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|3\\.5\\|", "|Shrubland - Subtropical/Tropical Dry|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^4\\.6$", "Grassland - Subtropical/Tropical Seasonally Wet/Flooded", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^4\\.6\\|", "Grassland - Subtropical/Tropical Seasonally Wet/Flooded|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|4\\.6$", "|Grassland - Subtropical/Tropical Seasonally Wet/Flooded", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|4\\.6\\|", "|Grassland - Subtropical/Tropical Seasonally Wet/Flooded|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^4\\.7$", "Grassland - Subtropical/Tropical High Altitude", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^4\\.7\\|", "Grassland - Subtropical/Tropical High Altitude|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|4\\.7$", "|Grassland - Subtropical/Tropical High Altitude", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|4\\.7\\|", "|Grassland - Subtropical/Tropical High Altitude|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^6$", "Rocky areas (eg. inland cliffs, mountain peaks)", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^6\\|", "Rocky areas (eg. inland cliffs, mountain peaks)|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|6$", "|Rocky areas (eg. inland cliffs, mountain peaks)", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|6\\|", "|Rocky areas (eg. inland cliffs, mountain peaks)|", hab1$vt, perl = TRUE)
-# 
-# hab1$vt <- gsub("^14\\.5$", "Artificial/Terrestrial - Urban Areas", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("^14\\.5\\|", "Artificial/Terrestrial - Urban Areas|", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|14\\.5$", "|Artificial/Terrestrial - Urban Areas", hab1$vt, perl = TRUE)
-# hab1$vt <- gsub("\\|14\\.5\\|", "|Artificial/Terrestrial - Urban Areas|", hab1$vt, perl = TRUE)
 names(hab1)[grepl("^vt", names(hab1))] <- "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName"
 
 #GeneralHabitats.GeneralHabitatsSubfield.suitability:	Suitability - defaults to suitable if not provided
@@ -544,7 +479,7 @@ names(hab1)[grepl("^GL", names(hab1))] <- "GenerationLength.range"
 #MaleMaturitySize.size:	Size at Maturity (in cms): Male
 hab1$FemaleMaturitySize.size <- hab1$MaleMaturitySize.size <- hab1$DBH
 
-#MaxSize.size	Maximum Size (in cms)
+#MaxSize.size	Maximum Size (in cm)
 names(hab1)[grepl("^MaxHeight", names(hab1))] <- "MaxSize.size"
 hab1$MaxSize.size <- hab1$MaxSize.size * 100
 
@@ -582,15 +517,15 @@ names(hab1)[grepl("^pgf1$", names(hab1))] <- "PlantGrowthForms.PlantGrowthFormsS
 #GenerationLength.justification
 standard.texts_en <- data.frame(GL1 = "Field measurements of generation length are largely missing for Neotropical trees. 
                              Therefore, an approach based on tree functional types was used to set proxies of species generation lengths based on their growth form and ecological group. 
-                             Values of the proxies ranged from 10 (for pioneer shrubs) to 80 years (large, climax trees), which are reasonable values for tropical trees obtained using IUCN approximative method number 3 (IUCN 2019, p.29) and based on empirical evidence of tree species development in forested conditions. 
+                             Values of the proxies ranged from 7 (for pioneer shrubs) to 80 years (large, climax trees), which are reasonable values for tropical trees obtained using IUCN approximative method number 3 (IUCN 2019, p.29) and based on empirical evidence of tree species development in forested conditions. 
                              This species was classified as ",
-                             GL2 = "More details on this approximate method to define species generation lengths can be found in Lima et al. (in prep.).",
+                             GL2 = "More details on this approximate method to define species generation lengths can be found in Lima et al. (2023).",
                              stringsAsFactors = FALSE)
 texto.pt1 <- c("Medidas em campo do comprimento ou tempo de geração (sensu IUCN 2019) não existem para a maioria das espécies arbóreas Neotropicais. 
 Portanto, um abordagem baseada em tipos funcionais foi usado para definir valores aproximados do tempo de geração em função da forma de vida e do grupo ecológico das espécies. 
 Esses valores variaram entre 10 (para arbustos pioneiros) e 80 anos (árvores altas e de final de sucessão), que são valores razoáveis considerando tempos de geração de árvores tropicais obtidos usando o método aproximativo número 3 da IUCN (IUCN 2019, p.29) e baseado nas evidências de campo sobre crescimento de espécies arbóreas tropicais em condições florestais. 
 A espécie foi classificada como '")
-texto.pt2 <- c("Mais detalhes sobre os métodos usados para definir o comprimento de geração aproximado podem ser encontrados em Lima et al. (in prep.).")
+texto.pt2 <- c("Mais detalhes sobre os métodos usados para definir o comprimento de geração aproximado podem ser encontrados em Lima et al. (2023).")
 hab1$GenerationLength.justification <- paste0(texto.pt1, hab1$PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName,
                                               "', em relação a sua forma de crescimento (altura máxima de ", hab1$MaxSize.size/100," m), e como '",
                                               hab1$ecol.group,"', em relação ao seu grupo ecológico. ", texto.pt2)
@@ -617,14 +552,14 @@ hab1$GenerationLength.justification <-
 
 ## Any missing info?
 #Any missing GL?
-hab1$GenerationLength.range[is.na(hab1$GenerationLength.range)] <- 50
+hab1$GenerationLength.range[is.na(hab1$GenerationLength.range)] <- 45
 #Any missing p?
 hab1$p.ci[is.na(hab1$p.est)] <- "0.44-0.47"
 hab1$p.est[is.na(hab1$p.est)] <- 0.454
 
 
 ## Sample of the SIS CONNECT taxonomy v6.1
-sample <- read.csv("SIS_sample_6_1/habitats.csv")
+sample <- read.csv("data/SIS_sample_6_1/habitats.csv")
 head(sample, 3)
 names(sample)
 apply(sample, 2, unique)
@@ -649,9 +584,6 @@ cols <- c("internal_taxon_id","Name_submitted",
           "habito","life.form","DBH","wsg","ecol.group","dispersal.syndrome","SeedMass_g"
 )
 hab2 <- hab2[, cols]
-
-## Manual updates
-hab2$ecol.group[hab2$Name_submitted %in% "Ximenia americana"] <- "early_secondary"
 
 ## Saving the supporting files
 # write.csv(standard.texts, "data/threat_standard_texts.csv", 
@@ -735,7 +667,7 @@ write.csv(hab5, "data/sis_connect/habitats_threat_merged_iucn.csv",
 # PLANT SPECIFIC ---------------------------------------------------------------
 
 ## Sample of the SIS CONNECT taxonomy v6.1
-sample <- read.csv("SIS_sample_6_1/plantspecific.csv")
+sample <- read.csv("data/SIS_sample_6_1/plantspecific.csv")
 head(sample, 3)
 apply(sample, 2, unique)
 names(sample)
@@ -776,7 +708,7 @@ write.csv(hab7, "data/sis_connect/plantspecific_threat_merged_iucn.csv",
 
 ## Generating the SIS CONNECT file "countries.csv"
 ### sample from SIS CONNECT v6.1
-head(read.csv("SIS_sample_6_1/countries.csv"))
+head(read.csv("data/SIS_sample_6_1/countries.csv"))
 
 ## Getting info from reflora and formatting
 taxon2 <- taxon2[,c("occurrence", "species.correct2")]
@@ -826,7 +758,7 @@ tmp$iso2 <- countrycode::countrycode(tmp$NAME_0, "country.name", "iso2c")
 tmp$code <- tmp$iso2
 
 # SIS CONNECT codes (states/provinces)
-lookup.codes <- read.csv("SIS_sample_6_1/Countryoccurrence.countryoccurrencelookup.csv", 
+lookup.codes <- read.csv("data/SIS_sample_6_1/Countryoccurrence.countryoccurrencelookup.csv", 
                          encoding = "UTF-8")
 for (i in 1:length(paises.ADM1)) {
   pais.i <- countrycode::countrycode(paises.ADM1[i], "country.name", "iso2c")
@@ -867,8 +799,8 @@ countries2 <- .merge_sis_connect(countries1, type = "countries", tax.table = tax
 ## Saving
 countries1$species.correct2 <- NULL
 head(countries,3)
-head(read.csv("SIS_sample_6_1/countries.csv"),3)
-table(names(countries1) == names(read.csv("SIS_sample_6_1/countries.csv")))
+head(read.csv("data/SIS_sample_6_1/countries.csv"),3)
+table(names(countries1) == names(read.csv("data/SIS_sample_6_1/countries.csv")))
 write.csv(countries1, "data/sis_connect/countries_threat.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
@@ -886,7 +818,6 @@ write.csv(countries2, "data/sis_connect/countries_threat_merged_iucn.csv",
 
 ## Getting the list of species in the Atlantic Forest
 prev.assess <- tax
-# prev.assess <- readRDS("data/herbarium_spp_data.rds")[, c(1, 2, 3)]
 
 ## Getting the IUCN assessments for Brazil (CNCFlora) - National level
 tmp = flora::get.taxa(prev.assess$species.correct2, 
@@ -935,136 +866,12 @@ saveRDS(prev.assess, "data/sis_connect/prev_assessments_threat.rds")
 ###############################################################################H
 ###############################################################################H
 # ENDEMISM LEVELS --------------------------------------------------------------
-
-## Species endemism levels in respect to the AF from 
-end1 <- end[,c(1,2,7,9,11)]
-
-## Getting species statuses from the AF checklist
-af.list$scientific.name <- gsub("M\xfcll", "Müll", af.list$scientific.name, fixed = TRUE)
-af.list1 <- plantR::fixSpecies(af.list, tax.name = "scientific.name")
-fix.spp <- af.list1[!af.list1$scientificNameStatus %in% "name_w_authors", "scientificName.new"]
-af.list1$scientificName.new[!af.list1$scientificNameStatus %in% "name_w_authors"] <-
-  as.character(sapply(strsplit(fix.spp, " "), function(x) paste(x[1], x[2])))
-names(af.list1)[9] <- "species"
-end1 <- dplyr::left_join(end1, 
-                         af.list1[ ,c("family", "species", "status")])
-
-## Replacing the synonym 
-syn.br <- syn.br[syn.br$status %in% c("replace", "invert"), ]
-for (i in 1:dim(syn.br)[1]) {
-  
-  sp.i <- syn.br$original.search[i]
-  rpl.i <- syn.br$search.str[i]
-  st.i <- syn.br$status[i]
-  
-  if (st.i == "replace") {
-    end1$species[end1$species %in% sp.i] <- rpl.i
-  }
-}
-
-##Getting mean endemism for new synonyms
-tmp <- aggregate(cbind(endemism.level..validated.taxonomy.only., 
-                       endemism.level..validated.and.probably.validated.taxonomy.) ~ 
-                   family + species, FUN = mean, data=end1)
-tmp1 <- aggregate(endemism.accepted.by.the.BF.2020 ~ family + species, 
-                  FUN = function(x) paste(unique(x), collapse = "|"), data=end1)
-tmp2 <- aggregate(status ~ family + species, 
-                  FUN = function(x) paste(unique(x), collapse = "|"), data=end1)
-tmp2$status[grepl("confirmed", tmp2$status)] <- "confirmed"
-tmp2$status[grepl("new to AF", tmp2$status)] <- "new to AF"
-tmp1 <- dplyr::left_join(tmp1, tmp2)
-end1 <- dplyr::left_join(tmp, tmp1)
-
-fbo <- readRDS("data/threat_fbo_tax_info.rds")[,c("species.correct2","phytogeographicDomain","endemism")]
-names(fbo)[1] <- "species"
-fbo$endemism <- stringr::str_to_title(fbo$endemism)
-fbo <- fbo[!is.na(duplicated(fbo$species)),]
-end1 <- dplyr::left_join(end1, fbo)
-end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
-                                       !grepl("Mata Atlântica", end1$phytogeographicDomain)] <- "Not in the AF"
-end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
-                                       end1$phytogeographicDomain %in% "Mata Atlântica" &
-                                       end1$endemism %in% "Endemic"] <- "Endemic"
-end1$endemism.accepted.by.the.BF.2020[!is.na(end1$phytogeographicDomain) & 
-                                       grepl("Mata Atlântica", end1$phytogeographicDomain) &
-                                       !end1$phytogeographicDomain %in% "Mata Atlântica"] <- "Not endemic"
-end1$endemism.accepted.by.the.BF.2020[end1$species %in% "Myrcia glomerata"] <- "Not endemic"
-
-
-##Classification
-end1$endemic <- NA
-end1$endemic[end1$endemism.level..validated.taxonomy.only. >= 85 & end1$endemism.level..validated.and.probably.validated.taxonomy. >= 85 & 
-              !end1$endemism.accepted.by.the.BF.2020 %in% "Not in the AF"] <- "endemic"
-end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 50 & end1$endemism.level..validated.and.probably.validated.taxonomy. >= 50 &
-              end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "endemic"
-end1$endemic[end1$endemism.level..validated.taxonomy.only. < 15 & end1$endemism.level..validated.and.probably.validated.taxonomy. < 15 &
-              !end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "occasional"
-end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 50 & 
-              end1$endemism.level..validated.and.probably.validated.taxonomy. >= 50] <- "widespread_common"
-end1$endemic[is.na(end1$endemic) & end1$endemism.level..validated.taxonomy.only. >= 15 & 
-              end1$endemism.level..validated.and.probably.validated.taxonomy. >= 15] <- "widespread_sparse"
-end1$endemic[is.na(end1$endemic) & 
-              end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_common"
-end1$endemic[is.na(end1$endemic) & 
-              !end1$endemism.accepted.by.the.BF.2020 %in% "Endemic"] <- "widespread_sparse"
-table(end1$endemic, useNA = "always")
-
-#Probable occurrences
-#end.prob$species  <- sapply(end.prob$scientific.name, flora::remove.authors)
-end.prob$species  <- sapply(end.prob$scientific.name, function(x) paste(strsplit(x, " ")[[1]][1:2], collapse = " "))
-end.prob1 <- end.prob[end.prob$status %in% "no records found but cited in BF.2020",]
-end.prob1 <- end.prob1[!end.prob1$species %in% end1$species,]
-
-tmp <- flora::get.taxa(end.prob1$species)
-tmp1 <- flora::get_domains(tmp)
-tmp2 <- flora::get_endemism(tmp)
-end.prob1$domain <- tmp1$domain 
-end.prob1$end.br <- tmp2$endemism 
-end.prob1$endemic <- NA
-end.prob1$endemic[end.prob1$domain %in% "Mata Atlântica" & 
-                   end.prob1$end.br %in%  "Endemica"] <- "endemic"
-end.prob1$endemic[is.na(end.prob1$endemic) & grepl("Mata Atlântica", end.prob1$domain)] <- 
-  "not_endemic"
-end.prob1$endemic[is.na(end.prob1$endemic) & !grepl("Mata Atlântica", end.prob1$domain)] <- 
-  "not in the AF"
-table(end.prob1$endemic, useNA = "always")
-
-#Merging the two data.frames
-end2 <- end1[,c("family","species",
-               "endemism.level..validated.and.probably.validated.taxonomy.",
-               "endemism.level..validated.taxonomy.only.",
-               "endemic",
-               "status")]
-names(end2)[3:4] <- c("endemism.level.1","endemism.level.2") 
-
-end.prob1$endemism.level.1 <- NA
-end.prob1$endemism.level.2 <- NA
-end.prob2 <- end.prob1[,c("family","species",
-                         "endemism.level.1",
-                         "endemism.level.2",
-                         "endemic", "status")]
-end.final <- rbind.data.frame(end2, end.prob2,
-                              stringsAsFactors = FALSE)
-end.final <- end.final[order(end.final$species),]
-
-##Getting the endemism in Brazil (no CNCFlora 'jurisidction')
-names(fbo.info)[which(names(fbo.info) == "species.correct2")] <- "species" 
-tmp0 <- dplyr::left_join(end.final, fbo.info, by = "species")
-tmp <- flora::get.taxa(end.final$species)
-tmp1 <- flora::get_endemism(tmp)
-tmp0$endemism[is.na(tmp0$endemism)] <- 
-  tmp1$endemism[is.na(tmp0$endemism)]
-table(tmp0$species == end.final$species)
-end.final$endemic.BR <- tmp0$endemism 
-end.final$endemic.BR[end.final$endemic.BR %in% "Endemica"] <- 
-  "endemic"
-end.final$endemic.BR[end.final$endemic.BR %in% "Não endemica"] <- 
-  "not_endemic"
-end.final$endemic.BR[end.final$endemic.BR %in% "not endemic"] <- 
-  "not_endemic"
+## CODES TO PREPARE ENDEMISM DATA ARE IN SCRIPT 03_prep_species_info.R
+## Reading here the output of the codes in that script
 
 ## Getting the endemism from other AF countries
-end.final1 <- dplyr::left_join(end.final, 
+end.final <- end
+end.final1 <- dplyr::left_join(end.final,
                                all.crit[,c("species", "endemism.ARG")])
 
 ## Saving
@@ -1072,165 +879,13 @@ saveRDS(end.final1, "data/sis_connect/endemism_threat.rds")
 
 
 
-###############################################################################H
-###############################################################################H
+# ###############################################################################H
+# ###############################################################################H
 # CITES LIST -------------------------------------------------------------------
 
-# ## Paralelizing to get all 166 CITES pages faster
-# cl <- snow::makeSOCKcluster(6)
-# doSNOW::registerDoSNOW(cl)
-# `%d%` <- foreach::`%dopar%`
-# x <- NULL
-# cites0 <- foreach::foreach(
-#   x = 1:166,
-#   #.combine = 'c',
-#   .options.snow = NULL
-# ) %d% {
-#   try(rcites::spp_taxonconcept(query_taxon = '', pages = x, 
-#                                token = "r5BFEg69iKmfx8OCqm3tIgtt"), TRUE)
-# }
-# snow::stopCluster(cl)
-# # for(i in 1:6) {
-# #   ele.i <- c(161:166)[i]
-# #   cites[[ele.i]] <- cites0[[i]]
-# # }
-# 
-# ## Binding all pages together
-# cites1 <- vector("list", 7)
-# names(cites1) <- c("all_id", "general", "higher_taxa", "accepted_names", 
-#                    "common_names", "synonyms", "cites_listings")
-# for(i in 1:7) {
-#   cites1.i <- lapply(cites, function(x) x[[i]])
-#   non.empty <- sapply(cites1.i, function(x) dim(x)[1] >0 ) 
-#   cites1[[i]] <- as.data.frame(dplyr::bind_rows(cites1.i[non.empty]))
-#   cat(i, "\n")
-# }
-# saveRDS(cites1, "data/cites_data.rds") # DONE IN 07/05/2021
-cites1 <- readRDS("data/threat_cites.rds")
-
-# Getting the best names for homonyms
-tax.cites <- cites1$all_id
-dups <- (duplicated(tax.cites$full_name) |  
-           duplicated(tax.cites$full_name, fromLast = TRUE))
-dup.spp <- unique(tax.cites$full_name[dups])
-tax.cites$remove <- TRUE
-for (i in 1:length(dup.spp)) {
-  sp.i <- dup.spp[i]
-  check_ids <- tax.cites$full_name %in% sp.i
-  taxon1.i <- tax.cites[check_ids,]
-  tax.cites$remove[check_ids] <- 
-    ifelse(taxon1.i$active %in% TRUE, TRUE, FALSE)
-  check_ids1 <- tax.cites$full_name %in% sp.i & tax.cites$remove
-  taxon2.i <- tax.cites[check_ids1,]
-  if (length(unique(taxon2.i$name_status)) > 1) 
-    tax.cites$remove[check_ids1] <-
-    ifelse(taxon2.i$name_status %in% "A", TRUE, FALSE)
-}
-tax.cites <- tax.cites[tax.cites$remove,]
-
-
-## Crossing with THREAT species
-tax$genus <- gsub(" .*", "", tax$species.correct2)
-tax <- as.data.frame(tax)
-#Species level
-ids_spp <- merge(tax, tax.cites, by.y = "full_name",
-                 by.x = "species.correct2", all.x = TRUE, sort = FALSE)
-ids_spp <- ids_spp[order(ids_spp$species.correct2),]
-
-#Genus level
-ids_gen <- merge(tax, tax.cites, by.y = "full_name",
-                 by.x = "genus", all.x = TRUE, sort = FALSE)
-ids_gen <- ids_gen[match(ids_spp$species.correct2, ids_gen$species.correct2),]
-table(ids_spp$species.correct2 == ids_gen$species.correct2)
-ids <- is.na(ids_spp$id) & !is.na(ids_gen$id)
-cols <- c("id", "rank", "name_status", "updated_at", "active", "author_year")
-ids_spp[ids,  cols] <- ids_gen[ids, cols]
-
-#family level
-ids_fam <- merge(tax, cites1$all_id, by.y = "full_name",
-                 by.x = "family.correct1", all.x = TRUE, sort = FALSE)
-ids_fam <- ids_fam[match(ids_spp$species.correct2, ids_fam$species.correct2),]
-table(ids_spp$species.correct2 == ids_fam$species.correct2)
-ids <- is.na(ids_spp$id) & !is.na(ids_fam$id)
-ids_spp[ids, cols] <- ids_fam[ids, cols]
-ids_spp <- ids_spp[ , -(which(names(ids_spp) == "remove"))]
-
-
-## Getting valid CITES IDs for synonyms
-syn.cites <- cites1$synonyms
-syn.cites1 <- syn.cites[syn.cites$id...2 %in% 
-                          ids_spp$id[ids_spp$name_status %in% "S"],]
-ids_spp$id[match(syn.cites1$id...2, ids_spp$id)] <- 
-  syn.cites1$id...1
-
-## General table
-gen.cites <- cites1$general
-cites_spp <- dplyr::left_join(ids_spp, 
-                              gen.cites[,c("id", "full_name", "cites_listing")],
-                              by = "id")
-## CITES annotations
-list.cites <- cites1$cites_listings
-all_cites_spp <- dplyr::left_join(cites_spp, list.cites, by = "id")
-all_cites_spp$hash_annotation[all_cites_spp$hash_annotation %in% c("NA", NA)] <- 
-  NA_character_
-all_cites_spp$code_annotation <- 
-  substr(all_cites_spp$hash_annotation, start = 1, stop = 3)
-all_cites_spp$code_annotation <- gsub("A$|L$", "", all_cites_spp$code_annotation, perl = TRUE)
-all_cites_spp$hash_annotation <- 
-  gsub("^#10|^#15|^#4|^#5|^#6", "", all_cites_spp$hash_annotation, perl = TRUE)
-# all_cites_spp$hash_annotation <- 
-#   stringr::str_squish(gsub("\\\n|\\\r", " ", all_cites_spp$hash_annotation))
-all_cites_spp$hash_annotation <- 
-  gsub("\\s+", " ", gsub("\\\n|\\\r", " ", all_cites_spp$hash_annotation, perl = TRUE), perl = TRUE)
-all_cites_spp$hash_annotation <- 
-  gsub("^ | $", "", all_cites_spp$hash_annotation, perl = TRUE)
-
-## EU legislation
-# taxon_ids <- unique(all_cites_spp$id[!is.na(all_cites_spp$id)])
-# # EU <- rcites::spp_eu_legislation(taxon_id = taxon_ids,  # website error....
-# #                            token = "izCSojTRrM62oMgkkyAAmgtt")
-# EU <- vector("list", length(taxon_ids))
-# names(EU) <- taxon_ids
-# for (i in 1:length(taxon_ids)) {
-#   EU[[i]] <- try(rcites::spp_eu_legislation(taxon_id = taxon_ids[i], 
-#                                  token = "izCSojTRrM62oMgkkyAAmgtt"), TRUE) 
-# }
-# rerun <- sapply(EU, class) %in% "try-error"
-# for (i in 1:length(taxon_ids[rerun])) {
-#   EU[rerun][[i]] <- try(rcites::spp_eu_legislation(taxon_id = taxon_ids[rerun][i], 
-#                                             token = "izCSojTRrM62oMgkkyAAmgtt"), TRUE) 
-# }
-# 
-# EU1 <- vector("list", 2)
-# names(EU1) <- c("eu_listings", "eu_decisions")
-# for(i in 1:2) {
-#   EU.i <- lapply(EU, function(x) x[[i]])
-#   non.empty <- sapply(EU.i, function(x) dim(x)[1] >0)
-#   non.empty[lengths(EU.i) <= 1] <- FALSE
-#   EU1[[i]] <- as.data.frame(dplyr::bind_rows(EU.i[unlist(non.empty)]))
-# }
-# # saveRDS(EU1, "data/EU_listings_data.rds") # DONE IN 10/05/2021
-EU1 <- readRDS("data/EU_listings_data.rds")
-
-# EU listings and decisions
-list.EU <- EU1$eu_listings
-names(list.EU)[4:5] <- paste0(names(list.EU)[4:5], ".EU")
-all_cites.EU_spp <- merge(all_cites_spp, list.EU[, c("taxon_concept_id","annex.EU","change_type.EU")],
-                          by.x = "id", by.y = "taxon_concept_id",
-                          all.x = TRUE, sort = FALSE)
-decis.EU <- EU1$eu_decisions
-decis.EU <- decis.EU[, -(which(names(decis.EU) %in% 
-                                 c("id","start_date","is_current",
-                                   "eu_decision_type.description","term.code","term.name")))]
-decis.EU1 <- aggregate(. ~ taxon_concept_id, data = decis.EU, 
-                       function(x) paste(x, collapse = "|")) 
-all_cites.EU_spp1 <- merge(all_cites.EU_spp,  decis.EU1,
-                           by.x = "id", by.y = "taxon_concept_id",
-                           all.x = TRUE, sort = FALSE)
-## Saving 
-all_cites.EU_spp1 <- 
-  all_cites.EU_spp1[order(all_cites.EU_spp1$species.correct2),]
-saveRDS(all_cites.EU_spp1, "data/threat_cites_EU.rds")
+## ALL CODES TO PREPARE CITES DATA ARE IN SCRIPT 03_prep_species_info.R
+## HERE WE JUST CHANGE NAMES TO MAKE THE FILE AVAILABLE FOR OTHER CODES BELOW
+all_cites.EU_spp1 <- cites
 
 
 
@@ -1239,7 +894,7 @@ saveRDS(all_cites.EU_spp1, "data/threat_cites_EU.rds")
 # USE AND TRADE ----------------------------------------------------------------
 
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/usetrade.csv")
+sample <- read.csv("data/SIS_sample_6_1/usetrade.csv")
 head(sample, 3)
 
 ##Loading the species list
@@ -1248,8 +903,16 @@ tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 3)]
 ##Loading and Preparing TreeCo use database
 usos1 <- uses_data_prep(usos, spp = tax$species.correct2)
 
+## Making sure Dicksonia sellowiana is in the file
+if (!"Dicksonia sellowiana" %in% usos1$Name_submitted) {
+  dicksonia <- data.frame("Dicksonia sellowiana", NA, NA, NA, "fern", "Brazil",
+                          NA, NA, "fibres")
+  names(dicksonia) <- names(usos1)
+  usos1 <- rbind.data.frame(usos1, dicksonia)
+}
+  
 ##Crossing TreeCo and IUCN use codes and nomenclature
-lookup.codes <- read.csv("SIS_sample_6_1/Utenduse.utenduselookup.csv", 
+lookup.codes <- read.csv("data/SIS_sample_6_1/Utenduse.utenduselookup.csv", 
                          encoding = "UTF-8")
 usos1$UTEndUseLookup <- NA
 usos1$UTEndUseLookup <- 
@@ -1323,17 +986,17 @@ write.csv(usos3, "data/sis_connect/usetrade_threat_merged_iucn.csv",
 
 ##Saving the file with the exploited species
 usos4 <- usos1[usos1$uses %in% c("timber") |
-                 usos1$Name_submitted %in% c("Euterpe edulis") , 
+                 usos1$Name_submitted %in% c("Euterpe edulis", "Dicksonia sellowiana") , 
                names(usos1)[1:which(names(usos1) == "uses")]]
 
 check_these <- !usos1$Name_submitted %in% usos4$Name_submitted
 cols <- c("essential_oils", "fences", "fibres","fodder","food","resins_gums","rubber_latex", "fuel")
 tab <- table(usos1$Name_submitted[check_these], usos1$uses[check_these])
 linhas <- apply(tab[,cols], 1, sum) > 0 
-tab[linhas, cols] # ok in 30/04/2021
+#tab[linhas, cols] # ok in 30/04/2021
 
 #How many times were they cited as being used for timber
-usos4 <- usos4[!grepl("Coradin", usos3$source) , ] # Aqui Euterpe edulis está sendo removido. ok?
+usos4 <- usos4[!grepl("Coradin", usos3$source), ]
 usos4$obs <- gsub("list provided by GTA. Note: I haven’t updated it for taxonomy so there might be some issues", NA, usos4$obs)
 usos5 <- as.data.frame(table(usos4$Name_submitted))
 names(usos5)[1:2] <- c("species.correct2", "times.cites")
@@ -1341,6 +1004,21 @@ usos5$sources <- aggregate(usos4$source, list(usos4$Name_submitted),
                            function (x) paste(x, collapse = " | "))$x
 usos5$obs <- aggregate(usos4$obs, list(usos4$Name_submitted), 
                        function (x) paste(x, collapse = " | "))$x
+usos5$species.correct2 <- as.character(usos5$species.correct2)
+
+## Making sure Euterpe edulis and Dicksonia sellowiana are in the file
+if (!"Dicksonia sellowiana" %in% as.character(usos5$species.correct2)) {
+  new <- data.frame("Dicksonia sellowiana", 5, NA, NA)
+  names(new) <- names(usos5)
+  usos5 <- rbind.data.frame(usos5, new)
+}
+if (!"Euterpe edulis" %in% as.character(usos5$species.correct2)) {
+  new <- data.frame("Euterpe edulis", 5, NA, NA)
+  names(new) <- names(usos5)
+  usos5 <- rbind.data.frame(usos5, new)
+}
+usos5 <- usos5[order(usos5$species.correct2), ]
+# Saving
 write.csv(usos5, "data/threat_exploited_timber_spp.csv", 
           row.names = FALSE, fileEncoding = "UTF-8")
 
@@ -1351,7 +1029,7 @@ write.csv(usos5, "data/threat_exploited_timber_spp.csv",
 # THREATS ----------------------------------------------------------------------
 
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/threats.csv")
+sample <- read.csv("data/SIS_sample_6_1/threats.csv")
 head(sample, 3)
 apply(sample, 2, unique)
 
@@ -1663,7 +1341,7 @@ write.csv(threats1, "data/sis_connect/threats_threat_merged_iucn.csv",
 # CONSERVATION NEEDED ----------------------------------------------------------
 
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/conservationneeded.csv")
+sample <- read.csv("data/SIS_sample_6_1/conservationneeded.csv")
 # head(sample, 3)
 # apply(sample, 2, unique)
 
@@ -1719,17 +1397,6 @@ con7.1 <- c(ConservationActionsLookup = "7.1", ConservationActionsName = "Instit
 # 7.2	Alliance & Partnership Development
 con7.2 <- c(ConservationActionsLookup = "7.2", ConservationActionsName = "Alliance & Partnership Development", 
             note = "Formar redes de colaboração multi-setoriais para divulgar e promover a conservação da espécie")
-
-## CREATING COMBINED INFO FOR ALL SPECIES ##
-# tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 3)]
-# all.spp <- merge(all.crit, tax,
-#                    by.x = "species", by.y = "species.correct2", all.x = TRUE, sort = FALSE)
-# cites <- readRDS("data/threat_cites_EU.rds")
-# all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appendix", "annotation")],
-#                  by.x = "internal_taxon_id", 
-#                  by.y = "internal_taxon_id", all.x = TRUE, sort = FALSE)
-# all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ]
-# saveRDS(all.spp, "data/all_spp_crits_tax_cites.rds")
 n.spp <- dim(all.spp)[1]
 
 #species uses
@@ -1926,7 +1593,7 @@ CR.EN.explo.spp <- unique(
   all.spp[all.spp$cat.reg.clean %in% c("EN","CR") &
             all.spp$endemic %in% c("endemic", "widespread_common") &
               (all.spp$internal_taxon_id %in% all.explo.sp$internal_taxon_id | 
-                 all.spp$internal_taxon_id %in% "sp1780"),   
+                 all.spp$species %in% c("Euterpe edulis", "Dicksonia sellowiana", "Ilex paraguariensis")),   
           c("internal_taxon_id", "species")])
 substitution <- do.call(rbind.data.frame,
                     replicate(dim(CR.EN.explo.spp)[1], con6.2, simplify = FALSE))
@@ -2015,7 +1682,7 @@ write.csv(conservation1, "data/sis_connect/conservationneeded_threat_merged_iucn
 # RESEARCH NEEDED --------------------------------------------------------------
 
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/researchneeded.csv")
+sample <- read.csv("data/SIS_sample_6_1/researchneeded.csv")
 head(sample, 3)
 apply(sample, 2, unique)
 
@@ -2062,16 +1729,6 @@ res3.3 <- c(ResearchLookup = "3.3", ResearchName = "Trade Trends", note = "")
 #3.4	Habitat Trends
 res3.4 <- c(ResearchLookup = "3.4", ResearchName = "Habitat Trends", note = "")
 
-
-## CREATING COMBINED INFO FOR ALL SPECIES ##
-# tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 3)]
-# all.spp <- merge(all.crit, tax,
-#                  by.x = "species", by.y = "species.correct2", all.x = TRUE, sort = FALSE)
-# cites <- readRDS("data/threat_cites_EU.rds")
-# all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appendix", "annotation")],
-#                  by.x = "internal_taxon_id", 
-#                  by.y = "internal_taxon_id", all.x = TRUE, sort = FALSE)
-# all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ] 
 n.spp <- dim(all.spp)[1]
 
 #species uses
@@ -2234,10 +1891,11 @@ table(names(research) == names(sample))
 text <- c("Existe apenas um registro recente (2018) para a espécie, feito no Monte Cabrão, Santos, São Paulo, Brasil. 
 Esse registro foi feito e identificado por I. Villaça and Mara Magenta, que não são especialistas da família. 
 Assim, esse registro pode ser um erro de identificação, em especial visto que o estudo no qual a espécie foi listada inclui
- apenas espécies usadas para o consumo de frutos pela população local (provavél confusão com Campomaneisa phaea?)")
+ apenas espécies usadas para o consumo de frutos pela população local (provavél confusão com Campomanesia phaea?)")
 
-replace_these <- grepl("sp566", research$internal_taxon_id) & 
-                    grepl("1.1", research$Research.ResearchSubfield.ResearchLookup)
+sp_id <- all.spp$internal_taxon_id[grepl("Campomanesia lundiana", all.spp$species)]
+replace_these <- research$internal_taxon_id %in% sp_id & 
+                  grepl("1.1", research$Research.ResearchSubfield.ResearchLookup)
 research$Research.ResearchSubfield.note[replace_these] <-
   paste(research$Research.ResearchSubfield.note[replace_these],
         stringr::str_squish(gsub("\\\n", "", text)),
@@ -2251,8 +1909,9 @@ Apenas um registro recente (2010) e validado taxonomicamente foi encontrado para
  (Ouro Preto e Mariana), mas novamente a validação por um especialistas da família ainda está pendente. 
  ver tb: PALAZZO, F.M.A.; DIAS-NETO, A.O.; MONTEIRO, M.H.D.A.; ANDREATA, R.H.P. 2010. Sinopse comentada de Sapotaceae no município de Rio das Ostras (RJ, BRASIL). Pesquisas (Botânica) 61: 293-306.")
 
-replace_these <- grepl("sp3874", research$internal_taxon_id) & 
-                    grepl("1.1", research$Research.ResearchSubfield.ResearchLookup)
+sp_id <- all.spp$internal_taxon_id[grepl("Pouteria stenophylla", all.spp$species)]
+replace_these <- research$internal_taxon_id %in% sp_id & 
+                  grepl("1.1", research$Research.ResearchSubfield.ResearchLookup)
 research$Research.ResearchSubfield.note[replace_these] <-
   paste(research$Research.ResearchSubfield.note[replace_these],
         stringr::str_squish(gsub("\\\n", "", text)),
@@ -2293,7 +1952,7 @@ write.csv(research1, "data/sis_connect/researchneeded_threat_merged_iucn.csv",
 
 ## Generating the SIS CONNECT file "assessments.csv"
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/assessments.csv")
+sample <- read.csv("data/SIS_sample_6_1/assessments.csv")
 # head(sample[,8:17], 4)
 # apply(sample, 2, unique)
 
@@ -2301,8 +1960,7 @@ sample <- read.csv("SIS_sample_6_1/assessments.csv")
 ## Biogeographic Realm
 #realms: Afrotropical, Antarctic, Australasian, Indomalayan, Nearctic, Neotropical, Oceanian, Palearctic
 countries0 <- readRDS("data/countries_per_species.rds")
-# regions <- as.data.frame(readxl::read_xlsx("E:/ownCloud/W_GIS/WO_Biogeographical_divisions/country_list.xlsx"))
-regions <- as.data.frame(readxl::read_xlsx("./data/outside_data//country_list.xlsx"))
+regions <- as.data.frame(read.csv("./data//country_list.csv"))
 countries0 <- merge(countries0, regions[, c("Country_Names", "WWF_Realm", "NAME_PT")],
                     by.x = "NAME_0", by.y = "Country_Names", sort = FALSE, all.x = TRUE)
 # countries0$UN_Bioregion <- gsub(" Region", "", countries0$UN_Bioregion)
@@ -2409,16 +2067,6 @@ assess$RedListCriteria.dataDeficientReason[replace_these] <- "Taxonomic"
 
 ## Date of the Assessment (dd/mm/yyyy)
 assess$RedListAssessmentDate.value <- "28/05/2021"
-
-## CREATING COMBINED INFO FOR ALL SPECIES ##
-# tax <- readRDS("data/herbarium_spp_data.rds")[, c(1, 3)]
-# all.spp <- merge(all.crit, tax,
-#                  by.x = "species", by.y = "species.correct2", all.x = TRUE, sort = FALSE)
-# cites <- readRDS("data/threat_cites_EU.rds")
-# all.spp <- merge(all.spp, cites[ ,c("internal_taxon_id", "cites_listing", "appendix", "annotation")],
-#                  by.x = "internal_taxon_id", 
-#                  by.y = "internal_taxon_id", all.x = TRUE, sort = FALSE)
-# all.spp <- all.spp[order(as.double(gsub("sp", "", all.spp$internal_taxon_id))), ] 
 
 ## Re-assessments
 prev.assess <- readRDS("data/sis_connect/prev_assessments_threat.rds")
@@ -2620,7 +2268,7 @@ assess$MapStatus.status[check_these] <- "Done"
 info.threat <- readRDS("data/assess_iucn_spp.rds")
 table(info.threat$species.correct2 == all.spp1$species)
 
-assess$PopulationDocumentation.narrative <- "Dados populacionais inexistentes ou não reportados para a espécie, pois ela é considerada ocasional na região estudada (i.e. categoria 'NA')"
+assess$PopulationDocumentation.narrative <- "Dados populacionais inexistentes ou não reportados para a espécie, pois ela é considerada ocasional na região estudada (i.e. categoria 'NA' da IUCN)"
 replace_these <- 
 assess$PopulationDocumentation.narrative[describe] <-
   c("_HERBARIO_ para a espécie. ") 
@@ -2650,7 +2298,7 @@ add_these <- is.na(info.threat$treeco.occs)
 texto <- c("Não foi encontrado nenhum registro para a espécie entre as centenas de inventários florestais compilados para a Mata Atlântica, 
            sugerindo que se trata de uma espécie que ocorre em baixa densidade na Mata Atlântica (tamanho populacional pequeno) e/ou associada a algum habitat mal-representado entre os inventários compilados. 
            Foi estimado um tamanho populacional para a espécie baseado na relação entre as métricas de distribuição geográfica (i.e. EOO and AOO) e o tamanho populacional para as espécies da Mata Atlântica (_POPMEAN_LOW_). 
-           Contudo, houve grande incerteza ao redor dessa estimativa (Lima et al. in prep.). Portanto, essa estimativa não foi usada para a avaliação de ameaça da espécie.")
+           Contudo, houve grande incerteza ao redor dessa estimativa (Lima et al. 2023). Portanto, essa estimativa não foi usada para a avaliação de ameaça da espécie.")
 assess$PopulationDocumentation.narrative[describe & add_these] <- 
   paste0(assess$PopulationDocumentation.narrative[describe & add_these], texto)
 
@@ -2707,13 +2355,12 @@ for (i in 1:dim(assess)[1]) {
     } else {
       pat <- "Foi estimado um tamanho populacional para a espécie baseado na relação entre as métricas de distribuição geográfica (i.e. EOO and AOO) e o tamanho populacional para as espécies da Mata Atlântica (_POPMEAN_LOW_). "
       texto <- gsub(pat, "", texto, fixed = TRUE)
-      pat <- "Contudo, houve grande incerteza ao redor dessas estimativas (Lima et al. in prep.). Portanto, elas não foram usadas para as avaliações de ameaça da espécie."
+      pat <- "Contudo, houve grande incerteza ao redor dessas estimativas (Lima et al. 2023). Portanto, elas não foram usadas para as avaliações de ameaça da espécie."
       texto <- gsub(pat, "", texto, fixed = TRUE)
       
     }
     
     # Fixing possible problems and replacing
-    # texto <- stringr::str_squish(gsub("\\\n", "", texto))
     texto <- gsub("\\s+", " ", (gsub("\\\n", "", texto)), perl = TRUE)
     texto <- gsub("^ | $", "", texto, perl = TRUE)
     assess$PopulationDocumentation.narrative[i] <- texto
@@ -2883,7 +2530,7 @@ for (i in 1:dim(assess)[1]) {
     }
     
   } else {
-    texto <- "Não foram encontrados registros sobre usos efetivos ou potenciais."
+    texto <- "Não foram encontrados registros sobre usos efetivos ou potenciais para a espécie."
   }
   # assess$UseTradeDocumentation.value[i] <- stringr::str_squish(texto)
   texto <- gsub("\\s+", " ", texto, perl = TRUE)
@@ -2901,7 +2548,7 @@ texto <- c("O principal e mais comum tipo de ameaça para as espécies arbóreas
 é a conversão de áreas de vegetação nativa para a agricultura e pastagem de larga-escala. 
 Apenas as áreas mais montanhosas próximas ao litoral brasileiro e a região de Misiones na Argentina foram poupadas dessa conversão em larga-escala. 
 Mais localmente, a Mata Atlântica também foi convertida para áreas urbanas, estradas e mineração. 
-Esse processo foi mais intenso até os anos 2000, resultando na redução de mais de 80% da área original da Mata Atlântica. 
+Esse processo foi mais intenso até os anos 2000 (dependendo da região), resultando na redução de mais de 80% da área original da Mata Atlântica. 
 Mas ele continua em andamento, com taxas de desmatamento acima dos 20 mil hectares ao ano, e com taxas mais elevadas no Paraguay e 
 em alguns estados brasileiros (Argentina & WWF 2017; SOS Mata Atlântica e INPE 2018; Rosa et al. 2021). 
 Além do desmatamento (i.e. perda de habitat), a degradação florestal (e.g. corte seletivo, fogo, espécies invasoras) 
@@ -3459,7 +3106,7 @@ write.csv(assess2, "data/sis_connect/assessments_threat_merged_iucn.csv",
 
 ## Generating the SIS CONNECT file "allfields.csv"
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/allfields.csv")
+sample <- read.csv("data/SIS_sample_6_1/allfields.csv")
 # head(sample, 3)
 # apply(sample, 2, unique)
 
@@ -3644,6 +3291,7 @@ allfields$PopulationReductionPast.qualifier <- ""
 allfields$PopulationReductionPast.justification <- ""
 check_these <- !is.na(allfields$PopulationReductionPast.direction)
 allfields$PopulationReductionPast.justification[check_these] <- "Inferred"
+## CHECK HERE: were to store the information on corrections applied to pop decline for early-successional species? ##  
 
 allfields$PopulationReductionPastBasis.value <- NA
 allfields$PopulationReductionPastBasis.value[!is.na(all.spp$reduction_A12)] <- 
@@ -3862,7 +3510,7 @@ write.csv(allfields1, "data/sis_connect/allfields_threat_merged_iucn.csv",
 
 ## Generating the SIS CONNECT file "references.csv"
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/references.csv", encoding = "UTF-8")
+sample <- read.csv("data/SIS_sample_6_1/references.csv", encoding = "UTF-8")
 head(sample, 3)
 apply(sample[,1:10], 2, unique)
 
@@ -4019,7 +3667,7 @@ lapply(result.all, head, 2)
 # ASSESSMENTS
 plan <- "allfields"
 unique(result.all[[plan]][,"refs"])
-#"Dauby et al. 2017|IUCN 2019|Lima et al. in prep.|Stévart et al. 2019|Rivers et al. 2010"
+#"Dauby et al. 2017|IUCN 2019|Lima et al. 2023|Stévart et al. 2019|Rivers et al. 2010"
  
 ref1 <- data.frame(Reference_type = "Assessment", 
                    author = "Dauby, G., Stévart, T., Droissart, V., Cosiaux, A., Deblauwe, V., Simo-Droissart, M., Sosef, M.S.M., Lowry, P.P., Schatz, G.E., Gereau, R.E., & Couvreur, T.L.P.",
@@ -4045,11 +3693,11 @@ ref2$internal_taxon_id <- spp
 
 ref3 <- data.frame(Reference_type = "Assessment", 
                    author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
-                   year = "in prep.", volume = NA, number = NA, pages = NA,
+                   year = "2023", volume = NA, number = NA, pages = NA,
                    title = "The Atlantic Forest trees: a flora on the verge of extinction", 
                    secondary_title = NA, type = "journal article")
 spp <- result.all[[plan]][,"internal_taxon_id"][
-  grepl("Lima et al. in prep.", result.all[[plan]][,"refs"])]
+  grepl("Lima et al. 2023", result.all[[plan]][,"refs"])]
 ref3 <- do.call(rbind.data.frame, 
                 replicate(length(spp), ref3, simplify = FALSE))
 ref3$internal_taxon_id <- spp
@@ -4080,7 +3728,7 @@ ref5$internal_taxon_id <- spp
 # ASSESSMENTS
 plan <- "assessments"
 head(unique(unlist(sapply(result.all[[plan]][,"refs"], strsplit, "\\|"))), 10)
-#"IUCN 2012","Flora do Brasil 2020", "Lima et al. in prep.", 
+#"IUCN 2012","Flora do Brasil 2020", "Lima et al. 2023", 
 #"Argentina & WWF 2017","SOS Mata Atlântica e INPE 2018",
 #"Rosa et al. 2021","Ribeiro et al. 2009"
 
@@ -4132,14 +3780,14 @@ ref9 <- do.call(rbind.data.frame,
                 replicate(length(spp), ref9, simplify = FALSE))
 ref9$internal_taxon_id <- spp
 
-#"Lima et al. in prep.", 
+#"Lima et al. 2023", 
 ref10 <- data.frame(Reference_type = "Assessment", 
                     author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
-                    year = "in prep.", volume = NA, number = NA, pages = NA,
+                    year = "2023", volume = NA, number = NA, pages = NA,
                     title = "The Atlantic Forest trees: a flora on the verge of extinction", 
                     secondary_title = NA, type = "journal article")
 spp <- result.all[[plan]][,"internal_taxon_id"][
-  grepl("Lima et al. in prep.", result.all[[plan]][,"refs"])]
+  grepl("Lima et al. 2023", result.all[[plan]][,"refs"])]
 ref10 <- do.call(rbind.data.frame, 
                 replicate(length(spp), ref10, simplify = FALSE))
 ref10$internal_taxon_id <- spp
@@ -4430,12 +4078,12 @@ write.csv(references1, "data/sis_connect/references_threat.csv",
 # CREDITS ----------------------------------------------------------------------
 
 ## Sample from SIS CONNECT v6.1
-sample <- read.csv("SIS_sample_6_1/credits.csv")
+sample <- read.csv("data/SIS_sample_6_1/credits.csv")
 apply(sample, 2, unique)
 
 ## Creating the assessor(s) vector
 assess1 <- data.frame(Order = 1L, 
-                      affiliation = "Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
+                      affiliation = "Universidade de São Paulo, ESALQ, Piracicaba, Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
                       credit_type = "Assessor", email = "raflima@usp.br",
                       firstName = "Renato A.",
                       initials = "R.", lastName = "Ferreira de Lima", nickname = "",
@@ -4443,7 +4091,7 @@ assess1 <- data.frame(Order = 1L,
 
 ## Creating the compiler(s) vector
 compila1 <- data.frame(Order = 1L, 
-                       affiliation = "Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
+                       affiliation = "Universidade de São Paulo, ESALQ, Piracicaba, Naturalis Biodiversity Center, Leiden, The Netherlands & IUCN SSC Global Tree Specialist Group", 
                        credit_type = "Compiler", email = "raflima@usp.br",
                        firstName = "Renato A.",
                        initials = "R.", lastName = "Ferreira de Lima", nickname = "",
@@ -4489,7 +4137,7 @@ write.csv(credits, "data/sis_connect/credits_threat.csv",
 ###############################################################################H
 # OCCURRENCES ------------------------------------------------------------------
 
-sample <- read.csv("SIS_sample_6_1/ex_maps.csv", sep = "\t")
+sample <- read.csv("data/SIS_sample_6_1/ex_maps.csv", sep = "\t")
 oc.data <- readRDS("data/threat_occ_data_final.rds")
 # oc.data.loc <- readRDS("data/threat_species_by_country.rds")
 oc.data1 <- readRDS("data/threat_occ_data.rds")
@@ -4516,20 +4164,46 @@ colnames(oc.data2) <- c("Binomial", "Dec_Lat", "Dec_Long", "Compiler", "SpatialR
 data.table::fwrite(oc.data2, "data/sis_connect/occurrences_threat.csv.zip", compress = "gzip")
 
 
-###############################################################################H
-###############################################################################H
-# EOO SHAPEFILES ---------------------------------------------------------------
+# ZIPPING ALL FILES TOGETHER ----------------------------------------------
+csv.files <- list.files("data/sis_connect/", full.names = TRUE)
+csv.files <- csv.files[grepl("_threat.csv|_threat.rds", csv.files, perl = TRUE)]
+caminho <- paste0(here::here(), "/data/sis_connect/DataS3")
+dir.create(caminho)
 
-shapes <- readRDS("data/spp.convex.hull.polys_sf_uncropped.rds")
-shapes <- sf::st_transform(shapes, crs = 3857)
-shapes <- sf::st_transform(shapes, crs = 4326)
-sf::sf_use_s2(FALSE)
-shp.area <- sf::st_area(shapes)
-small.area <- !as.double(shp.area) <= (2010*2010) # EOO smaller than the minimum AOO
-shapes1 <- shapes[small.area, ]
-writeLines(shapes1$tax, "data/sis_connect/spp_with_shapes.txt")
-toto <- full.tax[ , c("species.correct2", "internal_taxon_id")]
-names(shapes1)[1] <- "species.correct2"
-shapes2 <- dplyr::left_join(shapes1, toto)
-saveRDS(shapes2, "data/sis_connect/polygons_threat.rds", compress = TRUE)
+for (i in seq_len(length(csv.files))) {
+  if (grepl("csv$", csv.files[i], perl = TRUE)) { 
+    arquivo <- read.csv(csv.files[i], encoding = "UTF-8")
+  } else {
+    
+    if (grepl("zip$", csv.files[i], perl = TRUE)) {
+      planilha <- gsub('data/sis_connect/', '', csv.files[i], fixed = TRUE)
+      planilha1 <- gsub('_threat', '', planilha, perl = TRUE)
+      file.copy(from = paste0(here::here(), "/data/sis_connect/", planilha),
+                to = paste0(caminho,"/", planilha1))
+      next
+    } else {
+      
+      if (grepl("polygons", csv.files[i], perl = TRUE)) {
+        planilha <- gsub('data/sis_connect/', '', csv.files[i], fixed = TRUE)
+        planilha1 <- gsub('_threat', '', planilha, perl = TRUE)
+        file.copy(from = paste0(here::here(), "/data/sis_connect/", planilha),
+                  to = paste0(caminho,"/", planilha1))
+        
+      } else {
+        arquivo <- readRDS(csv.files[i])
+      }  
+    }    
+  }
+  
+  planilha <- gsub('data/sis_connect/', '', csv.files[i], fixed = TRUE)
+  planilha <- gsub('_threat.csv|_threat.rds', '', planilha, perl = TRUE)
+  
+  write.csv(arquivo, paste0(caminho, "/", planilha ,".csv"), 
+            row.names = FALSE, fileEncoding = "UTF-8")
+}
+
+# files2zip <- dir(caminho, full.names = TRUE)
+# zip(zipfile = paste0(here::here(), "/tables/DataS3"), files = files2zip)
+# unlink(caminho, recursive = TRUE)
+
 

@@ -281,9 +281,8 @@ saveRDS(simula.result, "data//simula_pop_decline.rds")
 ##################################
 #### THE ATLANTIC FOREST CASE ####
 ##################################
-# af.grid <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//af_hex_grid_50km.rds")
 af.grid <- readRDS("data/af_hex_grid_50km.rds")
-pop.sizes <- readRDS("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo Hyperdominance//pop.size.est_nmx50_mxd5_idp2.rds")
+pop.sizes <- readRDS("data/data-raw/pop.size.est_nmx50_mxd5_idp2.rds")
 pop.sizes <- pop.sizes$`1850`$mean
 row.names(pop.sizes) <- paste0("ID", 1:dim(pop.sizes)[1])
 
@@ -374,7 +373,7 @@ for (j in seq_len(iterations)){
         all.losses <- cbind(rbind.data.frame(result.loss, result.loss3), iter = j)
         simula.result.af[[j]] <- all.losses
 }                
-saveRDS(simula.result.af, "data//simula_pop_decline_AtlanticForest.rds")
+saveRDS(simula.result.af, "data/simula_pop_decline_AtlanticForest.rds")
 
 #### ONLY ENDEMICS ####
 all.crit <- readRDS("data/all.criteria.rds")
@@ -717,7 +716,7 @@ legend(0.6, 0.175, expression(bold("Type of community:")),
        #pch = c(19,17),
        bty = "n", #x.intersp= 1.85,
        cex = 1.2, col = "black")
-cores.tmp <- c("magenta", "darkgreen", "blue", "black")
+cores.tmp <- c("magenta", "darkgreen", "blue", "gray40")
 legend("bottomright", 
        c("Random", "Aggregate", "Aggregate in blocks", "Atlantic Forest"), 
        col = cores.tmp, 
@@ -725,11 +724,11 @@ legend("bottomright",
        bty = "n", cex = 1.1)
 tmp1 <- threat.per.loss.clumped
 lines(c(0,tmp1$x.Median,1) ~  c(0,tmp1$Group.1,1), 
-      col = "black", lwd = 1, lty = 1)
+      col = "gray40", lwd = 1, lty = 1)
 arrows(x0 = c(0,as.double(tmp1$Group.1),1)+0.001, 
        y0 = c(0,as.double(tmp1$x.1st.Qu.),1),
        y1 = c(0,as.double(tmp1$x.3rd.Qu.),1),
-       col = "black", code = 3, angle = 90, length = 0.025)
+       col = "gray40", code = 3, angle = 90, length = 0.025)
 # lines(c(0,tmp1$x.1st.Qu.,1) ~  c(0,tmp1$Group.1,1), 
 #       col = "black", lwd = 1, lty = 2)
 # lines(c(0,tmp1$x.3rd.Qu.,1) ~  c(0,tmp1$Group.1,1), 
@@ -754,7 +753,7 @@ hots[7] <- "Madagascar, Indian Oc. Isl."
 continents <- info$continent[trop_hotspots]
 continents <- gsub("North |South ", "", continents)
 cores.cont <- factor(continents)
-levels(cores.cont) <- c("darkgoldenrod", "forestgreen", "brown", "cadetblue1")
+levels(cores.cont) <- c("#FE6100", "#009E73", "#DC267F", "#648FFF")
 cores.cont <- as.character(cores.cont)
 # plot(1:4, 1:4, bg = unique(cores.cont), pch = 21)
 pch.hot <- rep(21, length(hots))

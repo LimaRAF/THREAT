@@ -32,13 +32,22 @@ names(countries) <- c("species.correct2", "CountryCode")
 full.info <- dplyr::left_join(full.info, countries)
 
 ## Habitat, growth form and other species info
-hab1 <- read.csv("data/threat_habitats_preliminar1.csv", encoding = "UTF-8")
-hab2 <- read.csv("data/threat_habitats.csv", encoding = "UTF-8")
+hab1 <- readRDS("data/threat_habitats.rds")
+hab2 <- read.csv("data/sis_connect/habitats_threat.csv", encoding = "UTF-8")
+hab2 <- aggregate(hab2$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName, 
+                  list(hab2$internal_taxon_id), 
+                       function(x) paste0(unique(x), collapse = "|"))
+names(hab2) <- c("internal_taxon_id", "GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName")
 hab <- dplyr::left_join(hab2, hab1)
-hab <- hab[,c(1,2,5,6,13,20,32)]
+hab <- hab[,c(1,2,3,6,13,14,15,16,18,22,24)]
 hab$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName <- 
   gsub("\\|NA*", "", hab$GeneralHabitats.GeneralHabitatsSubfield.GeneralHabitatsName)
 full.info <- dplyr::left_join(full.info, hab)
+
+gf <- read.csv("data/sis_connect/plantspecific_threat.csv", encoding = "UTF-8")
+full.info <- dplyr::left_join(full.info, 
+                              gf[, c("internal_taxon_id", "PlantGrowthForms.PlantGrowthFormsSubfield.PlantGrowthFormsName")])
+
 
 ## Species uses
 usos <- read.csv("data/sis_connect/usetrade_threat.csv", encoding = "UTF-8")
@@ -193,6 +202,30 @@ for (i in seq_len(dim(full.info4)[2])) {
     full.info4[check_these, i] <- ""
 }
 
+## Final filtering and editing
+replace_these <- full.info4$Category_A != full.info4$AssessA2 & 
+                  full.info4$Category_A %in% "LC or NT"
+full.info4$Category_A[replace_these] <- full.info4$AssessA2[replace_these]
+full.info4 <- full.info4[, -which(colnames(full.info4) %in% "AssessA2")]
+colnames(full.info4) <- gsub("Category_A", "CategoryA", colnames(full.info4))
+
+replace_these <- full.info4$CategoryB != full.info4$AssessB2 & 
+                  full.info4$CategoryB %in% "LC or NT" &
+                    full.info4$AssessB1 %in% c("LC", "NT", "", NA)
+full.info4$CategoryB[replace_these] <- full.info4$AssessB2[replace_these]
+
+replace_these <- full.info4$CategoryB != full.info4$AssessB1 & 
+  full.info4$CategoryB %in% "LC or NT" &
+  full.info4$AssessB2 %in% c("LC", "NT", "", NA)
+full.info4$CategoryB[replace_these] <- full.info4$AssessB1[replace_these]
+
+full.info4 <- full.info4[, -which(colnames(full.info4) %in% "PopulationDecline3Generations")]
+replace_these <- full.info4$CategoryC != full.info4$AssessC2 & 
+                  full.info4$CategoryC %in% "LC or NT"
+full.info4$CategoryC[replace_these] <- full.info4$AssessC2[replace_these]
+full.info4 <- full.info4[, -which(colnames(full.info4) %in% "AssessC2")]
+
+
 ##Saving
-writexl::write_xlsx(full.info4, "./text/Science/DataS1_new.xlsx",
+writexl::write_xlsx(full.info4, "./tables/DataS1.xlsx",
                     format_headers = FALSE)

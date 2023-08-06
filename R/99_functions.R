@@ -3649,3 +3649,1036 @@ trait_data_prep = function(trees,trees.sa,trait.spp,trait.gen,trait.fam,generali
     return(points1)
   }
 }  
+#' @Title Get Occupied Cells and Patches
+
+#' @param EOO.poly spatial object containig species EOO
+#' @param hab.map raster, raster layer/stack or spatial polygons containing 
+#'  the habitat spatial informaton 
+#' @param hab.class classess of values in ```hab.map``` to be considered as 'habitat'
+#' @param years numeric. Time interval between the first and last ```hab.map```
+#'  if more than one raster is provided (e.g. if ```hab.map``` is a RasterStack object)
+#' @param export_shp logical. Should the species habitat map be exported? Default to FALSE.
+#' @param plot logical. Should the habitat change map be plotted? Default to FALSE. 
+#' @param output_raster the output format in the case raster are quantities and not classes.
+#'  Default to "summary".
+#' @param proj_type character string, numeric or object of CRS class. Default to "cea".
+#' @param parallel logical. Should computing run in parallel? Default to FALSE.
+#' @param NbeCores integer. The number of cores for parallel execution. Default to 2.
+#' @param show_progress logical. whether a bar showing progress in computation should be shown. 
+#'  Default to TRUE.
+#' 
+#' @details The function compute the amount of habitat within the EOO of each species.
+#' If two or more time intervals are provided, the function also returns the values
+#' of habitat change. 
+#'    
+#' If a RasterStack is provided, the last stacked raster is taken as the most recent 
+#' raster to calculate current habitat proportion and area. Similarly, the first and 
+#' last rasters are used to calculate habitat loss.      
+#'    
+#'    
+#' @examples #To be included
+#' 
+#' @importFrom raster crs crop extract mask
+#' @importFrom sf st_crs st_transform st_intersection st_intersects st_as_sf st_geometry
+#' 
+#' 
+#' 
+EOO.habitat <- function(EOO.poly,
+                        hab.map = NULL,
+                        hab.class = NULL,
+                        years = NULL,
+                        export_shp = FALSE,
+                        plot = FALSE,
+                        output_raster = "summary",
+                        proj_type = "cea",
+                        parallel = FALSE,
+                        NbeCores = 2,
+                        show_progress = TRUE
+) {
+
+  proj_crs <- my.proj_crs(proj_type = proj_type)
+  
+  proj_hab <- raster::crs(hab.map)
+  
+  if(is.na(sf::st_crs(EOO.poly))) 
+    sf::st_crs(EOO.poly) <- 4326
+  
+  EOO.poly <- sf::st_transform(EOO.poly, crs = proj_hab)
+  
+  # Croping EOO shapefiles to the raster extent
+  EOO.poly.crop <- suppressWarnings(
+    sf::st_intersection(EOO.poly, sf::st_as_sfc(sf::st_bbox(hab.map))))
+  
+  if (length(EOO.poly$geometry) > length(EOO.poly.crop$geometry))
+    warning(paste0("The EOO of ",
+                   length(EOO.poly$geometry) - length(EOO.poly.crop$geometry),
+                   " species became empty after croping them to the habitat map extent"))
+  
+  EOO.poly.proj <- sf::st_transform(EOO.poly.crop, crs = proj_crs)
+  EOO.poly.area <- as.double(sf::st_area(EOO.poly.proj))/1000000 # area in km2
+  EOO.poly.name <- EOO.poly.crop
+  sf::st_geometry(EOO.poly.name) <- NULL
+  EOO.poly.name <- EOO.poly.name[,1] 
+  
+  if(any(grepl("SpatialPolygon", class(hab.map))))
+    hab.map <- sf::st_as_sf(hab.map)
+  
+  if (is.null(hab.class) & any(grepl("Raster", class(hab.map))))
+    classes <- seq(hab.map[[1]]@data@min, hab.map[[1]]@data@max, 1)
+
+  # Extracting the map information for each EOO polygon 
+  if (parallel) {
+    cl <- snow::makeSOCKcluster(NbeCores)
+    doSNOW::registerDoSNOW(cl)
+    
+    message('Parallel running with ',
+            NbeCores, ' cores')
+    `%d%` <- foreach::`%dopar%`
+  } else{
+    `%d%` <- foreach::`%do%`
+  }
+  
+  x <- NULL
+  if (show_progress) {
+    pb <-
+      txtProgressBar(
+        min = 0,
+        max = length(EOO.poly.crop$geometry),
+        style = 3
+      )
+    
+    progress <- function(n)
+      setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+  } else{
+    opts <- NULL
+  }
+  
+  output <-
+    foreach::foreach(
+      x = 1:length(EOO.poly.crop$geometry),
+      #x = 4000:5000,
+      #.combine = 'c',
+      #.packages=c("raster","sf"),
+      .options.snow = opts
+    ) %d% {
+      
+    # if (!parallel & show_progress)
+    #   setTxtProgressBar(pb, x)
+    
+    # for(x in 1:100) {
+    # cat(x, "\n")  
+    if(any(grepl("sf", class(hab.map)))) {
+
+      crop1 <- sf::st_intersection(hab.map, EOO.poly.crop[x, ]) # cropping to the extent of the polygon
+      crop.proj <- sf::st_transform(crop1, crs = proj_crs)
+      areas.x <- try(sf::st_area(crop1), TRUE)
+      if (class(areas.x) == "try-error") {
+        sf::sf_use_s2(FALSE)
+        crop1 <- sf::st_make_valid(crop1)
+        areas.x <- try(sf::st_area(crop1), TRUE)
+        sf::sf_use_s2(TRUE)
+      }
+      
+      area.hab <- as.numeric(sum(areas.x, na.rm = TRUE))/1000000
+      tmp <- c(as.numeric(sf::st_area(EOO.poly.crop[x, ]))/1000000 - area.hab, area.hab)
+      tmp1 <- crop1
+      sf::st_geometry(tmp1) <- NULL
+      n.polys <- length(unique(as.character(tmp1[,1]))) ### CHECK HERE: FAIL TO GET THE NUMBER OF SHAPE IDs
+      hab.mat <- matrix(c(NA,  n.polys, 100*tmp/EOO.poly.area[x], tmp), ncol = 3, nrow = 2, byrow = FALSE)
+      row.names(hab.mat) <- c("non_habitat", "habitat")
+      colnames(hab.mat) <- c("numb.polys","prop.EOO", "area.EOO")
+      res <- cbind.data.frame(tax = EOO.poly.name[x], hab.mat,
+                              stringsAsFactors = FALSE)["habitat",]
+
+      if(export_shp) {
+
+        ## Tried to combine the two sf objects but could not make it with the df info
+        # toto <- c(st_geometry(crop1), st_geometry(EOO.poly.crop[x, ]))
+        # merge(toto, crop1)
+        # toto <- sf::st_multipolygon(st_geometry(eoo1), st_geometry(crop1))
+        # crop1 <- st_cast(crop1, "POLYGON")
+        # eoo1 <- st_cast(EOO.poly.crop[x,], "POLYGON")
+
+        res <- list(res, crop1)
+
+        if (plot) {
+          par(mar = c(3,3,2,2), las=1, tcl=-0.25, mgp=c(2.5,0.5,0))
+          plot(sf::st_geometry(EOO.poly.crop[x, ]),
+               main = EOO.poly.name[x], bg=0)
+          plot(sf::st_geometry(crop1), add = TRUE, col = 1)
+        }
+
+      }
+
+    }
+
+  # result <- NULL
+   # for(x in 1001:2000) {
+   #   cat(x, "\n")
+    if(any(grepl("Raster", class(hab.map)))) {
+      
+      ext <- raster::extent(sf::st_bbox(EOO.poly.crop[x, ])[c(1,3,2,4)])
+      crop1 <- raster::crop(hab.map, ext) # cropping raster to the extent of the polygon
+      mask1 <- raster::mask(crop1, mask = as(EOO.poly.crop[x, ], "Spatial"))
+      tmp  <- raster::getValues(mask1) # much faster than raster::extract
+
+      if("numeric" %in% class(tmp) | "integer" %in% class(tmp))
+        tmp <- tmp[!is.na(tmp)] # excluding pixels outside the EOO
+      if("matrix" %in% class(tmp) | "data.frame" %in% class(tmp))
+        tmp  <- tmp[!is.na(tmp[,1]), , drop = FALSE] # excluding pixels outside the EOO
+      
+      if (dim(tmp)[1] > 0) {
+        #Getting the approximated area of the masked raster (in km2)
+        mask.area <- raster::area(mask1[[1]], na.rm = TRUE)
+        r.area <- raster::cellStats(mask.area, 'sum')
+        
+        if (!is.null(hab.class)) {
+          
+          # Getting habitat quantity (land-use maps)
+          mask.dim <- dim(tmp)
+          pixs <- mask.dim[1]
+          last <- mask.dim[2]
+          hab.mat <- as.matrix(table(factor(tmp[, last] %in% hab.class, levels = c(FALSE, TRUE))))
+          row.names(hab.mat) <- c("non_habitat", "habitat")
+          hab.mat <- cbind(hab.mat, 100 * hab.mat/pixs)
+          hab.mat <- cbind(hab.mat, (hab.mat[,2]* r.area)/100)
+          colnames(hab.mat) <- c("n.pixs", "prop.EOO", "area.EOO")
+          
+          if (class(crop1) == "RasterBrick") {
+            
+            # Getting the overal percentage of each transition
+            transit.mat <- 100 * as.matrix(table(factor(tmp[, 1] %in% hab.class, levels = c(FALSE, TRUE)),
+                                                 factor(tmp[, last] %in% hab.class, levels = c(FALSE, TRUE)))) / pixs
+            colnames(transit.mat) <- c("non_habitat_t1", "habitat_t1")
+            row.names(transit.mat) <- c("non_habitat_t0", "habitat_t0")
+            hab.mat <- cbind(hab.mat, loss = c(transit.mat[1, 2], transit.mat[2, 1]))
+            hab.mat <- cbind(hab.mat, recover = c(transit.mat[2, 1], transit.mat[1, 2]))
+            
+            # % of habitat loss and recovery
+            hab_loss <- 100 * transit.mat[2, 1] / sum(transit.mat[2, ])
+            non_hab_loss <- 100 * transit.mat[1, 2] / sum(transit.mat[1, ])
+            hab_rec <- 100 * transit.mat[1, 2] / sum(transit.mat[, 2])
+            non_hab_rec <- 100 * transit.mat[2, 1] / sum(transit.mat[, 1])
+            hab.mat <- cbind(hab.mat, rel.loss = c(non_hab_loss, hab_loss))
+            hab.mat <- cbind(hab.mat, rel.recover = c(non_hab_rec, hab_rec))
+            
+            # rate of loss and recovery
+            if(is.null(years))
+              years <- dim(hab.map)[3] - 1
+            
+            non_hab_loss_rate <- non_hab_loss / years
+            hab_loss_rate <- hab_loss / years
+            non_hab_rec_rate <- non_hab_rec / years
+            hab_rec_rate <- hab_rec / years
+            hab.mat <- cbind(hab.mat, rate.loss = c(non_hab_loss_rate, hab_loss_rate))
+            hab.mat <- cbind(hab.mat, rate.recover = c(non_hab_rec_rate, hab_rec_rate))
+            
+            # defining habitat quality at time t+1
+            transit <- matrix(NA, ncol = 1, nrow = pixs)
+            transit[tmp[, 1] %in% hab.class &
+                      tmp[, last] %in% hab.class, 1] <- 2
+            transit[tmp[, 1] %in% hab.class &
+                      !tmp[, last] %in% hab.class, 1] <- -2
+            transit[!tmp[, 1] %in% hab.class &
+                      tmp[, last] %in% hab.class, 1] <- 1
+            transit[!tmp[, 1] %in% hab.class &
+                      !tmp[, last] %in% hab.class, 1] <- 0
+            mod <- stats::lm(base::jitter(transit, factor=0.1) ~ 1)
+            ci <- round(stats::confint(mod),4)
+            hab.mat <- cbind(hab.mat,
+                             hab.quality = round(as.numeric(stats::coef(mod)),4),
+                             hab.quality.lo = ci[1],
+                             hab.quality.hi = ci[2])
+            
+            res <- cbind.data.frame(tax = EOO.poly.name[x], hab.mat[,-1],
+                                    stringsAsFactors = FALSE)["habitat",]
+            
+            # location of decline and recover
+            if (export_shp) {
+              
+              loc.loss <- data.frame(
+                cell = 1:length(mask1[[1]]@data@values),
+                raster::coordinates(mask1[[1]]),
+                classes = NA_integer_
+              )
+              #loc.loss$classes[loc.loss$cell %in% tmp[, 1]] <- transit
+              loc.loss$classes[!is.na(mask1[[1]]@data@values)] <- transit
+              r <- raster::rasterFromXYZ(loc.loss[!is.na(loc.loss$classes), 2:4],
+                                         crs = raster::crs(mask1[[1]]))
+              
+              if (plot) {
+                par(mar = c(3,3,2,2), las=1, tcl=-0.25, mgp=c(2.5,0.5,0))
+                raster::plot(r, col = c("red", "grey", "green", "darkgreen"),
+                             main = EOO.poly.name[x])
+                plot(sf::st_geometry(EOO.poly.crop[x,]), add = TRUE, bg = 0)
+              }
+              
+              res <- list(res, r)
+              
+            }
+          }
+          
+        } else {
+          
+          #Getting summary stats for the variable in the EOO (quantitative maps)
+          if("numeric" %in% class(tmp) | "integer" %in% class(tmp)) {
+            vals <- tmp # excluding pixels outside the EOO
+            pixs <- length(vals)
+          }
+          if("matrix" %in% class(tmp) | "data.frame" %in% class(tmp)) {
+            last <- dim(tmp)[2]
+            vals <- tmp[, last] # excluding pixels outside the EOO
+            pixs <- length(vals)
+          }
+          sumario <- matrix(unclass(summary(vals)), nrow = 1, ncol = 6, 
+                            dimnames = list("", c("Min","1st_Qu","Median","Mean","3rd_Qu","Max")))
+          
+          if(output_raster %in% "summary") {
+            res <- cbind.data.frame(tax = EOO.poly.name[x],
+                                    sumario, # ci,
+                                    stringsAsFactors = FALSE)
+            
+          } else {
+            
+            #Tabulating pixels
+            tmp1 <- table(factor(vals, levels = classes))
+            prop <-  matrix(round(100*unclass(tmp1)/pixs, 8), nrow = 1, ncol = length(classes),
+                            dimnames = list("", classes))
+            
+            if(output_raster %in% "prop.table")
+              res <- cbind.data.frame(tax = EOO.poly.name[x],
+                                      prop,
+                                      stringsAsFactors = FALSE)
+            
+            if(output_raster %in% "area.table")
+              area <- round((prop * r.area)/100, 3)
+            res <- cbind.data.frame(tax = EOO.poly.name[x],
+                                    area,
+                                    stringsAsFactors = FALSE)
+            
+          } 
+        }
+      } else {
+        
+        col.names <- c("prop.EOO", "area.EOO", "loss", "recover", "rel.loss", 
+                       "rel.recover", "rate.loss", "rate.recover", "hab.quality",   
+                       "hab.quality.lo", "hab.quality.hi")
+        hab.mat <- matrix(NA, nrow = 1, ncol = length(col.names), 
+                          dimnames = list("habitat", col.names))
+        res <- cbind.data.frame(tax = EOO.poly.name[x], hab.mat,
+                                stringsAsFactors = FALSE)
+      } 
+    }
+      
+    res
+  }
+  
+  if(parallel) snow::stopCluster(cl)
+  if(show_progress) close(pb)
+  
+  result <- do.call(rbind.data.frame, output)
+  rownames(result) <- NULL
+  return(result)
+}
+
+#### GETTING TRUE POLYGON CENTROIDS ####
+polygonCenter <- function(x, type = "cm") {
+  # how many polygons?
+  n.polys <- length(x)
+  
+  # object that will store the results
+  results <- NULL
+  for (i in seq_len(n.polys)){
+    # cat(i, "\n")
+    
+    # Getting the polygon with larger area for the cell
+    poly.i <- x[i,]
+    areas.i <- rgeos::gArea(poly.i, byid = TRUE)
+    poly.i.max <- poly.i[which.max(areas.i),]
+    
+    # Calculating the centroid using rGeos
+    centroid <- sp::coordinates(rgeos::gCentroid(poly.i.max))
+    
+    polys <- attr(poly.i.max, 'polygons')
+    polys2 <- attr(polys[[which.max(areas.i)]], 'Polygons')
+    coords <- sp::coordinates(polys2[[1]])
+    cm <- pracma::poly_center(coords[,1], coords[,2]) # center of mass
+    
+    # plot(x, border = "grey")
+    # plot(poly.i.max, add = TRUE, col = )
+    # points(centroid, pch = 19)
+    # points(t(cm), pch = 15, col=2)
+    
+    if (type == "cm")    
+      if(is.null(results)) { 
+        results <- t(cm) 
+      } else { 
+        results <- rbind(results, t(cm))
+      }
+    
+    if (type == "centroid")    
+      if(is.null(results)) { 
+        results <- centroid 
+      } else { 
+        results <- rbind(results, centroid)
+      }
+  }
+  
+  return(results)
+}
+
+## Another option taken from: https://gis.stackexchange.com/a/265475/171796
+
+#' find the center of mass / furthest away from any boundary
+#' 
+#' Takes as input a spatial polygon
+#' @param pol One or more polygons as input
+#' @param ultimate optional Boolean, TRUE = find polygon furthest away from
+#'   centroid. False = ordinary centroid
+
+centroid <- function(pol, ultimate=TRUE, iterations=5, initial_width_step=10){
+  if (ultimate){
+    new_pol <- pol
+    # For every polygon do this:
+    for (i in 1:length(pol)){
+      width <- -initial_width_step
+      area <- rgeos::gArea(pol[i,])
+      centr <- pol[i,]
+      wasNull <- FALSE
+      for (j in 1:iterations){
+        if (!wasNull){ # stop when buffer polygon was alread too small
+          centr_new <- rgeos::gBuffer(centr,width=width)
+          # if the buffer has a negative size:
+          substract_width <- width/20
+          while (is.null(centr_new)){ #gradually decrease the buffer size until it has positive area
+            width <- width-substract_width
+            centr_new <- rgeos::gBuffer(centr,width=width)
+            wasNull <- TRUE
+          }
+          # if (!(is.null(centr_new))){
+          #   plot(centr_new,add=T)
+          # }
+          new_area <- rgeos::gArea(centr_new)
+          #linear regression:
+          slope <- (new_area-area)/width
+          #aiming at quarter of the area for the new polygon
+          width <- (area/4-area)/slope
+          #preparing for next step:
+          area <- new_area
+          centr<- centr_new
+        }
+      }
+      #take the biggest polygon in case of multiple polygons:
+      d <- disaggregate(centr)
+      if (length(d)>1){
+        biggest_area <- rgeos::gArea(d[1,])
+        which_pol <- 1                             
+        for (k in 2:length(d)){
+          if (rgeos::gArea(d[k,]) > biggest_area){
+            biggest_area <- rgeos::gArea(d[k,])
+            which_pol <- k
+          }
+        }
+        centr <- d[which_pol,]
+      }
+      #add to class polygons:
+      new_pol@polygons[[i]] <- remove.holes(new_pol@polygons[[i]])
+      new_pol@polygons[[i]]@Polygons[[1]]@coords <- centr@polygons[[1]]@Polygons[[1]]@coords
+    }
+    centroids <- rgeos::gCentroid(new_pol,byid=TRUE)
+  }else{
+    centroids <- rgeos::gCentroid(pol,byid=TRUE)  
+  }  
+  return(centroids)
+}
+
+#Given an object of class Polygons, returns
+#a similar object with no holes
+
+remove.holes <- function(Poly){
+  # remove holes
+  is.hole <- lapply(Poly@Polygons,function(P)P@hole)
+  is.hole <- unlist(is.hole)
+  polys <- Poly@Polygons[!is.hole]
+  Poly <- Polygons(polys,ID=Poly@ID)
+  # remove 'islands'
+  max_area <- largest_area(Poly)
+  is.sub <- lapply(Poly@Polygons,function(P)P@area<max_area)  
+  is.sub <- unlist(is.sub)
+  polys <- Poly@Polygons[!is.sub]
+  Poly <- Polygons(polys,ID=Poly@ID)
+  Poly
+}
+
+largest_area <- function(Poly){
+  total_polygons <- length(Poly@Polygons)
+  max_area <- 0
+  for (i in 1:total_polygons){
+    max_area <- max(max_area,Poly@Polygons[[i]]@area)
+  }
+  max_area
+}
+
+#' Make transparent theme
+transparent=function(size=0){
+  
+  
+  temp=theme(rect= element_rect(fill = 'transparent',size=size),
+             panel.background=element_rect(fill = 'transparent'),
+             panel.border=element_rect(size=size),
+             panel.grid.major=element_blank(),
+             panel.grid.minor=element_blank())
+  temp
+}
+
+#' Make default palette
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+
+#' Make subcolors with main colors
+makeSubColor=function(main,no=3){
+  result=c()
+  for(i in 1:length(main)){
+    temp=ztable::gradientColor(main[i],n=no+2)[2:(no+1)]
+    result=c(result,temp)
+  }
+  result
+}
+
+
+#'Draw a PieDonut plot
+my.PieDonut=function(data,mapping,
+                     start=getOption("PieDonut.start",0),
+                     addPieLabel=TRUE,addDonutLabel=TRUE,
+                     showRatioDonut=TRUE,showRatioPie=TRUE,
+                     ratioByGroup=TRUE,
+                     showRatioThreshold=getOption("PieDonut.showRatioThreshold",0.02),
+                     labelposition=getOption("PieDonut.labelposition",2),
+                     labelpositionThreshold=0.1,
+                     r0=getOption("PieDonut.r0",0.3),
+                     r1=getOption("PieDonut.r1",1.0),
+                     r2=getOption("PieDonut.r2",1.2),
+                     explode=NULL,
+                     selected=NULL,
+                     explodePos=0.1,
+                     color="white",
+                     pieAlpha=0.8,
+                     donutAlpha=1.0,
+                     maxx=NULL,
+                     showPieName=FALSE,
+                     showDonutName=FALSE,
+                     title=NULL,
+                     pieLabelSize=4,
+                     donutLabelSize=3,
+                     titlesize=5,
+                     explodePie=TRUE,explodeDonut=FALSE,
+                     use.label=TRUE,use.labels=TRUE,
+                     family=getOption("PieDonut.family",""),
+                     labels = NULL,
+                     main.colors = NULL,
+                     correct.legend.x = NULL,
+                     correct.legend.y = NULL,
+                     tidy.legend.donut = NULL,
+                     tidy.legend.pie = NULL,
+                     plot.piedonut = TRUE,
+                     ratioAccuracy = c("pie" = 0.1, "donut" = 0.1),
+                     return = "both"){
+  
+  # data = pie.df
+  # mapping = aes(category, main.criteria)
+  # ratioByGroup=FALSE
+  # start=75
+  # r0=0
+  # r1=1
+  # r2=1.3
+  # labelposition = 2
+  # family = ""
+  # main.colors = cores[-1]
+  
+  (cols=colnames(data))
+  if(use.labels) data=moonBook::addLabelDf(data,mapping)
+  
+  count<-NULL
+  
+  if("count" %in% names(mapping)) count <- moonBook::getMapping(mapping,"count")
+  count
+  
+  pies<-donuts<-NULL
+  (pies = moonBook::getMapping(mapping,"pies"))
+  if(is.null(pies)) (pies = moonBook::getMapping(mapping,"pie"))
+  if(is.null(pies)) (pies = moonBook::getMapping(mapping,"x"))
+  
+  (donuts = moonBook::getMapping(mapping,"donuts"))
+  if(is.null(donuts)) (donuts = moonBook::getMapping(mapping,"donut"))
+  if(is.null(donuts)) (donuts = moonBook::getMapping(mapping,"y"))
+  
+  if(!is.null(count)){
+    
+    df<-data %>% group_by(.data[[pies]]) %>%dplyr::summarize(Freq=sum(.data[[count]]))
+    df
+  } else{
+    df=data.frame(table(data[[pies]]))
+  }
+  colnames(df)[1]=pies
+  
+  ##Putting the data frame into the order of the colors
+  if(!is.null(main.colors)) {
+    df <- df[order(match(df$category, names(main.colors))),]
+    # df3 <- df3[order(match(df3$category, names(main.colors))),]
+  }
+  
+  df$end=cumsum(df$Freq)
+  df$start=dplyr::lag(df$end)
+  df$start[1]=0
+  total=sum(df$Freq)
+  df$start1=df$start*2*pi/total
+  df$end1=df$end*2*pi/total
+  df$start1=df$start1+start
+  df$end1=df$end1+start
+  df$focus=0
+  if(explodePie) df$focus[explode]=explodePos
+  df$mid=(df$start1+df$end1)/2
+  df$x=ifelse(df$focus==0,0,df$focus*sin(df$mid))
+  df$y=ifelse(df$focus==0,0,df$focus*cos(df$mid))
+  df$label=df[[pies]]
+  df$ratio=df$Freq/sum(df$Freq)
+  
+  if(is.null(tidy.legend.pie))
+    tidy.legend.pie = rep(TRUE, nrow(df))
+  if(showRatioPie) {
+    
+    # df$label = ifelse(df$ratio >= showRatioThreshold,
+    #                 paste0(df$label, "\n(", scales::percent(df$ratio), ")"),
+    #                 as.character(df$label))
+    df$label = paste0(df$label, " (", scales::percent(df$ratio, accuracy = ratioAccuracy["pie"]), ")")
+    df$label[tidy.legend.pie] = gsub(" \\(", "\n(",df$label[tidy.legend.pie])
+    
+    
+  }
+  
+  if(is.null(correct.legend.x)) {
+    correct.legend.x = rep(0, nrow(df))
+  }
+  if(is.null(correct.legend.y)) {
+    correct.legend.y = rep(0, nrow(df))
+  }
+  
+  df$labelx=(r0+r1)/2*sin(df$mid)+df$x + correct.legend.x
+  df$labely=(r0+r1)/2*cos(df$mid)+df$y + correct.legend.y
+  if(!is.factor(df[[pies]])) df[[pies]]<-factor(df[[pies]])
+  df
+  
+  if(!is.null(main.colors)) {
+    mainCol = main.colors
+  } else {
+    mainCol = gg_color_hue(nrow(df))
+  }
+  
+  df$radius=r1
+  df$radius[df$focus!=0]=df$radius[df$focus!=0]+df$focus[df$focus!=0]
+  df$hjust=ifelse((df$mid %% (2*pi))>pi,1,0)
+  df$vjust=ifelse(((df$mid %% (2*pi)) <(pi/2))|(df$mid %% (2*pi) >(pi*3/2)),0,1)
+  df$segx=df$radius*sin(df$mid)
+  df$segy=df$radius*cos(df$mid)
+  df$segxend=(df$radius+0.05)*sin(df$mid)
+  df$segyend=(df$radius+0.05)*cos(df$mid)
+  df
+  
+  if(!is.null(donuts)){
+    subColor = makeSubColor(mainCol, no = length(unique(data[[donuts]])))
+    subColor
+    
+    
+    data
+    if(!is.null(count)){
+      
+      df3 <- as.data.frame(data[c(donuts,pies,count)])
+      colnames(df3)=c("donut","pie","Freq")
+      df3
+      df3<-eval(parse(text="complete(df3,donut,pie)"))
+      
+      # df3<-df3 %>% complete(donut,pie)
+      df3$Freq[is.na(df3$Freq)]=0
+      if(!is.factor(df3[[1]])) df3[[1]]=factor(df3[[1]])
+      if(!is.factor(df3[[2]])) df3[[2]]=factor(df3[[2]])
+      
+      df3<-df3 %>% arrange(.data$pie,.data$donut)
+      a<-df3 %>% spread(.data$pie,value=.data$Freq)
+      # a<-df3 %>% spread(pie,value=Freq)
+      a=as.data.frame(a)
+      a
+      rownames(a)=a[[1]]
+      a=a[-1]
+      a
+      colnames(df3)[1:2]=c(donuts,pies)
+      
+      
+      
+    } else {
+      df3 <- data.frame(table(data[[donuts]],data[[pies]]),stringsAsFactors = FALSE)
+      colnames(df3)[1:2] <- c(donuts,pies)
+      a = table(data[[donuts]],data[[pies]])
+      
+      #Putting the data frame into the order of the colors
+      if(!is.null(main.colors)) {
+        # df <- df[order(match(df$category, names(main.colors))),]
+        df3 <- df3[order(match(df3$category, names(main.colors))),]
+        a <- a[,order(match(colnames(a), names(main.colors)))]
+      }
+      
+    }
+    
+    a
+    df3
+    df3$group = rep(colSums(a),each=nrow(a))
+    df3$pie = rep(1:ncol(a),each=nrow(a))
+    total = sum(df3$Freq)
+    total
+    df3$ratio1 = df3$Freq/total
+    df3
+    if(ratioByGroup) {
+      df3$ratio = scales::percent(df3$Freq/df3$group, accuracy = ratioAccuracy["donut"])
+    } else {
+      df3$ratio <- scales::percent(df3$ratio1, accuracy = ratioAccuracy["donut"])
+    }
+    df3$end <- cumsum(df3$Freq)
+    df3
+    df3$start = dplyr::lag(df3$end)
+    df3$start[1] = 0
+    
+    df3$start1 = df3$start * 2 * pi / total
+    df3$end1 = df3$end * 2 * pi / total
+    df3$start1 = df3$start1 + start
+    df3$end1 = df3$end1 + start
+    df3$mid = (df3$start1 + df3$end1) / 2
+    df3$focus = 0
+    
+    if(!is.null(selected)){
+      df3$focus[selected]=explodePos
+    } else if(!is.null(explode)) {
+      selected=c()
+      for(i in 1:length(explode)){
+        start=1+nrow(a)*(explode[i]-1)
+        selected=c(selected,start:(start+nrow(a)-1))
+      }
+      selected
+      df3$focus[selected]=explodePos
+    }
+    df3
+    df3$x=0
+    df3$y=0
+    df
+    
+    if(!is.null(explode)){
+      explode
+      for(i in 1:length(explode)){
+        
+        xpos=df$focus[explode[i]]*sin(df$mid[explode[i]])
+        ypos=df$focus[explode[i]]*cos(df$mid[explode[i]])
+        
+        df3$x[df3$pie==explode[i]]=xpos
+        df3$y[df3$pie==explode[i]]=ypos
+      }
+    }
+    df3$no=1:nrow(df3)
+    df3$label=df3[[donuts]]
+    
+    if(is.null(tidy.legend.donut))
+      tidy.legend.donut <- rep(TRUE, nrow(df3))
+    
+    if(showRatioDonut) {
+      #### CHECK HERE ####
+      if(max(nchar(levels(df3$label)))<=2) { 
+        df3$label = paste0(df3$label,"(",df3$ratio,")")
+      } else { 
+        #df3$label = paste0(df3$label,"\n(",df3$ratio,")")
+        df3$label = paste0(df3$label," (",df3$ratio,")")
+        df3$label[tidy.legend.donut] <- gsub(" \\(","\n(",df3$label[tidy.legend.donut]) 
+      }
+    }
+    df3$label[df3$ratio1==0]=""
+    
+    # if(labelposition==0)
+    df3$label[df3$ratio1<showRatioThreshold]=""
+    
+    
+    df3$hjust=ifelse((df3$mid %% (2*pi))>pi,1,0)
+    df3$vjust=ifelse(((df3$mid %% (2*pi)) <(pi/2))|(df3$mid %% (2*pi) >(pi*3/2)),0,1)
+    df3$no=factor(df3$no)
+    df3
+    # str(df3)
+    labelposition
+    if(labelposition>0){
+      df3$radius=r2
+      if(explodeDonut) df3$radius[df3$focus!=0]=df3$radius[df3$focus!=0]+df3$focus[df3$focus!=0]
+      
+      df3$segx=df3$radius*sin(df3$mid)+df3$x
+      df3$segy=df3$radius*cos(df3$mid)+df3$y
+      df3$segxend=(df3$radius+0.05)*sin(df3$mid)+df3$x
+      df3$segyend=(df3$radius+0.05)*cos(df3$mid)+df3$y
+      
+      if(labelposition==2) df3$radius=(r1+r2)/2
+      df3$labelx= (df3$radius)*sin(df3$mid)+df3$x
+      df3$labely= (df3$radius)*cos(df3$mid)+df3$y
+    } else{
+      df3$radius=(r1+r2)/2
+      if(explodeDonut) df3$radius[df3$focus!=0]=df3$radius[df3$focus!=0]+df3$focus[df3$focus!=0]
+      df3$labelx=df3$radius*sin(df3$mid)+df3$x
+      df3$labely=df3$radius*cos(df3$mid)+df3$y
+    }
+    df3$segx[df3$ratio1==0]=0
+    df3$segxend[df3$ratio1==0]=0
+    df3$segy[df3$ratio1==0]=0
+    df3$segyend[df3$ratio1==0]=0
+    if(labelposition==0){
+      df3$segx[df3$ratio1<showRatioThreshold]=0
+      df3$segxend[df3$ratio1<showRatioThreshold]=0
+      df3$segy[df3$ratio1<showRatioThreshold]=0
+      df3$segyend[df3$ratio1<showRatioThreshold]=0
+    }
+    df3
+    
+    del=which(df3$Freq==0)
+    del
+    if(length(del)>0) subColor<-subColor[-del]
+    subColor
+  }
+  
+  p <- ggplot() + ggforce::theme_no_axes() + coord_fixed()
+  
+  if(is.null(maxx)) {
+    r3=r2+0.3
+  } else{
+    r3=maxx
+  }
+  
+  p1 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x", y0 = "y",
+                                             r0 = as.character(r0), r = as.character(r1),
+                                             start="start1",end="end1",
+                                             fill = pies),alpha=pieAlpha,color=color, data = df) + 
+    transparent()+
+    scale_fill_manual(values=mainCol)+
+    xlim(r3*c(-1.2,1.2)) + ylim(r3*c(-1,1)) + guides(fill=FALSE) +
+    theme_void()
+  
+  if ((labelposition == 1) & (is.null(donuts))) {
+    p1 <- p1 + geom_segment(aes_string(x = "segx", y = "segy",
+                                       xend="segxend",yend="segyend"),data=df)+
+      geom_text(aes_string(x="segxend",y="segyend",label="label",hjust="hjust",vjust="vjust"),size=pieLabelSize,data=df,family=family)
+    
+  } else 
+    if ((labelposition == 2) & (is.null(donuts))) {
+      p1<-p1+ geom_segment(aes_string(x="segx",y="segy",
+                                      xend="segxend",yend="segyend"),data=df[df$ratio<labelpositionThreshold,])+
+        geom_text(aes_string(x="segxend",y="segyend",label="label",hjust="hjust",vjust="vjust"),size=pieLabelSize,data=df[df$ratio<labelpositionThreshold,],family=family)+
+        geom_text(aes_string(x="labelx",y="labely",label="label"),size=pieLabelSize,data=df[df$ratio>=labelpositionThreshold,],family=family)
+      
+      
+    } else{
+      p1 <- p1 + geom_text(
+        aes_string(x = "labelx", y = "labely", label = "label"),
+        size = pieLabelSize,
+        data = df,
+        family = family
+      )
+    }
+  
+  if(showPieName) p1<-p1+annotate("text",x=0,y=0,label=pies,size=titlesize,family=family)
+  
+  p1 <- p1+theme(text=element_text(family=family))
+  
+  if(!is.null(donuts)){
+    
+    # donutAlpha=1.0;color="white"
+    # explodeDonut=FALSE
+    if(explodeDonut) {
+      p3 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x", y0 = "y", r0 = as.character(r1),
+                                                 r = as.character(r2), start="start1",end="end1",
+                                                 fill = "no",explode="focus"),alpha=donutAlpha,color=color,
+                                      data = df3)
+    } else{
+      p3 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x", y0 = "y", r0 = as.character(r1),
+                                                 r = as.character(r2), start="start1",end="end1",
+                                                 fill = "no"),alpha=donutAlpha,color=color,
+                                      data = df3)
+    }
+    
+    p3 <- p3 + transparent()+
+      scale_fill_manual(values=subColor)+
+      xlim(r3*c(-1,1))+ylim(r3*c(-1,1))+guides(fill=FALSE)+
+      theme_void()
+    
+    p3
+    
+    if(labelposition==1){
+      p3<-p3+ geom_segment(aes_string(x="segx",y="segy",
+                                      xend="segxend",yend="segyend"),data=df3)+
+        geom_text(aes_string(x="segxend",y="segyend",
+                             label="label",hjust="hjust",vjust="vjust"),size=donutLabelSize,data=df3,family=family)
+    } else 
+      if(labelposition==0){
+        p3<-p3+geom_text(aes_string(x="labelx",y="labely",
+                                    label="label"),size=donutLabelSize,data=df3,family=family)
+      } else{
+        p3 <- p3 + geom_segment(aes_string(x="segx",y="segy",
+                                           xend="segxend",yend="segyend"),data=df3[df3$ratio1<labelpositionThreshold,])+
+          geom_text(aes_string(x="segxend",y="segyend",
+                               label="label",hjust="hjust",vjust="vjust"),size=donutLabelSize,data=df3[df3$ratio1<labelpositionThreshold,],family=family)+
+          geom_text(aes_string(x="labelx",y="labely",
+                               label="label"),size=donutLabelSize,data=df3[df3$ratio1>=labelpositionThreshold,],family=family)
+        
+      }
+    
+    if(!is.null(title)) 
+      p3<-p3+annotate("text",x=0,y=r3,label=title,size=titlesize,family=family)
+    if(showDonutName) 
+      p3<-p3+annotate("text",x=(-1)*r3,y=r3,label=donuts,hjust=0,size=titlesize,family=family)
+    
+    p3 <- p3 + theme(text=element_text(family=family))# +
+    #theme(axis.ticks.length = unit(.1, "cm"))
+    #theme(axis.ticks = element_blank())
+    #p3
+    # grid::grid.newpage()
+    # print(p1, vp = grid::viewport(height = 1, width = 1))
+    # print(p3, vp = grid::viewport(height = 1, width = 1))
+  } # else {
+  #   p1
+  # }
+  
+  if (plot.piedonut) {
+    grid::grid.newpage()
+    print(p1, vp = grid::viewport(height = 1, width = 1))
+    print(p3, vp = grid::viewport(height = 1, width = 1))
+  }
+  
+  if(return == "both"){
+    return(list(p1, p3))
+  } else{
+    if(return == "pie") return(p1)
+    if(return == "donut") return(p3)
+  }
+  
+}
+
+## function to obtain threat from habitat loss from empirical spline fits to AF derived relationships
+get_threat <- function(habitat_loss = NULL, spp_richness = NULL,
+                       endemism_ratio = NULL, all = NULL, 
+                       VU = NULL, EN = NULL, CR = NULL,
+                       correct.cats = TRUE) {
+  # getting the proportion of loss
+  if (any(habitat_loss[!is.na(habitat_loss)] > 1))
+    habitat_loss <- habitat_loss/100
+  
+  perdas <- habitat_loss[!is.na(habitat_loss)]
+  
+  # getting the overall threat proportion
+  low <- predict(all[[1]], x=perdas)$y
+  med <- predict(all[[2]], x=perdas)$y
+  high <- predict(all[[3]], x=perdas)$y
+  threat <- cbind(low, med, high)
+  
+  low <- predict(VU[[1]], x=perdas)$y
+  med <- predict(VU[[2]], x=perdas)$y
+  high <- predict(VU[[3]], x=perdas)$y
+  threat.VU <- cbind(low, med, high)
+  
+  low <- predict(EN[[1]], x=perdas)$y
+  med <- predict(EN[[2]], x=perdas)$y
+  high <- predict(EN[[3]], x=perdas)$y
+  threat.EN <- cbind(low, med, high)
+  
+  low <- predict(CR[[1]], x=perdas)$y
+  med <- predict(CR[[2]], x=perdas)$y
+  high <- predict(CR[[3]], x=perdas)$y
+  threat.CR <- cbind(low, med, high)
+  
+  
+  # Averaging estimates of threat categories based on overall threat
+  if (correct.cats) {
+    low <- apply(cbind(threat.VU[,"low"], threat.EN[,"low"], threat.CR[,"low"]), 1, sum)
+    med <- apply(cbind(threat.VU[,"med"], threat.EN[,"med"], threat.CR[,"med"]), 1, sum)
+    high <- apply(cbind(threat.VU[,"high"], threat.EN[,"high"], threat.CR[,"high"]), 1, sum)
+    threat.cats <- cbind(low, med, high)
+    
+    low.ratio <- threat[,"low"]/threat.cats[,"low"]
+    threat.VU[,"low"] <- threat.VU[,"low"] * low.ratio
+    threat.EN[,"low"] <- threat.EN[,"low"] * low.ratio
+    threat.CR[,"low"] <- threat.CR[,"low"] * low.ratio
+    
+    med.ratio <- threat[,"med"]/threat.cats[,"med"]
+    threat.VU[,"med"] <- threat.VU[,"med"] * med.ratio
+    threat.EN[,"med"] <- threat.EN[,"med"] * med.ratio
+    threat.CR[,"med"] <- threat.CR[,"med"] * med.ratio
+    
+    high.ratio <- threat[,"med"]/threat.cats[,"med"]
+    threat.VU[,"high"] <- threat.VU[,"high"] * high.ratio
+    threat.EN[,"high"] <- threat.EN[,"high"] * high.ratio
+    threat.CR[,"high"] <- threat.CR[,"high"] * high.ratio
+    
+  }
+  
+  # Making sure that overall proportion is not above 100%
+  dados <- cbind(VU = threat.VU[,1], EN = threat.EN[,1], CR = threat.CR[,1])
+  dados <- round(100 * cbind(dados, LC = (1 - apply(dados, 1, sum))), 0)
+  dados[apply(dados,1,sum) != 100, 4] <- 
+    dados[apply(dados,1,sum) != 100, 4] + 
+    (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  # Calculating the RLI
+  high.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  dados <- cbind(VU = threat.VU[,2], EN = threat.EN[,2], CR = threat.CR[,2])
+  dados <- round(100 * cbind(dados, LC = 1 - apply(dados, 1, sum)), 0)
+  dados[apply(dados,1,sum) != 100, 4] <- 
+    dados[apply(dados,1,sum) != 100, 4] + 
+    (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  med.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  dados <- cbind(VU = threat.VU[,3], EN = threat.EN[,3], CR = threat.CR[,3])
+  dados <- round(100 * cbind(dados, LC = 1 - apply(dados, 1, sum)), 0)
+  dados[apply(dados, 1, sum) != 100, 4] <-
+    dados[apply(dados, 1, sum) != 100, 4] +
+    (100 - apply(dados,1,sum)[apply(dados,1,sum) != 100])
+  dados[,4][dados[,4] < 0 ] <- 0
+  low.RLI <- 
+    sapply(seq_along(perdas), 
+           function(i) red::rli(rep(colnames(dados), times = dados[i,])))
+  
+  # combining the results
+  threat <- cbind(threat, threat.VU, threat.EN, threat.CR)
+  colnames(threat) <- paste0(colnames(threat), 
+                             rep(c("_all","_VU","_EN","_CR"), each = 3))
+  RLI <- cbind(low_rli = low.RLI, median_rli = med.RLI, high_rli = high.RLI)
+  
+  # getting the number of threatened species
+  if (!is.null(spp_richness)) {
+    threat_spp <- round(spp_richness * threat, 1)
+    colnames(threat_spp) <- paste0(colnames(threat_spp),"_spp")
+    
+    # getting the number of threatened endemic species
+    if (!is.null(endemism_ratio)) {
+      if (any(endemism_ratio[!is.na(endemism_ratio)] > 1))
+        endemism_ratio <- endemism_ratio/100
+      
+      threat_end_spp <- threat_spp * endemism_ratio
+      colnames(threat_end_spp) <- gsub("_spp", "end_spp", colnames(threat_end_spp))
+      threat <- cbind(round(100 * threat, 1), threat_spp, threat_end_spp)
+      
+    } else {
+      threat <- cbind(round(100 * threat, 1), threat_spp)
+    }
+  } else {
+    threat <- round(100 * threat, 1)
+  }
+  
+  threat <- cbind(threat, RLI)
+  return(threat)
+}
+
