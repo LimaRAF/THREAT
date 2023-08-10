@@ -6,7 +6,6 @@
 ### NOT ALL FIGURES ARE BEING GENERATED HERE
 ### MAPS ARE BEING GENERATED IN SCRIPT '22_maps.R'
 ### SOME OTHER FIGURES ARE BEING GENERATED WITHIN THE SCRIPTS...
-
 rm(list = ls())
 gc()
 
@@ -159,7 +158,7 @@ mat <- as.matrix(table(paste0(all.crit$cat.reg.clean[all.crit$endemic %in% "ende
 mat <- mat[c(1,3,6,5,4,2), rev(c(4,1,3,8,7,5,2))]
 
 #how many LC actually remained as LC?
-100*mat[5,2]/sum(mat[,2]) # 14.94%
+100*mat[5,2]/sum(mat[,2]) # 14.94%; 2n revision 17.6%
 
 #Defining the colors of tracks and links
 grid.col = c(EX_prev = "black", CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
@@ -234,14 +233,13 @@ mat <- as.matrix(table(paste0(all.crit$cat.reg.clean[all.crit$endemic %in% "ende
 mat <- mat[c(1,3,6,5,4,2), rev(c(1,3,7,6,4,2))]
 
 #how many LC actually remained as LC?
-100*mat[5,2]/sum(mat[,2]) # 14.94%
-
+100*mat[5,2]/sum(mat[,2]) # 14.94%; 2n revision 17.5%
 
 #Defining the colors of tracks and links
 grid.col = c(CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
              CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
 adjustcolor("forestgreen", alpha.f = 0.7)
-col_mat = rep(rev(c("red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=5)
+col_mat = rep(rev(c("red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
 # mat[mat < 15] = mat[mat < 15]*1.25
 # mat[mat > 0 & mat < 5] = 5
 mat[mat < 10 & mat >= 5] = mat[mat < 10 & mat >= 5] + 1
@@ -253,7 +251,8 @@ transp[col_mat %in% "forestgreen"] <- 0.6
 circos.clear()
 circos.par(start.degree = 90)
 chordDiagram(mat, big.gap = 10, annotationTrack = "grid", annotationTrackHeight = mm_h(5),
-             grid.col = grid.col, col = col_mat,
+             grid.col = grid.col, 
+             col = col_mat,
              transparency = 0.3,
              #transparency = transp ,
              link.lwd = 4,
@@ -261,7 +260,7 @@ chordDiagram(mat, big.gap = 10, annotationTrack = "grid", annotationTrackHeight 
              w2=0.5, rou=0.2
 )
 #Putting legends on
-sec.ind <- c("CR","EN","VU","NT","LC","DD","LC","NT","VU","EN","CR")
+sec.ind <- c("CR","EN","VU","NT","LC","","DD","LC","NT","VU","EN","CR")
 for(si in get.all.sector.index()) {
   lab <- sec.ind[which(si == get.all.sector.index())]
   xlim = get.cell.meta.data("xlim", sector.index = si, track.index = 1)
@@ -274,6 +273,7 @@ legend("topleft","Previous assess.", bty="n", cex=1.3, adj=c(.25,2.5))
 legend("topright","New assess.", bty="n", cex=1.3, adj=c(0.25,2.5))
 legend("topleft",legend=expression(bold("B - Regional")),
        bty="n",horiz=F,cex=1.5,x.intersp=-0.7,y.intersp=-0.2)
+text(0.1,-1.025,"DD", cex=1.1)
 dev.off()
 
 

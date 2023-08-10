@@ -200,13 +200,13 @@ table(all.crit$cat.reg.clean, all.crit$redlistCategory)
 
 #How many species with CNCFlora assessments
 table(all.crit$status.reflora)
-100*sum(table(all.crit$status.reflora))/dim(all.crit)[1]  # 19.7% with previous CNCFlora asses.; remained the same in both reviews
+100*sum(table(all.crit$status.reflora))/dim(all.crit)[1]  # 19.7% with previous CNCFlora asses.; remained the same in 1st review; 48% in 2nd review
 
 #How many species with national assessments
 tmp <- all.crit[!is.na(all.crit$status.reflora) | 
                   !is.na(all.crit$category.ARG) |
                   !is.na(all.crit$category.PAY),]
-100 * dim(tmp)[1]/dim(all.crit)[1] # 20.3%; now 20.2%/ 2nd revision? the same
+100 * dim(tmp)[1]/dim(all.crit)[1] # 20.3%; now 20.2%/ 1st revision the same; 2nd revision 49%
 
 ## ENDEMIC SPECIES - proportions not show in the new version of the main text
 # #How may species with IUCN assessments
@@ -227,13 +227,14 @@ tmp <- all.crit[is.na(all.crit$redlistCategory) &
                   is.na(all.crit$status.reflora) &
                   is.na(all.crit$category.ARG) &
                   is.na(all.crit$category.PAY),]
-dim(tmp)[1] # 2959 species (58.09%) without assessments; now 1923 assessments (38.8%); revised 1534 assessments (31%); 2nd revision 1532 assessments (31%) 
-100 * dim(tmp)[1] / dim(all.crit)[1] # before 58.09%; now 38.8%; revised 31%; 2nd the same
-dim(tmp[tmp$endemic %in% "endemic",])[1] # before 1632 endemic species; now 1011; revised 768; 2n revision (the same)
-100 * dim(tmp[tmp$endemic %in% "endemic",])[1] / dim(tmp)[1] # before 55.12% without assessments; now: 52.6%; revised 50.1%; 2n revision (the same)
+dim(tmp)[1] # 2959 species (58.09%) without assessments; now 1923 assessments (38.8%); revised 1534 assessments (31%); 2nd revision 1120 assessments (31%) 
+100 * dim(tmp)[1] / dim(all.crit)[1] # before 58.09%; now 38.8%; revised 31%; 2nd 23%
+dim(tmp[tmp$endemic %in% "endemic",])[1] # before 1632 endemic species; now 1011; revised 768; 2n revision 456
+100 * dim(tmp[tmp$endemic %in% "endemic",])[1] / dim(tmp)[1] # before 55.12% without assessments; now: 52.6%; revised 50.1%; 2n revision 40.71%
 
 ##Species EX or EW
 ex.spp <- all.crit$species[all.crit$redlistCategory %in% c("EX","EW")]
+ex.spp <- c(ex.spp, "Cathedra grandiflora", "Rustia simpsonii")
 all.crit[all.crit$species %in% ex.spp, cols]
 all.crit[all.crit$species %in% ex.spp, c("species","population")]
 oc.data <- readRDS("data/threat_occ_data_final.rds")
@@ -243,10 +244,16 @@ table(oc.data$coly, oc.data$tax)
 table(oc.data$coly >= 1998, oc.data$tax)
 table(oc.data$coly[is.na(oc.data$typeStatus)] >= 1998, oc.data$tax[is.na(oc.data$typeStatus)])
 oc.data[oc.data$tax %in% "Pouteria stenophylla",]
+oc.data[oc.data$tax %in% "Cathedra grandiflora",]
+oc.data[oc.data$tax %in% "Rustia simpsonii",]
+
 #Identifications confirmed by specialists
 oc.data[oc.data$tax.check2 %in% "TRUE", c("coly","tax")]
 oc.data[oc.data$tax %in% c("Pouteria stenophylla"), 
         c("coly","tax","tax.check2","source","detBy","dety","vouchers")]
+oc.data[oc.data$tax %in% c("Cathedra grandiflora", "Rustia simpsonii"), 
+        c("coly","tax","tax.check2","source","detBy","dety","vouchers")]
+
 
 # paths = dir("C://Users//renato//Documents//raflima//Pos Doc//Manuscritos//Artigo AF checklist//data analysis//occurrence_data",full.names=TRUE)
 # paths = paths[grepl('merged_outliers.csv',paths) & grepl('Sapotaceae',paths)]
@@ -267,7 +274,7 @@ red::rli(all.crit$cat.reg.clean[all.ids], boot = TRUE, runs = 50000) # now 0.48;
 #endemics: presenting only this one in the main text
 end.ids <- !is.na(all.crit$redlistCategory) & all.crit$endemic %in% "endemic"
 red::rli(all.crit$redlistCategory[end.ids], boot = TRUE, runs = 50000) #0.736; revised 0.742; 2nd revision: the same
-red::rli(all.crit$cat.reg.clean[end.ids], boot = TRUE, runs = 50000) #0.478; revised 0.484 [0.472-0.495]; 2nd revision: 0.484 [0.472-0.495]
+red::rli(all.crit$cat.reg.clean[end.ids], boot = TRUE, runs = 50000) #0.478; revised 0.484 [0.472-0.495]; 2nd revision: 0.498 [0.487-0.510]
 
 ## how many remained as LC in both assessemnts?
 tmp <- table(all.crit$cat.reg.clean[all.ids], all.crit$redlistCategory[all.ids])
@@ -403,7 +410,7 @@ table(tmp0$redlistCriteria, tmp0$EOO < 20000)
 table(tmp0$redlistCriteria, tmp0$AOO <= 2000, useNA = "always")
 table(tmp0$redlistCriteria, tmp0$reduction_A12 < 30, useNA = "always")
 
-## MORE FORMAL COMAPRISON (ASKED BY THE REVIEWERS)
+## MORE FORMAL COMPARISON BETWEEN PREVIOUS (IUCN Red List) AND RE-ASSESSMENTS (HERE)
 # confusion matrix (all assessments)
 tmp <- all.crit[!is.na(all.crit$redlistCategory) &
                   !all.crit$cat.reg.clean %in% c("NA", NA), ]

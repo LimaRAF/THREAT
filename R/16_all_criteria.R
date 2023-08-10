@@ -475,10 +475,18 @@ all.crit <- cbind.data.frame(all.crit,
                              stringsAsFactors = FALSE)
 
 ## Getting CNCFlora previous assessments with THREAT assessments
-tmp <- flora::get.taxa(all.crit$species, replace.synonyms = FALSE,
-                       drop = c())
-table(all.crit$species == tmp$original.search)
-all.crit$status.reflora <- tmp$threat.status
+tmp <- readxl::read_xlsx("data/data-raw/ProposituraAP_148_Lista de Espécies da Flora Avaliadas_2023.xlsx")
+tmp.spp <- tmp$`Nome científico atualizado até 2021 (Flora e Funga do Brasil)`
+tmp$genus <- gsub(" .*", "", tmp.spp, perl = TRUE)
+tmp$epiteth <- sapply(strsplit(tmp.spp, " ", fixed), function(x) x[2])
+tmp$species <- paste(tmp$genus, tmp$epiteth)
+# tmp <- flora::get.taxa(all.crit$species, replace.synonyms = FALSE,
+#                        drop = c())
+tmp <- tmp[!grepl(" var\\. | subsp\\. | f\\. ", tmp.spp, perl = TRUE),]
+tmp1 <- dplyr::left_join(all.crit, tmp, by = "species") 
+table(all.crit$species == tmp1$species)
+all.crit$status.reflora <- as.character(tmp1$`Categoria Atual`)
+all.crit$categoria.reflora <- as.character(tmp1$Critério)
 
 ## Merging Argentina and Paraguay with THREAT assessments
 prev.assess.AR$species <- stringr::str_trim(prev.assess.AR$species)
@@ -647,6 +655,7 @@ all.crit$category.regional[grepl("widespread", all.crit$endemic) &
 all.crit$cat.reg.clean <- all.crit$category.regional
 all.crit$cat.reg.clean <- gsub("_PE|o$", "", all.crit$cat.reg.clean)
 all.crit$status.reflora <- gsub("DD\\|DD", "DD", all.crit$status.reflora)
+all.crit$status.reflora <- gsub("CRPE", "CR", all.crit$status.reflora)
 
 #### SAVING THE FINAL RESULTS TABLE ####
 all.crit <- all.crit[order(all.crit$species),]
