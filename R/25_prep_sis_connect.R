@@ -820,14 +820,16 @@ write.csv(countries2, "data/sis_connect/countries_threat_merged_iucn.csv",
 prev.assess <- tax
 
 ## Getting the IUCN assessments for Brazil (CNCFlora) - National level
-tmp = flora::get.taxa(prev.assess$species.correct2, 
-                      replace.synonyms = FALSE, life.form = TRUE)
-tmp$search.str = prev.assess$species.correct2
-tmp1 <- merge(prev.assess, tmp, 
-              by.x = "species.correct2", by.y = "search.str", 
-              all.x = TRUE, sort=FALSE)
-#table(prev.assess$species.correct2 == tmp1$species.correct2)
-prev.assess$status.reflora <- tmp1$threat.status
+tmp1 <- readRDS("data/all.criteria.rds")
+# tmp = flora::get.taxa(prev.assess$species.correct2, 
+#                       replace.synonyms = FALSE, life.form = TRUE)
+# tmp$search.str = prev.assess$species.correct2
+# tmp1 <- merge(prev.assess, tmp, 
+#               by.x = "species.correct2", by.y = "search.str", 
+#               all.x = TRUE, sort=FALSE)
+table(prev.assess$species.correct2 == tmp1$species)
+prev.assess$status.reflora <- tmp1$status.reflora
+prev.assess$categoria.reflora <- tmp1$categoria.reflora
 
 ## Getting the global IUCN assessments (IUCN) 
 iucn$species.correct2 <- sapply(strsplit(iucn$scientificName," "), 
@@ -856,7 +858,6 @@ table(prev.assess$species.correct2 == tmp$species.correct2)
 prev.assess <- cbind.data.frame(prev.assess, tmp[, !names(tmp) %in% names(prev.assess)],
                                 stringsAsFactors = FALSE)
 prev.assess <- prev.assess[order(prev.assess$species.correct2),]
-
 
 ## Saving
 saveRDS(prev.assess, "data/sis_connect/prev_assessments_threat.rds")
