@@ -3,6 +3,8 @@
 
 # The threat status of endemic Atlantic Forest trees (THREAT)
 
+[![DOI](https://zenodo.org/badge/275234070.svg)](https://zenodo.org/badge/latestdoi/275234070)
+
 ### Introduction
 
 This repository stores the data, scripts and functions of the project
