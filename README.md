@@ -42,7 +42,7 @@ These steps are:
 
 1.  **Definitions**: the basic definitions that will determine which
     species will be included in the assessments;
-2.  **Species information**: the essential information that must be
+2.  **Species information**: the information that must be
     compiled, estimated or imputed to obtain the population metrics;
 3.  **Population metrics**: the estimation of the population metrics
     defined by the IUCN as indicators of the threat of a species or
@@ -63,12 +63,12 @@ workflow.
 
 Note that the Pre-Assessment stage involves the compilation of key
 information from the study region and the group of organism included in
-the assessment. Although it represents the first steps of the workflow,
-the codes in this repository assume that this key information was
+the assessment. Although it represents the first step of the workflow,
+the code in this repository assume that this key information was
 already compiled, estimated, or imputed and that it is available in the
 `data` folder.
 
-Note as well that our Post-assessment stage does not include the
+Note as well that the Post-assessment stage does not include the
 submission of the assessments to the IUCN Red List and their review by
 the IUCN Red List units. This is beyond the scope of the workflow which
 is producing the conservation assessments and the associated files to
@@ -76,10 +76,10 @@ facilitate the process of submission by the Red List Authority.
 
 <br />
 
-##### Details on step 1
+##### Details on step 1 - Definitions
 
-Step 1 will define which species will have global (for all populations
-of the species) or regional assessments (for populations of the
+Step 1 will define which assessments will be global (for all populations
+of the species) or regional (for a subset of populations of the
 species). For instance, THREAT project has a regional scope
 (i.e. Atlantic Forest), so for species that are non-endemic and endemic
 to the Atlantic Forest the assessments are regional and global,
@@ -141,7 +141,7 @@ based on linear, exponential, quadratic, logistic and other trends of
 population decline through time. This is important because the time
 interval of population decline needed for the assessments of criterion A
 or C (10 years or one-, two- or three-generation lengths - see IUCN
-2019) often do not correspond exactly to the observed population sizes
+2019) often does not correspond exactly to the observed population sizes
 for most species.
 
 For criterion B, the `ConR` package provides functions for calculating
@@ -185,7 +185,7 @@ include down-listings or up-listings which should be duly noted (see
 IUCN 2012).
 
 The new version 2.0 of `ConR` also provides functions to assess the
-sensitivity of species Extent of Occurrence from the inclusion of
+sensitivity of species EOO from the inclusion of
 different types of records (e.g. not taxonomically validated records) -
 function `ConR::EOO.sensitivity()`. This may be handy for selecting
 occurrence records to be added to the assessments based on their
@@ -258,13 +258,13 @@ empirical evidence currently available for the species or
 closely-related taxa.
 
 For the assessment of the IUCN criteria A, C, and D, essential
-information include the Generation Length (GL) of the species and the
-Proportion of Mature Individuals (p) in their population. In THREAT, the
-solution adopted for missing GL and p was the imputation of values based
+information include the Generation Length (*GL*) of the species and the
+Proportion of Mature Individuals (*p*) in their population. In THREAT, the
+solution adopted for missing *GL* and *p* was the imputation of values based
 on generalization for groups of species defined based on their potential
 maximum height as an adult and on their ecological groups. The choice of
-which values were assigned to each group was based on the empirical
-evidence currently available in the literature.
+which values were assigned to each group was based on empirical
+evidences in the literature.
 
 Still related to criteria A and C, it is expected that harvest trends
 (e.g. timber species) and changes in habitat quality will have an impact
@@ -281,8 +281,8 @@ et al., 2010) for obtaining species-specific proxies of DD. But the
 pertinence of this solution may vary according to the group of organism
 being assessed (e.g. sessile vs. mobile organisms).
 
-Still related to criterion B, the quality of the geographical
-coordinates and the confidence in the species identifications can both
+Still related to criterion B, the quality of the
+georeferencing and the confidence in the species identifications can both
 impact the estimates of EOO and AOO. In THREAT, we only used
 geographically validated records for estimating these metrics, which is
 the standard procedure adopted by CNCFlora, the local Red List
