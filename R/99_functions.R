@@ -4153,8 +4153,10 @@ makeSubColor=function(main,no=3){
 #'Draw a PieDonut plot
 my.PieDonut=function(data,mapping,
                      start=getOption("PieDonut.start",0),
-                     addPieLabel=TRUE,addDonutLabel=TRUE,
-                     showRatioDonut=TRUE,showRatioPie=TRUE,
+                     addPieLabel=TRUE,
+                     addDonutLabel=TRUE,
+                     showRatioDonut=TRUE,
+                     showRatioPie=TRUE,
                      ratioByGroup=TRUE,
                      showRatioThreshold=getOption("PieDonut.showRatioThreshold",0.02),
                      labelposition=getOption("PieDonut.labelposition",2),
@@ -4175,18 +4177,25 @@ my.PieDonut=function(data,mapping,
                      pieLabelSize=4,
                      donutLabelSize=3,
                      titlesize=5,
-                     explodePie=TRUE,explodeDonut=FALSE,
-                     use.label=TRUE,use.labels=TRUE,
+                     explodePie=TRUE,
+                     explodeDonut=FALSE,
+                     use.label=TRUE,
+                     use.labels=TRUE,
                      family=getOption("PieDonut.family",""),
                      labels = NULL,
                      main.colors = NULL,
+                     sub.colors = NULL,
                      correct.legend.x = NULL,
                      correct.legend.y = NULL,
                      tidy.legend.donut = NULL,
                      tidy.legend.pie = NULL,
                      plot.piedonut = TRUE,
                      ratioAccuracy = c("pie" = 0.1, "donut" = 0.1),
-                     return = "both"){
+                     return = "both",
+                     legend.pie = FALSE,
+                     legend.donut = FALSE,
+                     explode.cor.pie = 1,
+                     explode.cor.donut = 1){
   
   # data = pie.df
   # mapping = aes(category, main.criteria)
@@ -4199,8 +4208,8 @@ my.PieDonut=function(data,mapping,
   # family = ""
   # main.colors = cores[-1]
   
-  (cols=colnames(data))
-  if(use.labels) data=moonBook::addLabelDf(data,mapping)
+  (cols = colnames(data))
+  if (use.labels) data=moonBook::addLabelDf(data,mapping)
   
   count<-NULL
   
@@ -4242,8 +4251,8 @@ my.PieDonut=function(data,mapping,
   df$focus=0
   if(explodePie) df$focus[explode]=explodePos
   df$mid=(df$start1+df$end1)/2
-  df$x=ifelse(df$focus==0,0,df$focus*sin(df$mid))
-  df$y=ifelse(df$focus==0,0,df$focus*cos(df$mid))
+  df$x=ifelse(df$focus==0,0,df$focus*sin(df$mid) * explode.cor.pie)
+  df$y=ifelse(df$focus==0,0,df$focus*cos(df$mid) * explode.cor.pie)
   df$label=df[[pies]]
   df$ratio=df$Freq/sum(df$Freq)
   
@@ -4256,8 +4265,7 @@ my.PieDonut=function(data,mapping,
     #                 as.character(df$label))
     df$label = paste0(df$label, " (", scales::percent(df$ratio, accuracy = ratioAccuracy["pie"]), ")")
     df$label[tidy.legend.pie] = gsub(" \\(", "\n(",df$label[tidy.legend.pie])
-    
-    
+
   }
   
   if(is.null(correct.legend.x)) {
@@ -4291,7 +4299,6 @@ my.PieDonut=function(data,mapping,
   if(!is.null(donuts)){
     subColor = makeSubColor(mainCol, no = length(unique(data[[donuts]])))
     subColor
-    
     
     data
     if(!is.null(count)){
@@ -4380,8 +4387,8 @@ my.PieDonut=function(data,mapping,
         xpos=df$focus[explode[i]]*sin(df$mid[explode[i]])
         ypos=df$focus[explode[i]]*cos(df$mid[explode[i]])
         
-        df3$x[df3$pie==explode[i]]=xpos
-        df3$y[df3$pie==explode[i]]=ypos
+        df3$x[df3$pie==explode[i]] = xpos * explode.cor.donut
+        df3$y[df3$pie==explode[i]] = ypos * explode.cor.donut
       }
     }
     df3$no=1:nrow(df3)
@@ -4442,6 +4449,22 @@ my.PieDonut=function(data,mapping,
     }
     df3
     
+    if (!is.null(sub.colors)) {
+      no.sub <- length(sub.colors)
+      no <- length(unique(data[[donuts]]))
+      
+      if (no.sub == length(subColor)) subColor <- sub.colors
+      
+      if (no.sub != no)
+        stop(cat("Length of subcolors is different than the number of", donuts))
+      
+      if (no.sub == no) {
+        cores <- sub.colors
+        names(cores) <- sort(unique(data[[donuts]]))
+        subColor <- unname(cores[match(df3[[donuts]], names(cores))])
+      }
+    }
+    
     del=which(df3$Freq==0)
     del
     if(length(del)>0) subColor<-subColor[-del]
@@ -4462,7 +4485,8 @@ my.PieDonut=function(data,mapping,
                                              fill = pies),alpha=pieAlpha,color=color, data = df) + 
     transparent()+
     scale_fill_manual(values=mainCol)+
-    xlim(r3*c(-1.2,1.2)) + ylim(r3*c(-1,1)) + guides(fill=FALSE) +
+    xlim(r3*c(-1.2,1.2)) + ylim(r3*c(-1,1)) + 
+    guides(fill = legend.pie) +
     theme_void()
   
   if ((labelposition == 1) & (is.null(donuts))) {
@@ -4470,7 +4494,7 @@ my.PieDonut=function(data,mapping,
                                        xend="segxend",yend="segyend"),data=df)+
       geom_text(aes_string(x="segxend",y="segyend",label="label",hjust="hjust",vjust="vjust"),size=pieLabelSize,data=df,family=family)
     
-  } else 
+  } else {
     if ((labelposition == 2) & (is.null(donuts))) {
       p1<-p1+ geom_segment(aes_string(x="segx",y="segy",
                                       xend="segxend",yend="segyend"),data=df[df$ratio<labelpositionThreshold,])+
@@ -4486,6 +4510,7 @@ my.PieDonut=function(data,mapping,
         family = family
       )
     }
+  }
   
   if(showPieName) p1<-p1+annotate("text",x=0,y=0,label=pies,size=titlesize,family=family)
   
@@ -4508,8 +4533,9 @@ my.PieDonut=function(data,mapping,
     }
     
     p3 <- p3 + transparent()+
-      scale_fill_manual(values=subColor)+
-      xlim(r3*c(-1,1))+ylim(r3*c(-1,1))+guides(fill=FALSE)+
+      scale_fill_manual(values=subColor) +
+      xlim(r3*c(-1,1))+ylim(r3*c(-1,1)) + 
+      guides(fill = legend.donut) +
       theme_void()
     
     p3
@@ -4519,7 +4545,7 @@ my.PieDonut=function(data,mapping,
                                       xend="segxend",yend="segyend"),data=df3)+
         geom_text(aes_string(x="segxend",y="segyend",
                              label="label",hjust="hjust",vjust="vjust"),size=donutLabelSize,data=df3,family=family)
-    } else 
+    } else {
       if(labelposition==0){
         p3<-p3+geom_text(aes_string(x="labelx",y="labely",
                                     label="label"),size=donutLabelSize,data=df3,family=family)
@@ -4532,6 +4558,7 @@ my.PieDonut=function(data,mapping,
                                label="label"),size=donutLabelSize,data=df3[df3$ratio1>=labelpositionThreshold,],family=family)
         
       }
+    }
     
     if(!is.null(title)) 
       p3<-p3+annotate("text",x=0,y=r3,label=title,size=titlesize,family=family)

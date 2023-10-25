@@ -107,7 +107,7 @@ high.pop.sizes <- rowsum(high.pop.sizes, spp_names)
 
 ## OBTAINING POPULATION SIZES FOR MISSING YEARS ##
 ## Getting pop. sizes for all possible generation lengths
-gen.lengths <- c(10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100)
+gen.lengths <- c(7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100)
 pos.gen.length <- sort(unique(gen.lengths * rep(c(1:3), each=length(gen.lengths))), decreasing = TRUE)
 miss.years <- 2018 - pos.gen.length
 miss.years1 <- miss.years[miss.years < 1992]

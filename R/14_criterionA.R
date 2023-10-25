@@ -286,9 +286,12 @@ colnames(mat) <- gsub(" ", "", colnames(mat))
 rownames(mat) <- gsub(" ", "", rownames(mat))
 
 #Defining the colors of tracks and links
-grid.col = c(CR_25 = "red", EN_25 = "darkorange", VU_25 = "gold", LCorNT_25 = "khaki",
-             CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
-col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+# grid.col = c(CR_25 = "red", EN_25 = "darkorange", VU_25 = "gold", LCorNT_25 = "khaki",
+#              CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
+# col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+grid.col = c(CR_25 = "#CD0000", EN_25 = "#E69F00", VU_25 = "#FFFF00", LCorNT_25 = "khaki",
+             CR_opt = "#CD0000", EN_opt = "#E69F00", VU_opt = "#FFFF00", LCorNT_opt = "khaki")
+col_mat = rep(rev(c("#CD0000","#E69F00","#FFFF00","khaki")), each=4)
 col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
 col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
 #col_mat[mat < 5] = "#00000000"
@@ -348,9 +351,12 @@ colnames(mat) <- gsub(" ", "", colnames(mat))
 rownames(mat) <- gsub(" ", "", rownames(mat))
 
 #Defining the colors of tracks and links
-grid.col = c(CR_20= "red", EN_20 = "darkorange", VU_20 = "gold", LCorNT_20 = "khaki",
-             CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
-col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+# grid.col = c(CR_20= "red", EN_20 = "darkorange", VU_20 = "gold", LCorNT_20 = "khaki",
+#              CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
+# col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+grid.col = c(CR_20= "#CD0000", EN_20 = "#E69F00", VU_20 = "#FFFF00", LCorNT_20 = "khaki",
+             CR_opt = "#CD0000", EN_opt = "#E69F00", VU_opt = "#FFFF00", LCorNT_opt = "khaki")
+col_mat = rep(rev(c("#CD0000","#E69F00","#FFFF00","khaki")), each=4)
 col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
 col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
 #col_mat[mat < 5] = "#00000000"
@@ -447,7 +453,9 @@ colnames(pct) <- gl.vals
 pct <- round(100 * pct/dim(all.GL)[1], 1)
 
 par(mar=c(3,3.5,0.75, 0.25), mgp=c(1.9,0.25,0),tcl=-0.2,las=1)
-barplot(pct, horiz = FALSE, col = c("red","darkorange","gold","khaki"),
+barplot(pct, horiz = FALSE, 
+        # col = c("red","darkorange","gold","khaki"),
+        col = c("#CD0000","#E69F00","#FFFF00","khaki"),
         legend.text = c("CR", "EN", "VU", "LC or NT"),
         xlab = "Generation length (years)",  
         args.legend = list(ncol=4, x.intersp = 1, y.intersp = 1, yjust = -1,

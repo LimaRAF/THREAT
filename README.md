@@ -44,8 +44,8 @@ These steps are:
 
 1.  **Definitions**: the basic definitions that will determine which
     species will be included in the assessments;
-2.  **Species information**: the essential information that must be
-    compiled, estimated or imputed to obtain the population metrics;
+2.  **Species information**: the information that must be compiled,
+    estimated or imputed to obtain the population metrics;
 3.  **Population metrics**: the estimation of the population metrics
     defined by the IUCN as indicators of the threat of a species or
     taxon;
@@ -65,12 +65,12 @@ workflow.
 
 Note that the Pre-Assessment stage involves the compilation of key
 information from the study region and the group of organism included in
-the assessment. Although it represents the first steps of the workflow,
-the codes in this repository assume that this key information was
-already compiled, estimated, or imputed and that it is available in the
-`data` folder.
+the assessment. Although it represents the first step of the workflow,
+the code in this repository assume that this key information was already
+compiled, estimated, or imputed and that it is available in the `data`
+folder.
 
-Note as well that our Post-assessment stage does not include the
+Note as well that the Post-assessment stage does not include the
 submission of the assessments to the IUCN Red List and their review by
 the IUCN Red List units. This is beyond the scope of the workflow which
 is producing the conservation assessments and the associated files to
@@ -78,20 +78,20 @@ facilitate the process of submission by the Red List Authority.
 
 <br />
 
-##### Details on step 1
+##### Details on step 1 - Definitions
 
-Step 1 will define which species will have global (for all populations
-of the species) or regional assessments (for populations of the
-species). For instance, THREAT project has a regional scope
-(i.e. Atlantic Forest), so for species that are non-endemic and endemic
-to the Atlantic Forest the assessments are regional and global,
-respectively. This is why it is important to know beforehand the
-endemism level of all species (e.g. endemic, non-endemic, vagrant) with
-respect to the target region (see Lima et al. 2020 for the example of
-the Atlantic Forest tree species). In addition, depending on the group
-of organisms, long time series of habitat cover will be necessary to
-obtain the population size reductions based on habitat loss. This is
-often the case for tree species.
+Step 1 will define which assessment will be global (for all populations
+of the species) or regional (for some populations of the species). For
+instance, THREAT project has a regional scope (i.e. Atlantic Forest), so
+for species that are non-endemic and endemic to the Atlantic Forest the
+assessments are regional and global, respectively. This is why it is
+important to know beforehand the endemism level of all species
+(e.g. endemic, non-endemic, vagrant) with respect to the target region
+(see Lima et al. 2020 for the example of the Atlantic Forest tree
+species). In addition, depending on the group of organisms, long time
+series of habitat cover will be necessary to obtain the population size
+reductions based on habitat loss. This is often the case for tree
+species.
 
 Identifying and contacting local IUCN Red List Authorities as early as
 possible is a key step to make sure that methods are aligned with IUCN
@@ -102,7 +102,7 @@ submission.
 
 <br />
 
-##### Details on step 2
+##### Details on step 2 - Species information
 
 Species occurrence records are the input data used to obtain the
 species’ geographic range and other spatial population metrics that are
@@ -128,7 +128,7 @@ specimen duplicates across biological collections.
 
 <br />
 
-##### Details on step 3
+##### Details on step 3 - Population metrics
 
 Different population metrics are necessary for applying the IUCN
 criteria A, B, C and D (criterion E is currently not considered in this
@@ -143,7 +143,7 @@ based on linear, exponential, quadratic, logistic and other trends of
 population decline through time. This is important because the time
 interval of population decline needed for the assessments of criterion A
 or C (10 years or one-, two- or three-generation lengths - see IUCN
-2019) often do not correspond exactly to the observed population sizes
+2019) often does not correspond exactly to the observed population sizes
 for most species.
 
 For criterion B, the `ConR` package provides functions for calculating
@@ -162,7 +162,7 @@ for assessing criterion B.
 
 <br />
 
-##### Details on step 4
+##### Details on step 4 - IUCN Red List Criteria assessment
 
 This step corresponds to the assignment of one of the IUCN Red List
 Categories (i.e. EX, EW, CR, EN, VU, NT, LC, DD) by comparing the
@@ -175,8 +175,8 @@ package (Dauby et al. 2017, Dauby & Lima 2022 - see functions
 `ConR::criterion_D()`). A specific function was also developed to tell
 apart NT from LC categories (see function `ConR::near.threatened()`).
 
-In the case of multiple IUCN criteria, there is also the need to
-generate a consensus IUCN Red List Category among the results of each
+In the case of multiple IUCN Red List Criteria, there is also the need
+to generate a consensus IUCN Red List Category among the results of each
 IUCN Criteria (see function `ConR:::cat_mult_criteria()`).
 
 This step of the workflow also includes the assignment of tags, such as
@@ -200,7 +200,7 @@ which information may include uncertainties in the assessments.
 
 <br />
 
-##### Details on step 5
+##### Details on step 5 - Summary and export
 
 Many different summaries and analyses can be done to present the results
 of the assessments. Besides a general description of the results
@@ -268,9 +268,9 @@ maximum height as an adult and on their ecological groups. The choice of
 which values were assigned to each group was based on the empirical
 evidence currently available in the literature.
 
-Still related to criteria A and C, it is expected that harvest trends
-(e.g. timber species) and changes in habitat quality will have an impact
-on the change in population sizes. For long-lived organisms, this
+Still related to the IUCN criteria A and C, it is expected that harvest
+trends (e.g. timber species) and changes in habitat quality will have an
+impact on the change in population sizes. For long-lived organisms, this
 information will probably be missing for most species. But it is advised
 to take them into account for calibrating the final results of the
 assessments.
@@ -381,11 +381,11 @@ Renato A. F. de Lima & Gilles Dauby
 
 Please cite this repository as:
 
-> **{{ Renato A. F. de Lima, Gilles Dauby, André L. de Gasper, Eduardo
-> P. Fernandez, Alexander C. Vibrans, Alexandre A. de Oliveira, Paulo I.
+> **Renato A. F. de Lima, Gilles Dauby, André L. de Gasper, Eduardo P.
+> Fernandez, Alexander C. Vibrans, Alexandre A. de Oliveira, Paulo I.
 > Prado, Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege.
 > (2023). The Atlantic Forest trees: a flora on the verge of extinction.
-> Manuscript under review }}**
+> Manuscript under review**
 
 ### Funding
 

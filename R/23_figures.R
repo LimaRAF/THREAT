@@ -23,9 +23,19 @@ source("R/99_functions.R")
 all.crit <- readRDS("data/all.criteria.rds")
 
 ## Defining the colors for each category
-cores <- c(CR_PE = "darkred", CR = "red", EN = "darkorange", VU = "gold", 
-           NT = "yellowgreen", `NA` = "grey", DD = "grey", LC = "forestgreen")
+# cores <- c(CR_PE = "darkred", CR = "red", EN = "darkorange", VU = "gold", 
+#            NT = "yellowgreen", `NA` = "grey", DD = "grey", LC = "forestgreen")
+cores <- c(CR_PE = "#8B0000", CR = "#CD0000", EN = "#E69F00", VU = "#F0E442", 
+                NT = "#C1FF73", `NA` = "#A0A0A0", DD = "#A0A0A0", LC = "#10E210")
+crit_cores <- c("#A0A0A0", "#648FFF", "#2455D8", "#88CCEE", "cyan", "#E280DC", "#EE72AF", "#785EF0", "black")
 
+crit_cores <- grey.colors(9, start = 0.3, end = 0.9)
+
+
+color.f <- colorRampPalette(c("cyan","blue"))
+color.f <- colorRampPalette(c("cyan","#8000FF"))
+crit_cores <- color.f(9)
+crit_cores <- c("#A0A0A0", crit_cores[-1])
 
 #### FIGURE 1 ####
 #Creating and organizing the data frame to be plotted
@@ -57,18 +67,25 @@ pie.all <- my.PieDonut(dados, aes(category, main.criteria),
                        showRatioThreshold = 0.01, labelpositionThreshold =  0.03,
                        main.colors = cores[c(2:5,8,6)],
                        #donut.colors = NULL,
-                       pieAlpha = 0.75,
+                       pieAlpha = 0.9,
                        correct.legend.x = c(0.00,0.00,-0.02,-0.075,-0.15,-0.10),
                        correct.legend.y = c(0.2,0.00,-0.200,-0.075, 0.00, 0.10),
                        tidy.legend.donut = toto,
                        tidy.legend.pie = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
                        plot.piedonut = FALSE,
                        return = "pie", pieLabelSize = 6, donutLabelSize = 4.5)
-donut.all <- my.PieDonut(dados, aes(category, main.criteria),
-                         ratioByGroup=FALSE, showPieName = FALSE,
-                         start=75,r0=0, r1=1,r2=1.3,
-                         showRatioThreshold = 0.01, labelpositionThreshold =  0.028,
+                       # return = "pie", pieLabelSize = 6, donutLabelSize = 4.5,
+                       # explode = 1:6,
+                       # explode.cor.pie = 0.5, explode.cor.donut = 0.7)
+crit_cores1 <-  
+donut.all <- my.PieDonut(dados, aes(category, main.criteria, colour = main.criteria),
+                         ratioByGroup=FALSE, 
+                         showPieName = FALSE,
+                         start=75, r0=0, r1=1, r2=1.3,
+                         showRatioThreshold = 0.01, 
+                         labelpositionThreshold =  0.028,
                          main.colors = cores[c(2:5,8,6)],
+                         sub.colors = crit_cores,
                          #donut.colors = NULL,
                          pieAlpha = 0.75,
                          correct.legend.x = c(0.00,0.00,-0.045,-0.100,-0.15,-0.10),
@@ -77,7 +94,11 @@ donut.all <- my.PieDonut(dados, aes(category, main.criteria),
                          tidy.legend.pie = c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
                          plot.piedonut = FALSE,
                          return = "donut", pieLabelSize = 6, donutLabelSize = 4.5)
+                         # return = "donut", pieLabelSize = 6, donutLabelSize = 4.5,
+                         # explode = 1:6,
+                         # explode.cor.pie = 0.5, explode.cor.donut = 0.7)
 ggdraw(pie.all) + draw_plot(donut.all)
+
 ## Endemicas
 dados <- pie.df[pie.df$endemic %in% "endemic",]
 dim(dados)
@@ -90,6 +111,7 @@ pie.end <- my.PieDonut(dados, aes(category, main.criteria),
                        #labelposition = 2, selected=c(1:15), title="labelposition=1",
                        #explode = c(1:3), explodeDonut = TRUE,
                        main.colors = cores[c(2:5,8)],
+                       pieAlpha = 0.9,
                        #donut.colors = NULL,
                        correct.legend.x = c(0,0,-0.15,-0.1,-0.1),
                        correct.legend.y = c(0.2,0,-0.05,0.05,0.1),
@@ -97,6 +119,9 @@ pie.end <- my.PieDonut(dados, aes(category, main.criteria),
                        tidy.legend.pie = c(TRUE,TRUE,TRUE,FALSE,TRUE),
                        plot.piedonut = TRUE,
                        return = "pie", pieLabelSize = 6, donutLabelSize = 4.5)
+                       # return = "pie", pieLabelSize = 6, donutLabelSize = 4.5,
+                       # explode = 1:5,
+                       # explode.cor.pie = 0.5, explode.cor.donut = 0.7)
 donut.end <- my.PieDonut(dados, aes(category, main.criteria),
                          ratioByGroup=FALSE, showPieName = FALSE,
                          start=75,r0=0, r1=1,r2=1.3,
@@ -104,6 +129,7 @@ donut.end <- my.PieDonut(dados, aes(category, main.criteria),
                          #labelposition = 2, selected=c(1:15), title="labelposition=1",
                          #explode = c(1:3), explodeDonut = TRUE,
                          main.colors = cores[c(2:5,8)],
+                         sub.colors = crit_cores[-c(1,4)],
                          #donut.colors = NULL,
                          correct.legend.x = c(0,0,-0.15,-0.1,-0.1),
                          correct.legend.y = c(0.2,0,-0.05,0.05,0.1),
@@ -111,35 +137,93 @@ donut.end <- my.PieDonut(dados, aes(category, main.criteria),
                          tidy.legend.pie = c(TRUE,TRUE,TRUE,FALSE,TRUE),
                          plot.piedonut = TRUE,
                          return = "donut", pieLabelSize = 6, donutLabelSize = 4.5)
+                         # return = "donut", pieLabelSize = 6, donutLabelSize = 4.5,
+                         # explode = 1:5,
+                         # explode.cor.pie = 0.5, explode.cor.donut = 0.7)
 
-## Construting the plots
+## Constructing the plots
 pie.donut.all <- ggdraw(pie.all) + draw_plot(donut.all)
 pie.donut.end <- ggdraw(pie.end) + draw_plot(donut.end)
 
-fig1 <- plot_grid(pie.donut.all, pie.donut.end,
-                  labels = c('A - All populations', 'B - Endemics'),
-                  align="v", vjust = 7, label_size = 16
-)
+
+## Combining the plots into one image and saving
+# fig1 <- plot_grid(pie.donut.all, pie.donut.end,
+#                   labels = c('A - All populations', 'B - Endemics'),
+#                   align="v", vjust = 7, label_size = 16
+# )
+fig1 <- ggdraw() + 
+  draw_plot(pie.donut.all + guides(color=F), x=-0.05, y=0, width = 0.65, height = 1.07) + 
+  draw_plot(pie.donut.end + guides(color=F), x=0.45, y=0, width = 0.65, height = 1.07) + 
+  draw_label(label = 'A - All populations',x =0.095, y =0.95, size = 22, fontface = "bold") +
+  draw_label(label = 'B - Endemics',x =0.57, y =0.95, size = 22, fontface = "bold")
+fig1
 
 path <- "./figures"
-ggsave2("Figure1_AB.jpg", fig1, "jpeg", path,
-        width = 50, height = 22, units = "cm", dpi = 320)
+ggsave2("Figure1_AB_new.jpg", fig1, "jpeg", path,
+        width = 45, height = 22, units = "cm", dpi = 320)
+ggsave2("Figure1_AB_new.pdf", fig1, "pdf", path,
+        width = 45, height = 22, units = "cm", dpi = 320)
 
-fig1A <- plot_grid(pie.donut.all,
-                   labels = c('A - All populations'),
-                   align="v", vjust = 7, label_size = 18
-)
-path <- "./figures"
-ggsave2("Figure1_A.pdf", fig1A, "pdf", path,
-        width = 25, height = 22, units = "cm", dpi = 320)
+## Creating fake legends
+df <- data.frame(x = rep(c(1,2,3,4,5,6), each =7), y = c(letters[1:7]))
+p <- ggplot(data = df, aes(y = y, fill = as.factor(y))) + 
+  geom_bar() +
+  theme_minimal() +
+  scale_fill_manual(labels = c("A2", "A2, B1+2", "A2+D", "All", "B1", "B1+2", "B2"),
+                    values = crit_cores[-1]) + 
+  theme(legend.position = "bottom", 
+        legend.text = element_text(size = 23),
+        legend.title = element_text(size = 28)) + 
+  # labs(fill = NULL) + 
+  labs(fill = "Criteria") + 
+  guides(fill = guide_legend(nrow=1))
+#guides(colour = "colorbar", size = "legend", shape = "legend")
+lp = get_legend(p)
 
-fig1B <- plot_grid(pie.donut.end,
-                   labels = c('B - Endemics'),
-                   align="v", vjust = 7, label_size = 18
-)
-path <- "./figures"
-ggsave2("Figure1_B.pdf", fig1B, "pdf", path,
-        width = 25, height = 22, units = "cm", dpi = 320)
+cores1 <- unname(cores[-1][c(1,2,3,4,7,5)])
+df1 <- data.frame(x = rep(c(1,2,3,4,5,6), each =6), y = c(letters[1:6]))
+p1 <- ggplot(data = df1, aes(y = y, fill = as.factor(y))) + 
+  geom_bar() +
+  theme_minimal() +
+  scale_fill_manual(labels = c("CR", "EN", "VU", "NT", "LC", "NA"),
+                    values = cores1) + 
+  theme(legend.position = "bottom", 
+        legend.text = element_text(size = 23),
+        legend.title = element_text(size = 28)) + 
+  labs(fill = NULL) + 
+  labs(fill = "Categories") + 
+  guides(fill = guide_legend(nrow=1))
+lp1 = get_legend(p1)
+
+
+## Combining the plots and legends into one image and saving
+fig2 <- ggdraw() + 
+  draw_plot(pie.donut.all + guides(color=F), x=-0.05, y=0, width = 0.65, height = 1.07) + 
+  draw_plot(pie.donut.end + guides(color=F), x=0.45, y=0, width = 0.65, height = 1.07) + 
+  draw_label(label = 'A - All populations',x =0.095, y =0.95, size = 22, fontface = "bold") +
+  draw_label(label = 'B - Endemics',x =0.57, y =0.95, size = 22, fontface = "bold") + 
+  draw_grob(lp, x=0.025, y=-0.455) +
+  draw_grob(lp1, x=0.02, y=-0.4)
+
+ggsave2("Figure1_AB_new1.jpg", fig2, "jpg", path,
+        width = 45, height = 22, units = "cm", dpi = 320)
+
+
+# fig1A <- plot_grid(pie.donut.all,
+#                    labels = c('A - All populations'),
+#                    align="v", vjust = 7, label_size = 18
+# )
+# path <- "./figures"
+# ggsave2("Figure1_A.pdf", fig1A, "pdf", path,
+#         width = 25, height = 22, units = "cm", dpi = 320)
+# 
+# fig1B <- plot_grid(pie.donut.end,
+#                      labels = c('B - Endemics'),
+#                    align="v", vjust = 7, label_size = 18
+# )
+# path <- "./figures"
+# ggsave2("Figure1_B.pdf", fig1B, "pdf", path,
+#         width = 25, height = 22, units = "cm", dpi = 320)
 
 
 #### FIGURE 2 ####
@@ -161,16 +245,21 @@ mat <- mat[c(1,3,6,5,4,2), rev(c(4,1,3,8,7,5,2))]
 100*mat[5,2]/sum(mat[,2]) # 14.94%; 2n revision 17.6%
 
 #Defining the colors of tracks and links
-grid.col = c(EX_prev = "black", CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
-             CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
-col_mat = rep(rev(c("black", "red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
+# grid.col = c(EX_prev = "black", CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
+#              CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
+# col_mat = rep(rev(c("black", "red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
+grid.col = c(EX_prev = "#000000", CR_prev = "#CD0000", EN_prev = "#E69F00", VU_prev = "#F0E442", NT_prev = "#C1FF73", LC_prev = "#10E210", DD_prev = "#A0A0A0",
+             CR_new = "#CD0000", EN_new = "#E69F00", VU_new = "#F0E442", NT_new = "#C1FF73", LC_new = "#10E210", DD_new = "#A0A0A0")
+col_mat = rep(rev(c("#000000", "#CD0000", "#E69F00", "#F0E442", "#C1FF73", "#10E210", "#A0A0A0")), each=6)
+
 #col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
 #col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
 #col_mat[mat < 5] = "#00000000"
 mat[mat < 10 & mat >= 5] = mat[mat < 10 & mat >= 5] + 1
 mat[mat > 0 & mat < 5] = mat[mat > 0 & mat < 5] + 2
 transp <- rep(0.3, length(col_mat))
-transp[col_mat %in% "forestgreen"] <- 0.6
+# transp[col_mat %in% "forestgreen"] <- 0.6
+transp[col_mat %in% "#10E210"] <- 0.6
 
 #plotting the diagram
 circos.clear()
@@ -236,16 +325,16 @@ mat <- mat[c(1,3,6,5,4,2), rev(c(1,3,7,6,4,2))]
 100*mat[5,2]/sum(mat[,2]) # 14.94%; 2n revision 17.5%
 
 #Defining the colors of tracks and links
-grid.col = c(CR_prev = "red", EN_prev = "darkorange", VU_prev = "gold", NT_prev = "yellowgreen", LC_prev = "forestgreen", DD_prev = "grey",
-             CR_new = "red", EN_new = "darkorange", VU_new = "gold", NT_new = "yellowgreen", LC_new = "forestgreen", DD_new = "grey")
-adjustcolor("forestgreen", alpha.f = 0.7)
-col_mat = rep(rev(c("red", "darkorange", "gold", "yellowgreen", "forestgreen", "grey")), each=6)
+grid.col = c(CR_prev = "#CD0000", EN_prev = "#E69F00", VU_prev = "#F0E442", NT_prev = "#C1FF73", LC_prev = "#10E210", DD_prev = "#A0A0A0",
+             CR_new = "#CD0000", EN_new = "#E69F00", VU_new = "#F0E442", NT_new = "#C1FF73", LC_new = "#10E210", DD_new = "#A0A0A0")
+col_mat = rep(rev(c("#CD0000", "#E69F00", "#F0E442", "#C1FF73", "#10E210", "#A0A0A0")), each=6)
+
 # mat[mat < 15] = mat[mat < 15]*1.25
 # mat[mat > 0 & mat < 5] = 5
 mat[mat < 10 & mat >= 5] = mat[mat < 10 & mat >= 5] + 1
 mat[mat > 0 & mat < 5] = mat[mat > 0 & mat < 5] + 2
 transp <- rep(0.3, length(col_mat))
-transp[col_mat %in% "forestgreen"] <- 0.6
+transp[col_mat %in% "#10E210"] <- 0.6
 
 #plotting the diagram
 circos.clear()
@@ -289,7 +378,8 @@ jpeg(filename = "figures/Figure_XX.jpg", width = 2500, height = 2250, units = "p
      res = 300, family = "sans", type="cairo", bg="white")
 
 cexs <- pchs <- cores1 <- as.factor(all.crit$cat.reg.clean[all.crit$endemic %in% "endemic"])
-levels(cores1) <- c("red", "grey", "darkorange", "forestgreen", "yellowgreen", "gold")
+# levels(cores1) <- c("red", "grey", "darkorange", "forestgreen", "yellowgreen", "gold")
+levels(cores1) <- c("#CD0000", "#A0A0A0", "#E69F00", "#10E210", "#C1FF73", "#F0E442")
 levels(pchs) <- c(19,1,15,1,1,17)
 levels(cexs) <- c(1,1,1,1,1,1.2)
 
@@ -319,7 +409,9 @@ abline(v = linhas[1], lty=3)
 abline(h = linhas[2], lty=3)
 
 legend(log(45),log(4), c("CR","EN","VU","LC+NT"),
-       pch=c(19,15,17,1), col=c("red", "darkorange",  "gold", "forestgreen"), 
+       pch=c(19,15,17,1), 
+       # col=c("red", "darkorange",  "gold", "forestgreen"), 
+       col=c("#CD0000", "#E69F00", "#F0E442", "#10E210"), 
        bty= "n", cex=1.1)
 
 # Plot 2: Top (height) boxplot
@@ -333,8 +425,10 @@ a <- boxplot(log(prop.EOO.in.StrictUCs+1) ~ cats.f,
              notch = TRUE, varwidth = TRUE, frame = FALSE, horizontal = TRUE,
              at = pos, xaxt = "n", yaxt = "n", 
              ylim = log(c(0,100)+1), xlim=c(0,2.5),
-             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
-             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             col = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
+             outcol = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
              outpch = 19,
              ylab = "", xlab = "")
 axis(2, pos, col = NA, col.ticks = NA, 
@@ -371,8 +465,10 @@ a <- boxplot(log(protected+1) ~ cats.f,
              notch = TRUE, varwidth = TRUE, frame = FALSE, horizontal = FALSE,
              at = c(0.2,0.75,1.5,2.2), yaxt = "n", xaxt = "n", 
              ylim = log(c(0,100)+1), xlim=c(0,2.5),
-             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
-             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             col = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
+             outcol = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
              outpch = 19,
              ylab = "", xlab = "")
 axis(1, pos, col = NA, col.ticks = NA, 
@@ -415,9 +511,14 @@ colnames(mat) <- gsub(" ", "", colnames(mat))
 rownames(mat) <- gsub(" ", "", rownames(mat))
 
 #Defining the colors of tracks and links
-grid.col = c(CR_hi = "red", EN_hi = "darkorange", VU_hi = "gold", LCorNT_hi = "khaki",
-             CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
-col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+# grid.col = c(CR_hi = "red", EN_hi = "darkorange", VU_hi = "gold", LCorNT_hi = "khaki",
+#              CR_opt = "red", EN_opt = "darkorange", VU_opt = "gold", LCorNT_opt = "khaki")
+# col_mat = rep(rev(c("red","darkorange","gold","khaki")), each=4)
+grid.col = c(CR_hi = "#CD0000", EN_hi = "#E69F00", VU_hi = "#F0E442", LCorNT_hi = "#F0E68C",
+             CR_opt = "#CD0000", EN_opt = "#E69F00", VU_opt = "#F0E442", LCorNT_opt = "#F0E68C")
+col_mat = rep(rev(c("#CD0000","#E69F00","#F0E442","#F0E68C")), each=4)
+
+
 col_mat[mat >= 15] = adjustcolor(col_mat[mat >= 15], alpha.f = 0.5)
 col_mat[mat < 15] = adjustcolor(col_mat[mat < 15], alpha.f = 0.9)
 #col_mat[mat < 5] = "#00000000"
@@ -505,8 +606,10 @@ a <- boxplot(log(prop.EOO.forest+1) ~ cats.f,
              at = pos, #xaxt = "n", 
              yaxt = "n", 
              ylim = log(c(1,110)), xlim=c(0,2.5),
-             col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
-             outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # col = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             # outcol = alpha(rev(c("red", "darkorange",  "gold", "forestgreen")),0.4),
+             col = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
+             outcol = alpha(rev(c("#CD0000", "#E69F00", "#F0E442", "#10E210")),0.4),
              outpch = 19, cex.lab = 1.2,
              ylab = "Area of Habitat (%)", xlab = "")
 # axis(1, pos, col = NA, col.ticks = NA, 

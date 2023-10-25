@@ -37,7 +37,7 @@ hab.class <- toto$NB_LAB[grepl("ForestCover", toto$LegendTreeCoSimp)]
 
 ## Loading aggregated rasters and extracting the habitat loss/quality
 ano1 = 2000
-hab.map <- raster::stack(paste0("data/ESA_Land_Cover_map_",ano1,"_2015_AF_1km.tif"))
+hab.map <- raster::stack(paste0("data/ESA_Land_Cover_map_", ano1, "_2015_AF_1km.tif"))
 names(hab.map) <- paste("ESA",c(ano1,2015), sep=".")
 anos <- 2015 - ano1 
 

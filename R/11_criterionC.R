@@ -28,7 +28,7 @@ for(x in 1:length(res.means)) {
 }
 
 #### LOADING THREAT HABITAT AND ECOLOGY DATA ####
-## Includes species info on Generation Length and Proportion of matrue individuals
+## Includes species info on Generation Length and Proportion of mature individuals
 hab <- readRDS("data/threat_habitats.rds")
 
 PopData <- merge(decline.models, hab, by.x= "row.names", by.y = "Name_submitted", all.x = TRUE)
