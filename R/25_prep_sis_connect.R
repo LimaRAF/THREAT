@@ -3695,7 +3695,7 @@ ref2$internal_taxon_id <- spp
 ref3 <- data.frame(Reference_type = "Assessment", 
                    author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
                    year = "2023", volume = NA, number = NA, pages = NA,
-                   title = "The Atlantic Forest trees: a flora on the verge of extinction", 
+                   title = "Comprehensive conservation assessments reveal high extinction risks across Atlantic Forest trees", 
                    secondary_title = NA, type = "journal article")
 spp <- result.all[[plan]][,"internal_taxon_id"][
   grepl("Lima et al. 2023", result.all[[plan]][,"refs"])]
@@ -3785,7 +3785,7 @@ ref9$internal_taxon_id <- spp
 ref10 <- data.frame(Reference_type = "Assessment", 
                     author = "Lima, R.A.F., Dauby, G., de Gasper, A.L., Vibrans, A.C., Oliveira, A.A., Prado, P.I., Souza, V.C., Siqueira, M.F., ter Steege, H.",
                     year = "2023", volume = NA, number = NA, pages = NA,
-                    title = "The Atlantic Forest trees: a flora on the verge of extinction", 
+                    title = "Comprehensive conservation assessments reveal high extinction risks across Atlantic Forest trees", 
                     secondary_title = NA, type = "journal article")
 spp <- result.all[[plan]][,"internal_taxon_id"][
   grepl("Lima et al. 2023", result.all[[plan]][,"refs"])]

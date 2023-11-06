@@ -369,9 +369,9 @@ Please cite this repository as:
 
 > **Renato A. F. de Lima, Gilles Dauby, André L. de Gasper, Eduardo P.
 Fernandez, Alexander C. Vibrans, Alexandre A. de Oliveira, Paulo I. Prado,
-Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege. (2023). The
-Atlantic Forest trees: a flora on the verge of extinction. Manuscript under
-review**
+Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege. (2023).
+Comprehensive conservation assessments reveal high extinction risks across
+Atlantic Forest trees. Manuscript under review**
 
 ### Funding
 
@@ -419,4 +419,6 @@ Forest hotspot. Biol. Conserv. 252, 108825 (2020).
 Siqueira, plantR: An R package and workflow for managing species records from
 biological collections. Methods Ecol. Evol. 14(2), 332-339 (2023).
 
-> M. C. Rivers, S. P. Bachman, T. R. Meagher, E. Nic Lughadha, N. A. Brummitt, Subpopulations, locations and fragmentation: applying IUCN red list criteria to herbarium specimen data. Biodivers. Conserv. 19, 2071–2085 (2010).
+> M. C. Rivers, S. P. Bachman, T. R. Meagher, E. Nic Lughadha, N. A. Brummitt,
+Subpopulations, locations and fragmentation: applying IUCN red list criteria to
+herbarium specimen data. Biodivers. Conserv. 19, 2071–2085 (2010).

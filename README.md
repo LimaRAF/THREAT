@@ -384,8 +384,8 @@ Please cite this repository as:
 > **Renato A. F. de Lima, Gilles Dauby, André L. de Gasper, Eduardo P.
 > Fernandez, Alexander C. Vibrans, Alexandre A. de Oliveira, Paulo I.
 > Prado, Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege.
-> (2023). The Atlantic Forest trees: a flora on the verge of extinction.
-> Manuscript under review**
+> (2023). Comprehensive conservation assessments reveal high extinction
+> risks across Atlantic Forest trees. Manuscript under review**
 
 ### Funding
 
