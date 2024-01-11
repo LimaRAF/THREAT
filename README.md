@@ -120,7 +120,7 @@ assessments using criteria A and C (see section ‘Details on step 3’).
 Species occurrence records should be submitted to a data cleaning and
 validation process to make sure that only the data with a minimum
 quality will be used in the assessments. The `plantR` package (Lima et
-al. 2022) provides different tools to standardize the notation
+al. 2023) provides different tools to standardize the notation
 associated with species records and to validate the locality,
 geographical coordinates, taxonomic nomenclature and species
 identifications. It also includes tools for the retrieval and removal of
@@ -133,18 +133,18 @@ specimen duplicates across biological collections.
 Different population metrics are necessary for applying the IUCN
 criteria A, B, C and D (criterion E is currently not considered in this
 workflow). A new version 2.0 of the `ConR` package (Dauby et al. 2017,
-Dauby & Lima 2022) was developed to include new functions to calculate
+Dauby & Lima 2023) was developed to include new functions to calculate
 most of these metrics.
 
 For criterion A, the `ConR` package provides a function for fitting
 statistical models to the population size vector to obtain the
-reductions at a specific point in time (`ConR::pop.decline.fit()`),
-based on linear, exponential, quadratic, logistic and other trends of
-population decline through time. This is important because the time
-interval of population decline needed for the assessments of criterion A
-or C (10 years or one-, two- or three-generation lengths - see IUCN
-2019) often does not correspond exactly to the observed population sizes
-for most species.
+reductions at a specific point in time (`ConR::pop.decline()`), based on
+linear, exponential, quadratic, logistic and other trends of population
+decline through time. This is important because the time interval of
+population decline needed for the assessments of criterion A or C (10
+years or one-, two- or three-generation lengths - see IUCN 2019) often
+does not correspond exactly to the observed population sizes for most
+species.
 
 For criterion B, the `ConR` package provides functions for calculating
 the Extent of Occurrence (EOO - `ConR::EOO.computing()`), Area of
@@ -170,7 +170,7 @@ population metrics obtained in the previous step against the IUCN
 quantitative thresholds and conditions. As mentioned above, specific
 functions were developed to assess the IUCN criteria A, B, C and D,
 which are freely available in the new version 2.0 of the `ConR` R
-package (Dauby et al. 2017, Dauby & Lima 2022 - see functions
+package (Dauby et al. 2017, Dauby & Lima 2023 - see functions
 `ConR::criterion_A()`, `ConR::criterion_B()`, `ConR::criterion_C()` and
 `ConR::criterion_D()`). A specific function was also developed to tell
 apart NT from LC categories (see function `ConR::near.threatened()`).
@@ -327,13 +327,13 @@ THREAT workflow.
 
 | Data Limitations/Uncertainties      | Criteria | Metric impacted        | Solution                         |
 |:------------------------------------|:---------|:-----------------------|:---------------------------------|
-| Generation Length                   | A and C  | Pop. size decline      | Group-specific imputation        |
-| Proportion of Mature Individuals    | C and D  | Pop. size              | Group-specific Imputation        |
-| Impact of harvest trends            | A and C  | Pop. size decline      | Group-specific imputation        |
-| Impact of habitat quality changes   | A and C  | Pop. size decline      | Group-specific imputation        |
+| Generation Length                   | A & C    | Pop. size decline      | Group-specific imputation        |
+| Proportion of Mature Individuals    | C & D    | Pop. size              | Group-specific Imputation        |
+| Impact of harvest trends            | A & C    | Pop. size decline      | Group-specific imputation        |
+| Impact of habitat quality changes   | A & C    | Pop. size decline      | Group-specific imputation        |
 | Average Dispersal Distance          | B1/B2    | Subpops./Fragmentation | Estimation from data             |
-| Geographical coordinates of records | B1/B2    | EOO and AOO            | Use only valid records           |
-| Species identification of records   | B1/B2    | EOO and AOO            | Add extra records, if needed     |
+| Geographical coordinates of records | B1/B2    | EOO & AOO              | Use only valid records           |
+| Species identification of records   | B1/B2    | EOO & AOO              | Add extra records, if needed     |
 | Scale of threat events              | B1/B2    | Number of locations    | Set a fixed value                |
 | Subpopulation limits                | C2a(i)   | Size of subpopulations | Subcriteria applied in few cases |
 | Future threats                      | D2       | \-                     | Subcriteria not applied          |
@@ -384,8 +384,10 @@ Please cite this repository as:
 > **Renato A. F. de Lima, Gilles Dauby, André L. de Gasper, Eduardo P.
 > Fernandez, Alexander C. Vibrans, Alexandre A. de Oliveira, Paulo I.
 > Prado, Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege.
-> (2023). Comprehensive conservation assessments reveal high extinction
-> risks across Atlantic Forest trees. Manuscript under review**
+> (2024). [Comprehensive conservation assessments reveal high extinction
+> risks across Atlantic Forest
+> trees](https://doi.org/10.1126/science.abq5099). Science. DOI:
+> 10.1126/science.abq5099.**
 
 ### Funding
 
@@ -419,8 +421,8 @@ repository.
 > data. Ecol. Evol. 7, 11292–11303 (2017).
 
 > G. Dauby, R. A. F. de Lima, ConR: Computation of Parameters Used in
-> Preliminary Assessment of Conservation Status (R package version
-> 2.0.0) (2022).
+> Preliminary Assessment of Species Conservation Status (R package
+> version 2.1) (2023).
 
 > IUCN, Guidelines for application of IUCN Red List criteria at regional
 > and national levels Version 4.0. (IUCN Species Survival Commission,
