@@ -361,11 +361,11 @@ This repository is structured as follows:
     standard to build the IUCN-required CSV files
   - Three other sub-folders including the shapefiles necessary to run
     the scripts
-  - A sub-folder not available in this repository names `data-raw` where
-    all the raw and very large files necessary to run the scripts are
-    stored (GitHub does not accept very large files). However, all the
-    derived data obtained from processing these raw and heavy files are
-    available in the `data` folder.
+  - One sub-folder is not available in this repository (sub-folder
+    `data-raw`), which contains the raw and very large files necessary
+    to run the scripts are stored (GitHub does not accept very large
+    files). However, all the derived data obtained from processing these
+    raw and heavy files are available in the `data` folder.
 
 - [`figures/`](https://github.com/LimaRAF/THREAT/tree/master/figures):
   contains all the figures created during the workflow.
@@ -386,8 +386,8 @@ Please cite this repository as:
 > Prado, Vinícius C. Souza, Marinez F. de Siqueira & Hans ter Steege.
 > (2024). [Comprehensive conservation assessments reveal high extinction
 > risks across Atlantic Forest
-> trees](https://doi.org/10.1126/science.abq5099). Science. DOI:
-> 10.1126/science.abq5099.**
+> trees](https://doi.org/10.1126/science.abq5099). Science 383(6679):
+> 219-225. DOI: 10.1126/science.abq5099.**
 
 ### Funding
 
